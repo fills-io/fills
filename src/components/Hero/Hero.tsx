@@ -1,5 +1,6 @@
 import ConceptBuilder from "./ConceptBuilder";
 import HeroDrafting from "./HeroDrafting";
+import HeroImageGrid from "./HeroImageGrid";
 
 /**
  * Hero — cream "architectural drafting" treatment (ported from v40).
@@ -23,8 +24,11 @@ export default function Hero() {
         }}
       />
 
-      {/* Architectural margin drafting marks */}
+      {/* Architectural margin drafting marks (light mode) */}
       <HeroDrafting />
+
+      {/* Bracketed scene squares (dark mode) */}
+      <HeroImageGrid />
 
       {/* Corner ticks */}
       <span className="absolute left-3.5 top-3.5 z-10 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
