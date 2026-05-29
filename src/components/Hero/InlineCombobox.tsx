@@ -71,7 +71,7 @@ export default function InlineCombobox({
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
           disabled={disabled}
-          className={`${widthClass} inline-block border-b border-dashed border-dark-3 bg-transparent pr-4 text-center font-serif italic text-hero-cream-2 placeholder:text-hero-dim placeholder:opacity-85 focus:border-acc focus:outline-none disabled:cursor-not-allowed disabled:opacity-40`}
+          className={`${widthClass} inline-block border-b border-dashed border-bdr-2 bg-transparent pr-4 text-center font-serif italic text-txt-2 placeholder:text-txt-3 placeholder:opacity-85 focus:border-acc focus:outline-none disabled:cursor-not-allowed disabled:opacity-40`}
         />
         {/* Chevron hint — clickable so the dropdown can be opened without focusing the input first. */}
         <button
@@ -79,20 +79,20 @@ export default function InlineCombobox({
           aria-label={`Show ${label} suggestions`}
           onClick={() => !disabled && setOpen((v) => !v)}
           disabled={disabled}
-          className="absolute right-0 top-1/2 -translate-y-1/2 px-0.5 text-xs not-italic text-hero-dim transition hover:text-acc disabled:cursor-not-allowed disabled:opacity-40"
+          className="absolute right-0 top-1/2 -translate-y-1/2 px-0.5 text-xs not-italic text-txt-3 transition hover:text-acc disabled:cursor-not-allowed disabled:opacity-40"
         >
           ▾
         </button>
       </span>
 
       {open && !disabled && suggestions.length > 0 && (
-        <div className="absolute left-1/2 top-full z-50 mt-2 min-w-[200px] -translate-x-1/2 border border-dark-3 bg-dark-2 py-1 text-left text-base shadow-2xl">
+        <div className="absolute left-1/2 top-full z-50 mt-2 min-w-[200px] -translate-x-1/2 border border-bdr-2 bg-bg py-1 text-left text-base shadow-2xl">
           {suggestions.map((s) => (
             <button
               key={s}
               type="button"
               onClick={() => pick(s)}
-              className="block w-full px-4 py-2 text-left font-sans text-sm not-italic text-hero-cream-2 transition hover:bg-dark-3 hover:text-acc"
+              className="block w-full px-4 py-2 text-left font-sans text-sm not-italic text-txt-2 transition hover:bg-bdr-2 hover:text-acc"
             >
               {s}
             </button>

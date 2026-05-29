@@ -1,55 +1,68 @@
 import ConceptBuilder from "./ConceptBuilder";
+import HeroDrafting from "./HeroDrafting";
 
+/**
+ * Hero — cream "architectural drafting" treatment (ported from v40).
+ *
+ * Theme-aware: cream surface in light mode, warm-graphite in dark mode
+ * (follows the global --bg token, unlike the old always-dark hero).
+ * Background carries a faint dotted lattice; the margins carry drafting
+ * marks (dimension band, scale, north arrow, A-A callouts) via HeroDrafting.
+ */
 export default function Hero() {
   return (
-    <section className="relative min-h-[780px] overflow-hidden border-b border-dark-3 bg-dark px-8 py-12">
-      {/* Subtle grid background */}
+    <section className="relative min-h-[780px] overflow-hidden border-b border-bdr bg-bg px-8 pb-12 pt-10">
+      {/* Faint dotted lattice */}
       <div
-        className="pointer-events-none absolute inset-0"
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(232,196,176,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(232,196,176,0.035) 1px, transparent 1px)",
-          backgroundSize: "64px 64px",
+            "radial-gradient(circle, var(--dot) 1px, transparent 1.6px)",
+          backgroundSize: "22px 22px",
         }}
       />
 
-      {/* Corner ticks — architectural detailing */}
-      <span className="absolute left-3.5 top-3.5 font-mono text-[9px] uppercase tracking-[0.1em] text-hero-dim">
+      {/* Architectural margin drafting marks */}
+      <HeroDrafting />
+
+      {/* Corner ticks */}
+      <span className="absolute left-3.5 top-3.5 z-10 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
         FILLS · A-001
       </span>
-      <span className="absolute right-3.5 top-3.5 font-mono text-[9px] uppercase tracking-[0.1em] text-hero-dim">
+      <span className="absolute right-3.5 top-3.5 z-10 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
         v0.1
       </span>
-      <span className="absolute bottom-3.5 left-3.5 font-mono text-[9px] uppercase tracking-[0.1em] text-hero-dim">
+      <span className="absolute bottom-3.5 left-3.5 z-10 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
         HERO · 01
       </span>
-      <span className="absolute bottom-3.5 right-3.5 font-mono text-[9px] uppercase tracking-[0.1em] text-hero-dim">
-        N↑
+      <span className="absolute bottom-3.5 right-3.5 z-10 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
+        ↑ N
       </span>
 
       {/* Center stage */}
-      <div className="relative z-10 mx-auto flex max-w-[780px] flex-col items-center pt-12 text-center">
+      <div className="relative z-10 mx-auto flex max-w-[780px] flex-col items-center pt-14 text-center">
         {/* Eyebrow pill */}
-        <span className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-dark-3 bg-[rgba(45,40,35,0.6)] px-3.5 py-1.5 backdrop-blur">
+        <span className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-bdr-2 bg-bg-2 px-3.5 py-1.5">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-acc" />
-          <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-hero-cream-2">
+          <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-txt-2">
             Interior · Architecture · AI
           </span>
         </span>
 
         {/* Headline */}
-        <h1 className="mb-4 font-serif text-[clamp(40px,5.4vw,64px)] font-normal leading-[0.98] tracking-tight text-hero-cream">
+        <h1 className="mb-4 font-serif text-[clamp(40px,5.4vw,64px)] font-normal leading-[0.98] tracking-tight text-txt">
           Design your space.
           <br />
-          <span className="italic text-hero-cream-2">Built like</span>{" "}
+          <span className="italic text-txt-2">Built like</span>{" "}
           <span className="italic text-acc">architecture.</span>
         </h1>
 
         {/* Subhead */}
-        <p className="mx-auto mb-10 max-w-[520px] text-sm font-light leading-relaxed text-hero-cream-2">
+        <p className="mx-auto mb-10 max-w-[520px] text-sm font-light leading-relaxed text-txt-2">
           Where interior design, architecture, and AI converge. Generate a
-          complete editorial mood board — palette, materials, lighting,
-          furniture — in five minutes.
+          complete editorial mood board with palette, materials, lighting, and
+          furniture, in five minutes.
         </p>
 
         {/* Concept builder with tabs */}
