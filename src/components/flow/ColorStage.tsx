@@ -70,7 +70,7 @@ export default function ColorStage({
       {/* Role labels */}
       <div className="mt-3 flex gap-2 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
         {ROLES.map((r, i) => (
-          <span key={r} style={{ flexGrow: i === 0 ? 6 : i === 1 ? 3 : 1 }} className="flex-1">
+          <span key={i} style={{ flexGrow: i === 0 ? 6 : i === 1 ? 3 : 1 }} className="flex-1">
             {r}
           </span>
         ))}

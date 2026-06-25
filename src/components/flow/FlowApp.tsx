@@ -20,6 +20,8 @@ import ProjectStage from "./ProjectStage";
 import VibeStage from "./VibeStage";
 import ColorStage from "./ColorStage";
 import LiveBrief from "./LiveBrief";
+import Theater from "./Theater";
+import SignupGate from "./SignupGate";
 
 export type Phase =
   | "project"
@@ -154,6 +156,10 @@ export default function FlowApp() {
 
           <LiveBrief state={state} />
         </main>
+      ) : phase === "theater" ? (
+        <Theater onDone={() => setPhase("signup")} />
+      ) : phase === "signup" ? (
+        <SignupGate onContinue={() => setPhase("concept")} />
       ) : (
         <main className="mx-auto max-w-[760px] px-6 py-20 text-center">
           <div className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-acc">
