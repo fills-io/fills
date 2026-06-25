@@ -56,7 +56,7 @@ export default function ColorStage({
       <div className="flex h-[140px] overflow-hidden border border-bdr-2">
         {palette.colors.map((c, i) => (
           <div
-            key={c}
+            key={i}
             className="relative flex-1 transition-all"
             style={{ backgroundColor: c, flexGrow: i === 0 ? 6 : i === 1 ? 3 : 1 }}
           >

@@ -420,11 +420,11 @@ function ChipRow({
         </b>{" "}
         suggestions
       </span>
-      {chips.map((c) => {
+      {chips.map((c, i) => {
         const isActive = active.trim().toLowerCase() === c.toLowerCase();
         return (
           <button
-            key={c}
+            key={`${c}-${i}`}
             type="button"
             onClick={() => onPick(c)}
             className={`rounded-full border px-[11px] py-[5px] font-sans text-[11.5px] transition ${

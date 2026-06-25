@@ -22,8 +22,12 @@ import ColorStage from "./ColorStage";
 import LiveBrief from "./LiveBrief";
 import Theater from "./Theater";
 import SignupGate from "./SignupGate";
+import ConceptPage from "./ConceptPage";
+import MoodBoard from "./MoodBoard";
+import UploadStage from "./UploadStage";
 
 export type Phase =
+  | "upload"
   | "project"
   | "vibe"
   | "color"
@@ -44,6 +48,7 @@ export type FlowState = {
 const BUILD_PHASES: Phase[] = ["project", "vibe", "color"];
 
 const PHASE_LABEL: Record<Phase, string> = {
+  upload: "Step 01 · Upload",
   project: "Step 01 · Project",
   vibe: "Step 02 · Vibe",
   color: "Step 03 · Color",
@@ -57,7 +62,9 @@ export default function FlowApp() {
   const params = useSearchParams();
   const entryPath = params.get("path") === "upload" ? "upload" : "quick";
 
-  const [phase, setPhase] = useState<Phase>("project");
+  const [phase, setPhase] = useState<Phase>(
+    entryPath === "upload" ? "upload" : "project",
+  );
   const [state, setState] = useState<FlowState>({
     entryPath,
     industry: params.get("industry") ?? "",
@@ -156,57 +163,20 @@ export default function FlowApp() {
 
           <LiveBrief state={state} />
         </main>
+      ) : phase === "upload" ? (
+        <UploadStage state={state} patch={patch} onContinue={() => setPhase("theater")} />
       ) : phase === "theater" ? (
         <Theater onDone={() => setPhase("signup")} />
       ) : phase === "signup" ? (
         <SignupGate onContinue={() => setPhase("concept")} />
+      ) : phase === "concept" ? (
+        <ConceptPage state={state} onCreateBoard={() => setPhase("board")} />
       ) : (
-        <main className="mx-auto max-w-[760px] px-6 py-20 text-center">
-          <div className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.16em] text-acc">
-            <span className="inline-block h-px w-5 bg-acc" />
-            {PHASE_LABEL[phase]}
-          </div>
-          <h2 className="mb-4 font-serif text-[clamp(28px,4vw,44px)] font-normal leading-[1.1] tracking-tight text-txt">
-            Drafting your <em className="italic text-acc">concept</em>.
-          </h2>
-          <p className="mx-auto mb-8 max-w-[460px] text-[15px] leading-relaxed text-txt-2">
-            This part of the flow — the generating screen, sign-in, editable
-            concept page and final mood board — is being built next. Your
-            choices so far are captured in the brief.
-          </p>
-          <div className="mx-auto max-w-[420px] border border-bdr-2 bg-bg-2 p-6 text-left">
-            <LiveBriefInline state={state} />
-          </div>
-          <button
-            onClick={() => setPhase("project")}
-            className="mt-8 font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
-          >
-            ← Start over
-          </button>
-        </main>
+        <MoodBoard
+          state={state}
+          onAddSpace={() => setPhase(state.entryPath === "upload" ? "upload" : "project")}
+        />
       )}
     </div>
-  );
-}
-
-/** Compact brief recap for the stub screen. */
-function LiveBriefInline({ state }: { state: FlowState }) {
-  const rows = [
-    ["Industry", state.industry],
-    ["Specifically", state.spec],
-    ["Vibe", state.vibe],
-    ["References", `${state.picks.length} picked`],
-  ] as const;
-  return (
-    <dl className="space-y-3">
-      {rows.map(([label, value]) => (
-        <div key={label} className="flex items-baseline justify-between gap-4">
-          <dt className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
-            {label}
-          </dt>
-          <dd className="font-serif text-[14px] text-txt">{value || "—"}</dd>
-        </div>
-      ))}
-    </dl>
   );
 }

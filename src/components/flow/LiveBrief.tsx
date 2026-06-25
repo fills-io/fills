@@ -65,8 +65,8 @@ export default function LiveBrief({ state }: { state: FlowState }) {
             Palette · {palette.label}
           </div>
           <div className="flex h-7 overflow-hidden border border-bdr-2">
-            {palette.colors.map((c) => (
-              <span key={c} className="flex-1" style={{ backgroundColor: c }} />
+            {palette.colors.map((c, i) => (
+              <span key={i} className="flex-1" style={{ backgroundColor: c }} />
             ))}
           </div>
         </div>

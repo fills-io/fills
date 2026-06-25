@@ -82,6 +82,40 @@ export const CONCEPT_ELEMENTS: { id: string; label: string; num: string }[] = [
 ];
 
 /**
+ * "Reading this as" refinement chips on the concept page. Generic across
+ * industries (design-first placeholders); real per-industry dimensions can
+ * replace these when the concept AI is wired in.
+ */
+export const CONTEXT_DIMENSIONS: { id: string; label: string; options: string[] }[] = [
+  { id: "scale", label: "Scale", options: ["Intimate", "Mid-size", "Generous", "Flagship"] },
+  { id: "audience", label: "Audience", options: ["Locals", "Destination", "Members", "Mixed"] },
+  { id: "budget", label: "Budget tier", options: ["Considered", "Premium", "Luxury", "Ultra-luxe"] },
+];
+
+/** Alternative direction names per element (Edit cycles through these). */
+export const ELEMENT_ALTERNATIVES: Record<string, string[]> = {
+  materials: ["Lime plaster & oak", "Travertine & brass", "Raw concrete & linen", "Burl wood & bouclé"],
+  flooring: ["Wide oak board", "Honed limestone", "Microcement", "Herringbone parquet"],
+  ceiling: ["Exposed structure", "Lime-washed flat", "Timber slat", "Coffered plaster"],
+  furniture: ["Sculptural & low", "Classic & upholstered", "Modular & light", "Antique & collected"],
+  lighting: ["Warm pools", "Natural-led", "Dramatic spots", "Even & diffuse"],
+  accents: ["Ceramics & stone", "Vintage art", "Botanical", "Sculptural objects"],
+};
+
+/** Build templated editorial + spatial narrative from the brief. */
+export function buildNarrative(spec: string, vibe: string): {
+  editorial: string;
+  spatial: string;
+} {
+  const s = spec || "the space";
+  const v = vibe || "a warm, considered direction";
+  return {
+    editorial: `A ${s} read through ${v}. The room is composed from light and material first — surfaces chosen for how they hold late-afternoon sun, furniture kept low and quiet so the architecture leads. Nothing shouts; everything is intentional.`,
+    spatial: `Circulation runs along the longest sightline, drawing you in before the room reveals itself. Zones are defined by a continuous floor finish and a single uninterrupted ceiling, so the ${s} feels larger than its footprint and calm at every hour.`,
+  };
+}
+
+/**
  * Seed palette id (into concept-palettes.ts) chosen from the vibe text.
  * Mirrors the prototype's keyword matching (dark/moody → noir,
  * japandi/minimal → japandi, else warm).
