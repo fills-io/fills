@@ -46,7 +46,7 @@ export default function Faq() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="border-b border-bdr bg-bg-2 px-8 py-24">
+    <section id="faq" className="border-b border-bdr bg-bg-2 px-8 py-[104px]">
       <SectionHeader
         eyebrow="07 · Questions"
         headline="Things people ask."

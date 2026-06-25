@@ -46,7 +46,7 @@ export default function PickYourDoor() {
         <div className="mb-9 text-center">
           <span className="inline-flex items-center gap-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-hero-cream-2">
             <span className="inline-block h-px w-[18px] bg-[rgba(232,196,176,0.2)]" />
-            07 · Three ways to start
+            08 · Three ways to start
             <span className="inline-block h-px w-[18px] bg-[rgba(232,196,176,0.2)]" />
           </span>
           <h3 className="mt-3 font-serif text-[clamp(28px,3.6vw,40px)] font-medium leading-[1.2] tracking-tight text-hero-cream">

@@ -7,6 +7,7 @@ import Architect from "@/components/Architect";
 import HowItWorks from "@/components/HowItWorks";
 import SampleBoards from "@/components/SampleBoards";
 import MadeFor from "@/components/MadeFor";
+import WordmarkMoment from "@/components/WordmarkMoment";
 import Faq from "@/components/Faq";
 import PickYourDoor from "@/components/PickYourDoor";
 import Footer from "@/components/Footer";
@@ -23,6 +24,7 @@ export default function Home() {
       <HowItWorks />
       <SampleBoards />
       <MadeFor />
+      <WordmarkMoment />
       <Faq />
       <PickYourDoor />
       <Footer />

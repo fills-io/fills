@@ -25,7 +25,7 @@ export default function SectionHeader({
 
   return (
     <div
-      className={`mx-auto max-w-3xl ${
+      className={`mx-auto max-w-[780px] ${
         align === "center" ? "text-center" : "text-left"
       }`}
     >
@@ -34,7 +34,7 @@ export default function SectionHeader({
         {eyebrow}
       </span>
       <h2
-        className={`mt-5 font-serif text-[clamp(28px,3.8vw,44px)] font-normal leading-[1.12] tracking-tight ${textColor}`}
+        className={`mt-5 font-serif text-[clamp(34px,4.6vw,56px)] font-medium leading-[1.05] tracking-tight ${textColor}`}
       >
         {headline}
       </h2>

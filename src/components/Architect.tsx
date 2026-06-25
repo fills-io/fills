@@ -31,7 +31,7 @@ export default function Architect() {
   return (
     <section
       id="architect"
-      className="border-b border-dark-3 bg-dark px-8 py-24"
+      className="border-b border-dark-3 bg-dark px-8 py-[104px]"
     >
       <SectionHeader
         eyebrow="03 · Talk to an architect"
@@ -50,7 +50,7 @@ export default function Architect() {
         {TIERS.map((tier) => (
           <div
             key={tier.num}
-            className="flex flex-col gap-6 px-8 py-8 transition hover:bg-dark-2 md:flex-row md:items-start"
+            className="group flex flex-col gap-6 px-8 py-8 transition hover:bg-[rgba(232,196,176,0.03)] md:flex-row md:items-start"
           >
             <span className="font-mono text-[11px] tracking-[0.14em] text-acc md:min-w-[80px] md:pt-1">
               {tier.num}
