@@ -1,6 +1,7 @@
 import ConceptBuilder from "./ConceptBuilder";
 import HeroDrafting from "./HeroDrafting";
 import HeroImageGrid from "./HeroImageGrid";
+import HeroDots from "./HeroDots";
 
 /**
  * Hero — cream "architectural drafting" treatment (ported from v40).
@@ -13,16 +14,8 @@ import HeroImageGrid from "./HeroImageGrid";
 export default function Hero() {
   return (
     <section className="relative min-h-[780px] overflow-hidden border-b border-bdr bg-bg px-8 pb-12 pt-10">
-      {/* Faint dotted lattice */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-0"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle, var(--dot) 1px, transparent 1.6px)",
-          backgroundSize: "22px 22px",
-        }}
-      />
+      {/* Interactive sketchbook dot grid — light mode, reacts to cursor */}
+      <HeroDots />
 
       {/* Architectural margin drafting marks (light mode) */}
       <HeroDrafting />

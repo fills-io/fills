@@ -5,6 +5,7 @@ import Ticker from "@/components/Ticker";
 import Output from "@/components/Output";
 import Architect from "@/components/Architect";
 import HowItWorks from "@/components/HowItWorks";
+import SampleBoards from "@/components/SampleBoards";
 import MadeFor from "@/components/MadeFor";
 import Faq from "@/components/Faq";
 import PickYourDoor from "@/components/PickYourDoor";
@@ -20,6 +21,7 @@ export default function Home() {
       <Output />
       <Architect />
       <HowItWorks />
+      <SampleBoards />
       <MadeFor />
       <Faq />
       <PickYourDoor />
