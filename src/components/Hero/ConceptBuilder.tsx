@@ -68,17 +68,20 @@ export default function ConceptBuilder() {
 
   function build() {
     if (tab === "quick") {
+      // → new QuickFlow, prefilled from the madlib.
       const qs = new URLSearchParams({
-        mode: "quick",
+        path: "quick",
         industry: industry?.label ?? "",
         spec: spec.trim(),
         vibe: vibe.trim(),
       });
-      router.push(`/concept?${qs.toString()}`);
-    } else if (tab === "studio") {
-      router.push("/concept?mode=studio");
+      router.push(`/create?${qs.toString()}`);
+    } else if (tab === "upload") {
+      // → new QuickFlow upload path.
+      router.push("/create?path=upload");
     } else {
-      router.push("/concept?mode=upload");
+      // Full Studio keeps the existing detailed wizard.
+      router.push("/concept?mode=studio");
     }
   }
 
