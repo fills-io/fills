@@ -11,7 +11,9 @@
 
 import { useEffect, useState } from "react";
 
-const COMPLETIONS = ["the brief.", "the room.", "in the blanks.", "the rest."];
+const COMPLETIONS = ["the brief.", "the room.", "the blanks.", "the rest."];
+// The widest completion — reserves the box so the line never reflows.
+const GHOST = "the blanks.";
 
 export default function WordmarkMoment() {
   const [idx, setIdx] = useState(0);
@@ -35,14 +37,14 @@ export default function WordmarkMoment() {
 
         <h2 className="mt-6 font-serif text-[clamp(34px,5.2vw,68px)] font-normal leading-[1.05] tracking-tight text-txt">
           Fills{" "}
-          <span className="relative inline-block align-baseline">
+          <span className="relative inline-block text-left align-baseline">
             {/* sizing ghost keeps the line from reflowing as the word swaps */}
             <span className="invisible italic" aria-hidden>
-              in the blanks.
+              {GHOST}
             </span>
             <span
               key={idx}
-              className="absolute inset-0 whitespace-nowrap italic text-acc"
+              className="absolute inset-0 whitespace-nowrap text-left italic text-acc"
               style={{ animation: "wmSwap 2.6s ease-in-out" }}
             >
               {COMPLETIONS[idx]}
