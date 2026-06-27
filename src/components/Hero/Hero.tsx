@@ -17,6 +17,18 @@ export default function Hero() {
       {/* Interactive sketchbook dot grid — light mode, reacts to cursor */}
       <HeroDots />
 
+      {/* Soft halo behind the headline — fades the dots out so the text
+          reads clean and sits on a calm focal area. Background-colored, so
+          it adapts to light/dark. Above the dots, below the content. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-[2]"
+        style={{
+          background:
+            "radial-gradient(ellipse 56% 44% at 50% 36%, var(--bg) 42%, transparent 78%)",
+        }}
+      />
+
       {/* Architectural margin drafting marks (light mode) */}
       <HeroDrafting />
 
