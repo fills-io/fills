@@ -78,7 +78,7 @@ export default function ColorStage({
 
       <div className="mt-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-acc">
         <span className="inline-block h-px w-4 bg-acc" />
-        AI · {palette.label}
+        Palette · {palette.label}
       </div>
 
       <div className="mt-8 border-t border-bdr-2 pt-6">

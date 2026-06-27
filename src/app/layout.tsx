@@ -26,9 +26,59 @@ const dmMono = DM_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fills · Interior · Architecture · AI",
+  metadataBase: new URL("https://fills.io"),
+  title: {
+    default: "Fills — AI Mood Board & Interior Design Brief Generator",
+    template: "%s · Fills",
+  },
   description:
-    "Where interior design, architecture, and AI converge. Generate a complete editorial mood board — palette, materials, lighting, furniture — in five minutes.",
+    "Fills turns a one-line brief into a complete editorial mood board — palette, materials, lighting, furniture — in five minutes. An AI interior design tool built by a working architect.",
+  keywords: [
+    "AI mood board generator",
+    "AI interior design",
+    "interior design brief generator",
+    "mood board maker",
+    "interior design tool",
+    "AI design tool",
+    "architecture mood board",
+    "moodboard generator for designers",
+  ],
+  applicationName: "Fills",
+  authors: [{ name: "Fills" }],
+  alternates: { canonical: "https://fills.io" },
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    url: "https://fills.io",
+    siteName: "Fills",
+    title: "Fills — AI Mood Board & Interior Design Brief Generator",
+    description:
+      "Turn a one-line brief into a complete editorial mood board — palette, materials, lighting, furniture — in five minutes. Built by a working architect.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Fills — AI Mood Board & Interior Design Brief Generator",
+    description:
+      "Turn a one-line brief into a complete editorial mood board in five minutes. Built by a working architect.",
+  },
+};
+
+// Structured data — helps Google (and AI Overviews) understand what Fills is.
+const STRUCTURED_DATA = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Fills",
+  applicationCategory: "DesignApplication",
+  operatingSystem: "Web",
+  url: "https://fills.io",
+  description:
+    "An AI mood board and interior design brief generator. Turn a one-line brief into a complete editorial mood board — palette, materials, lighting, furniture — in five minutes. Built by a working architect.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  creator: {
+    "@type": "Organization",
+    name: "Fills",
+    url: "https://fills.io",
+  },
 };
 
 // Pre-paint script: applies saved theme before React hydrates to avoid flash.
@@ -55,6 +105,10 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(STRUCTURED_DATA) }}
+        />
       </head>
       <body className="min-h-screen antialiased">
         {children}

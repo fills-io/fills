@@ -208,7 +208,7 @@ export default function PinterestGrid({
       {suggestionContext && suggestions.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-acc">
-            AI · try also
+Try also
           </span>
           {suggestions.map((s) => (
             <button
@@ -227,7 +227,7 @@ export default function PinterestGrid({
       )}
       {suggestionContext && suggestionsStatus === "loading" && (
         <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-hero-dim">
-          AI · thinking of related searches…
+Finding related searches…
         </div>
       )}
 

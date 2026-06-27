@@ -86,7 +86,7 @@ export default function ComingSoon() {
         >
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-acc" />
           <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-hero-cream-2">
-            Interior · Architecture · AI
+            Interior · Architecture · Design
           </span>
         </span>
 

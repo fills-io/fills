@@ -39,7 +39,7 @@ export default function Footer() {
             </span>
           </div>
           <p className="mt-5 max-w-xs text-[13px] leading-[1.7] text-txt-2">
-            Where interior design, architecture, and AI meet. Build your concept brief in minutes.
+            Where interior design and architecture meet a faster way to brief. Build your concept brief in minutes.
           </p>
         </div>
 
