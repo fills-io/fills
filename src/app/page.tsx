@@ -11,6 +11,7 @@ import WordmarkMoment from "@/components/WordmarkMoment";
 import Faq from "@/components/Faq";
 import PickYourDoor from "@/components/PickYourDoor";
 import Footer from "@/components/Footer";
+import Reveal from "@/components/Reveal";
 
 export default function Home() {
   return (
@@ -19,14 +20,31 @@ export default function Home() {
       <Hero />
       <SocialBand />
       <Ticker />
-      <Output />
-      <Architect />
-      <HowItWorks />
-      <SampleBoards />
-      <MadeFor />
-      <WordmarkMoment />
-      <Faq />
-      <PickYourDoor />
+      {/* Below-the-fold sections gently reveal as they scroll into view. */}
+      <Reveal>
+        <Output />
+      </Reveal>
+      <Reveal>
+        <Architect />
+      </Reveal>
+      <Reveal>
+        <HowItWorks />
+      </Reveal>
+      <Reveal>
+        <SampleBoards />
+      </Reveal>
+      <Reveal>
+        <MadeFor />
+      </Reveal>
+      <Reveal>
+        <WordmarkMoment />
+      </Reveal>
+      <Reveal>
+        <Faq />
+      </Reveal>
+      <Reveal>
+        <PickYourDoor />
+      </Reveal>
       <Footer />
     </>
   );

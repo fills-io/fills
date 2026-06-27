@@ -87,6 +87,18 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Flow step transition: each stage fades + slides in on phase change. */
+@keyframes flowStageIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.flow-stage-in {
+  animation: flowStageIn 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-stage-in { animation: none; }
+}
+
 /* Hero dual-mode layers: drafting margins in light, scene squares in dark. */
 html:not(.theme-dark) .hero-image-grid {
   display: none;

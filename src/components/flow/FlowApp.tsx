@@ -129,15 +129,17 @@ export default function FlowApp() {
       {isBuild ? (
         <main className="mx-auto grid max-w-[1100px] grid-cols-1 gap-10 px-6 py-12 lg:grid-cols-[1fr_300px]">
           <div>
-            {phase === "project" && (
-              <ProjectStage state={state} patch={patch} onContinue={next} />
-            )}
-            {phase === "vibe" && (
-              <VibeStage state={state} patch={patch} onContinue={next} />
-            )}
-            {phase === "color" && (
-              <ColorStage state={state} patch={patch} onContinue={next} />
-            )}
+            <div key={phase} className="flow-stage-in">
+              {phase === "project" && (
+                <ProjectStage state={state} patch={patch} onContinue={next} />
+              )}
+              {phase === "vibe" && (
+                <VibeStage state={state} patch={patch} onContinue={next} />
+              )}
+              {phase === "color" && (
+                <ColorStage state={state} patch={patch} onContinue={next} />
+              )}
+            </div>
 
             {/* Build progress + back */}
             <div className="mt-10 flex items-center justify-between border-t border-bdr-2 pt-5">
@@ -163,19 +165,23 @@ export default function FlowApp() {
 
           <LiveBrief state={state} />
         </main>
-      ) : phase === "upload" ? (
-        <UploadStage state={state} patch={patch} onContinue={() => setPhase("theater")} />
-      ) : phase === "theater" ? (
-        <Theater onDone={() => setPhase("signup")} />
-      ) : phase === "signup" ? (
-        <SignupGate state={state} onContinue={() => setPhase("concept")} />
-      ) : phase === "concept" ? (
-        <ConceptPage state={state} onCreateBoard={() => setPhase("board")} />
       ) : (
-        <MoodBoard
-          state={state}
-          onAddSpace={() => setPhase(state.entryPath === "upload" ? "upload" : "project")}
-        />
+        <div key={phase} className="flow-stage-in">
+          {phase === "upload" ? (
+            <UploadStage state={state} patch={patch} onContinue={() => setPhase("theater")} />
+          ) : phase === "theater" ? (
+            <Theater onDone={() => setPhase("signup")} />
+          ) : phase === "signup" ? (
+            <SignupGate state={state} onContinue={() => setPhase("concept")} />
+          ) : phase === "concept" ? (
+            <ConceptPage state={state} onCreateBoard={() => setPhase("board")} />
+          ) : (
+            <MoodBoard
+              state={state}
+              onAddSpace={() => setPhase(state.entryPath === "upload" ? "upload" : "project")}
+            />
+          )}
+        </div>
       )}
     </div>
   );
