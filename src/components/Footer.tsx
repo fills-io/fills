@@ -53,7 +53,7 @@ export default function Footer() {
               {col.links.map((link) => (
                 <a
                   key={link}
-                  href="#"
+                  href={link === "Blog" ? "/blog" : "#"}
                   className="text-[13px] text-txt-2 transition hover:text-acc"
                 >
                   {link}

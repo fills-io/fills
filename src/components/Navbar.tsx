@@ -2,10 +2,10 @@ import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
-  { label: "Platform", href: "#how" },
-  { label: "Showcase", href: "#works" },
-  { label: "Mood Boards", href: "#samples" },
-  { label: "For You", href: "#audience" },
+  { label: "Platform", href: "/#how" },
+  { label: "Showcase", href: "/#works" },
+  { label: "Mood Boards", href: "/#samples" },
+  { label: "Journal", href: "/blog" },
 ];
 
 export default function Navbar() {
