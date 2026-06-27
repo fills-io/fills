@@ -48,10 +48,13 @@ export default function LiveBrief({ state }: { state: FlowState }) {
           </div>
           <div className="flex flex-wrap gap-1.5">
             {state.picks.map((p) => (
-              <span
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
                 key={p}
-                className="h-8 w-8 border border-bdr-2 bg-bg-3"
-                title={p}
+                src={p}
+                alt="Reference"
+                loading="lazy"
+                className="h-8 w-8 border border-bdr-2 bg-bg-3 object-cover"
               />
             ))}
           </div>
