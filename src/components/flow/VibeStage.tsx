@@ -24,11 +24,9 @@ const RATIO_CLASS: Record<string, string> = {
 export default function VibeStage({
   state,
   patch,
-  onContinue,
 }: {
   state: FlowState;
   patch: (p: Partial<FlowState>) => void;
-  onContinue: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [searches, setSearches] = useState(0);
@@ -115,13 +113,15 @@ export default function VibeStage({
               key={p.id}
               type="button"
               onClick={() => toggle(p.id, p.label)}
-              className="group relative mb-3 block w-full break-inside-avoid"
+              className="group relative mb-3 block w-full break-inside-avoid transition-transform duration-200 active:scale-[0.97]"
             >
               <PlaceholderScene
                 label={p.label}
                 pattern={p.pattern}
-                className={`${RATIO_CLASS[p.ratio]} w-full transition ${
-                  isPicked ? "ring-2 ring-acc" : "group-hover:border-acc"
+                className={`${RATIO_CLASS[p.ratio]} w-full transition duration-200 ${
+                  isPicked
+                    ? "scale-[1.02] ring-2 ring-acc"
+                    : "group-hover:border-acc"
                 }`}
               />
               {isPicked && (
@@ -140,18 +140,17 @@ export default function VibeStage({
         })}
       </div>
 
-      {/* Footer status + continue */}
-      <div className="mt-7 flex flex-col items-start justify-between gap-4 border-t border-bdr-2 pt-5 sm:flex-row sm:items-center">
+      {/* Footer status */}
+      <div className="mt-7 border-t border-bdr-2 pt-5">
         <span className="font-mono text-[11px] uppercase tracking-[0.12em] text-txt-3">
           Your picks · {picked.length} / {MAX_PICKS}
+          {!ready && (
+            <span className="text-acc">
+              {" "}
+              · pick {MIN_PICKS - picked.length} more to continue
+            </span>
+          )}
         </span>
-        <button
-          onClick={onContinue}
-          disabled={!ready}
-          className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-bdr-2 disabled:text-txt-3 disabled:opacity-70"
-        >
-          {ready ? "Continue →" : `Pick ${MIN_PICKS - picked.length} more →`}
-        </button>
       </div>
     </section>
   );

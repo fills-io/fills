@@ -17,15 +17,13 @@ import type { FlowState } from "./FlowApp";
 type Props = {
   state: FlowState;
   patch: (p: Partial<FlowState>) => void;
-  onContinue: () => void;
 };
 
-export default function ProjectStage({ state, patch, onContinue }: Props) {
+export default function ProjectStage({ state, patch }: Props) {
   const [ddOpen, setDdOpen] = useState(false);
   const matched = INDUSTRIES.find((i) => i.label === state.industry);
   const specChips = getSpecSuggestions(matched?.id ?? null);
   const vibeChips = getVibeSuggestions(matched?.id ?? null, state.spec);
-  const ready = !!state.industry && state.spec.trim().length >= 3;
 
   return (
     <section>
@@ -110,16 +108,6 @@ export default function ProjectStage({ state, patch, onContinue }: Props) {
           )}
         </div>
       )}
-
-      <div className="mt-9">
-        <button
-          onClick={onContinue}
-          disabled={!ready}
-          className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-bdr-2 disabled:text-txt-3 disabled:opacity-70"
-        >
-          Continue →
-        </button>
-      </div>
     </section>
   );
 }
@@ -147,7 +135,7 @@ function ChipRow({
             key={`${c}-${i}`}
             type="button"
             onClick={() => onPick(c)}
-            className={`rounded-full border px-[11px] py-[5px] font-sans text-[11.5px] transition ${
+            className={`rounded-full border px-[11px] py-[5px] font-sans text-[11.5px] transition active:scale-95 ${
               isActive
                 ? "border-acc bg-[rgba(200,81,42,0.18)] text-acc"
                 : "border-bdr-2 text-txt-2 hover:border-acc hover:text-acc"
