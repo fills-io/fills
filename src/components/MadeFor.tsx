@@ -1,3 +1,5 @@
+import CardBrackets from "./CardBrackets";
+
 const PERSONAS = [
   {
     label: "01 / The Renter",
@@ -72,17 +74,16 @@ export default function MadeFor() {
       </div>
 
       {/* Light persona grid */}
-      <div className="grid grid-cols-1 gap-px bg-bdr md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 bg-bg p-3 md:grid-cols-2">
         {PERSONAS.map((p) => (
           <article
             key={p.label}
-            className="relative bg-bg p-8 transition hover:bg-bg-2"
+            className="group relative border border-bdr-2 bg-bg-2 p-8 transition duration-200 hover:-translate-y-0.5 hover:border-acc"
           >
-            <span className="absolute left-2 top-2 h-2 w-2 border-l border-t border-acc" />
-            <span className="absolute bottom-2 right-2 h-2 w-2 border-b border-r border-acc" />
+            <CardBrackets />
 
             <div className="mb-6 flex items-baseline justify-between">
-              <span className="font-mono text-[10px] tracking-[0.14em] text-acc">
+              <span className="font-mono text-[10px] tracking-[0.14em] text-txt-3">
                 {p.label}
               </span>
               <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-txt-3">

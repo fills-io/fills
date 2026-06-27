@@ -1,4 +1,5 @@
 import SectionHeader from "./SectionHeader";
+import CardBrackets from "./CardBrackets";
 
 const STATIONS = [
   {
@@ -78,7 +79,7 @@ const STATIONS = [
 
 export default function HowItWorks() {
   return (
-    <section id="how" className="border-b border-bdr bg-bg px-8 py-24">
+    <section id="how" className="border-b border-bdr bg-bg px-8 py-[104px]">
       <SectionHeader
         eyebrow="04 · How it works"
         headline="From a few choices to a complete brief."
@@ -91,25 +92,35 @@ export default function HowItWorks() {
         lead="Fills follows how senior studios actually scope a project. You give a starting direction. We build out the rest. You stay in control of the result."
       />
 
-      <div className="mx-auto mt-16 grid max-w-6xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {STATIONS.map((s) => (
-          <article
-            key={s.num}
-            className="relative border border-bdr bg-bg-2 p-7 transition hover:bg-bg-3"
-          >
-            <span className="absolute -left-px -top-px h-3 w-3 border-l-2 border-t-2 border-acc" />
-            <span className="absolute -bottom-px -right-px h-3 w-3 border-b-2 border-r-2 border-acc" />
+      {/* Datum thread — a terracotta drafting line connecting the steps */}
+      <div className="relative mx-auto mt-16 max-w-[1280px]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-0 right-0 top-[120px] z-0 hidden items-center lg:flex"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-acc" />
+          <span className="h-px flex-1 bg-[repeating-linear-gradient(to_right,var(--acc)_0_6px,transparent_6px_12px)] opacity-50" />
+          <span className="h-1.5 w-1.5 rounded-full bg-acc" />
+        </div>
 
-            <div className="mb-5 font-mono text-[10px] tracking-[0.14em] text-txt-3">
-              {s.num}
-            </div>
-            <div className="mb-6 grid h-20 place-items-center">{s.visual}</div>
-            <h3 className="mb-3 font-serif text-lg font-medium leading-snug text-txt">
-              {s.title}
-            </h3>
-            <p className="text-[12.5px] leading-[1.7] text-txt-2">{s.body}</p>
-          </article>
-        ))}
+        <div className="relative z-10 grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+          {STATIONS.map((s) => (
+            <article
+              key={s.num}
+              className="group relative border border-bdr-2 bg-bg-2 p-7 transition duration-200 hover:-translate-y-0.5 hover:border-acc"
+            >
+              <CardBrackets />
+              <div className="mb-5 font-mono text-[10px] tracking-[0.14em] text-txt-3">
+                {s.num}
+              </div>
+              <div className="mb-6 grid h-20 place-items-center">{s.visual}</div>
+              <h3 className="mb-3 font-serif text-lg font-medium leading-snug text-txt">
+                {s.title}
+              </h3>
+              <p className="text-[12.5px] leading-[1.7] text-txt-2">{s.body}</p>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );

@@ -87,6 +87,14 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Hero dual-mode layers: drafting margins in light, scene squares in dark. */
+html:not(.theme-dark) .hero-image-grid {
+  display: none;
+}
+html.theme-dark .hero-drafting-layer {
+  display: none;
+}
+
 body {
   background-color: var(--bg);
   color: var(--txt);

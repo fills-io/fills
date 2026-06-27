@@ -1,4 +1,5 @@
 import SectionHeader from "./SectionHeader";
+import CardBrackets from "./CardBrackets";
 
 const OUTPUT_CARDS = [
   {
@@ -86,7 +87,7 @@ const OUTPUT_CARDS = [
 
 export default function Output() {
   return (
-    <section id="output" className="border-b border-bdr bg-bg px-8 py-24">
+    <section id="output" className="border-b border-bdr bg-bg px-8 py-[104px]">
       <SectionHeader
         eyebrow="02 · The Output"
         headline="Designer-grade output, in five minutes."
@@ -99,14 +100,13 @@ export default function Output() {
         lead="Fills is a mood board generator for interior design and architecture, designed by a working architect and trained on how senior studios brief clients. Describe your project, and in five minutes you get a complete editorial brief: palette, materials, lighting, furniture, spatial notes."
       />
 
-      <div className="mx-auto mt-16 grid max-w-6xl grid-cols-1 gap-px bg-bdr md:grid-cols-3 lg:grid-cols-5">
+      <div className="mx-auto mt-16 grid max-w-[1280px] grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {OUTPUT_CARDS.map((card) => (
           <article
             key={card.num}
-            className="relative bg-bg p-8 transition hover:bg-bg-2"
+            className="group relative border border-bdr-2 bg-bg-2 p-8 transition duration-200 hover:-translate-y-0.5 hover:border-acc"
           >
-            <span className="absolute left-2 top-2 h-2 w-2 border-l border-t border-acc" />
-            <span className="absolute bottom-2 right-2 h-2 w-2 border-b border-r border-acc" />
+            <CardBrackets />
             <div className="mb-5 font-mono text-[10px] tracking-[0.14em] text-txt-3">
               {card.num}
             </div>

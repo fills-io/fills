@@ -2,10 +2,10 @@ import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
-  { label: "How it works", href: "#how" },
+  { label: "Platform", href: "#how" },
+  { label: "Showcase", href: "#works" },
+  { label: "Mood Boards", href: "#samples" },
   { label: "For You", href: "#audience" },
-  { label: "Samples", href: "#samples" },
-  { label: "Pricing", href: "#pricing" },
 ];
 
 export default function Navbar() {
@@ -14,17 +14,16 @@ export default function Navbar() {
       className="sticky top-0 z-50 flex h-[60px] items-center justify-between border-b border-bdr px-8 backdrop-blur-md"
       style={{ background: "var(--nav-bg)" }}
     >
-      {/* Logo */}
+      {/* Logo — v40 moodboard swatch-stack mark */}
       <Link href="/" className="flex items-center gap-3">
-        <span className="grid h-4 w-4 place-items-center">
-          {/* Brand mark — small architectural rectangle */}
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <rect x="0.5" y="0.5" width="6" height="6" stroke="currentColor" strokeWidth="1" className="text-acc" />
-            <rect x="7.5" y="0.5" width="6" height="6" stroke="currentColor" strokeWidth="1" className="text-txt-2" />
-            <rect x="0.5" y="7.5" width="6" height="6" stroke="currentColor" strokeWidth="1" className="text-txt-2" />
-            <rect x="7.5" y="7.5" width="6" height="6" stroke="currentColor" strokeWidth="1" className="text-acc" />
-          </svg>
-        </span>
+        <svg width="24" height="24" viewBox="0 0 28 28" fill="none" aria-hidden>
+          <rect x="2" y="2" width="11" height="11" rx="1" fill="#C8512A" />
+          <rect x="15" y="2" width="11" height="5" rx="1" className="fill-txt" />
+          <rect x="15" y="9" width="11" height="4" rx="1" className="fill-txt-3" />
+          <rect x="2" y="15" width="5" height="11" rx="1" className="fill-txt-3" />
+          <rect x="9" y="15" width="4" height="11" rx="1" fill="#C8512A" opacity="0.4" />
+          <rect x="15" y="15" width="11" height="11" rx="1" className="fill-txt" />
+        </svg>
         <span className="text-sm font-medium tracking-tight text-txt">
           Fills<b className="font-medium text-acc">.io</b>
         </span>
@@ -49,9 +48,12 @@ export default function Navbar() {
         <button className="h-[60px] border-l border-bdr px-5 text-xs text-txt-2 transition hover:bg-bg-2 hover:text-txt">
           Sign in
         </button>
-        <button className="h-[60px] border-l border-bdr bg-acc px-6 text-xs font-medium text-white transition hover:bg-acc-d">
+        <Link
+          href="/concept?mode=quick"
+          className="flex h-[60px] items-center border-l border-bdr bg-acc px-6 text-xs font-medium text-white transition hover:bg-acc-d"
+        >
           Get started →
-        </button>
+        </Link>
       </div>
     </nav>
   );

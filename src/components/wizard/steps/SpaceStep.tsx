@@ -50,37 +50,43 @@ export default function SpaceStep({ state, setState }: Props) {
           What kind of project is this?
         </p>
 
-        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {INDUSTRIES.map((ind) => {
             const isSelected = state.industryId === ind.id;
+            // v40-style meta: first 3 spaces, root segment, joined by " · "
+            const meta = ind.spaces
+              .slice(0, 3)
+              .map((s) => s.id.split("-")[0])
+              .join(" · ");
             return (
               <button
                 key={ind.id}
                 onClick={() => {
-                  // Switching industry clears the previously-picked space
-                  // so we don't leave a "Bedroom" selection when the
-                  // industry changes to Hospitality.
                   setState({
                     industryId: ind.id,
                     spaceId:
                       ind.id === state.industryId ? state.spaceId : undefined,
                   });
                 }}
-                className={`group flex flex-col items-start border p-4 text-left transition ${
+                className={`group flex flex-col items-start gap-1 border bg-bg-2 p-[14px_16px] text-left transition ${
                   isSelected
-                    ? "border-acc bg-[rgba(200,81,42,0.08)]"
-                    : "border-dark-3 hover:border-hero-cream-2"
+                    ? "border-acc bg-[rgba(200,81,42,0.1)]"
+                    : "border-bdr-2 hover:border-acc"
                 }`}
               >
                 <span
-                  className={`text-[15px] font-medium ${
-                    isSelected ? "text-acc" : "text-hero-cream"
+                  className={`text-[13px] font-medium ${
+                    isSelected ? "text-txt" : "text-txt"
                   }`}
                 >
                   {ind.label}
                 </span>
-                <span className="mt-1 text-[12px] text-hero-dim">
-                  {ind.blurb}
+                <span
+                  className={`font-mono text-[9px] uppercase tracking-[0.08em] ${
+                    isSelected ? "text-acc" : "text-txt-3"
+                  }`}
+                >
+                  {meta}
                 </span>
               </button>
             );
