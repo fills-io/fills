@@ -195,6 +195,10 @@ export default function ConceptBuilder() {
           0% { opacity: 0; transform: translateY(70%); }
           100% { opacity: 1; transform: translateY(0); }
         }
+        @keyframes cbBlink {
+          0%, 50% { opacity: 1; }
+          50.01%, 100% { opacity: 0; }
+        }
       `}</style>
     </div>
   );
@@ -377,9 +381,61 @@ function QuickPanel(props: {
   );
 }
 
+/* Typewriter for the placeholder examples — types a word out, holds, erases,
+ * advances. Drives the "type here" feel. Off when focused/typing/reduced-motion. */
+function useTypewriter(words: string[], active: boolean): string {
+  const key = words.join("|");
+  const [text, setText] = useState("");
+  const [i, setI] = useState(0);
+  const [mode, setMode] = useState<"type" | "hold" | "erase">("type");
+
+  useEffect(() => {
+    if (!active) {
+      setText("");
+      setMode("type");
+      setI(0);
+      return;
+    }
+    const list = key ? key.split("|") : [];
+    if (list.length === 0) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setText(list[i % list.length]);
+      return;
+    }
+    const full = list[i % list.length];
+    let t: ReturnType<typeof setTimeout>;
+    if (mode === "type") {
+      t = setTimeout(
+        () =>
+          text.length < full.length
+            ? setText(full.slice(0, text.length + 1))
+            : setMode("hold"),
+        text.length < full.length ? 55 : 1300,
+      );
+    } else if (mode === "hold") {
+      t = setTimeout(() => setMode("erase"), 700);
+    } else {
+      t = setTimeout(
+        () => {
+          if (text.length > 0) setText(full.slice(0, text.length - 1));
+          else {
+            setI((p) => (p + 1) % list.length);
+            setMode("type");
+          }
+        },
+        text.length > 0 ? 28 : 120,
+      );
+    }
+    return () => clearTimeout(t);
+  }, [active, key, text, mode, i]);
+
+  return text;
+}
+
 /* Auto-sizing inline text input (serif, italic, dashed underline).
- * When empty + unfocused, the placeholder rolls through real examples
- * (placeholderOptions) to guide the user — pauses on focus or typing. */
+ * When empty + unfocused, it TYPES OUT example values (terracotta, with a
+ * blinking caret) so it reads as an editable field, not read-only text.
+ * The typing stops the moment you focus/type. */
 function AutoSizeInput({
   value,
   onChange,
@@ -397,19 +453,14 @@ function AutoSizeInput({
   const [width, setWidth] = useState(160);
   const [focused, setFocused] = useState(false);
 
-  // Rotate through example placeholders only while empty + unfocused.
-  const rotate =
-    !disabled && !value && !focused && (placeholderOptions?.length ?? 0) > 1;
-  const idx = useRotatingIndex(placeholderOptions?.length ?? 0, 2200, rotate);
-  const shownPlaceholder = rotate
-    ? placeholderOptions![idx % placeholderOptions!.length]
-    : placeholder;
+  const options = placeholderOptions ?? [];
+  const typing = !disabled && !value && !focused && options.length > 0;
+  const typed = useTypewriter(options, typing);
 
-  // Width is sized to the longest example so it never jitters as it rolls.
-  const longest =
-    placeholderOptions && placeholderOptions.length
-      ? placeholderOptions.reduce((a, b) => (b.length > a.length ? b : a), placeholder)
-      : placeholder;
+  // Width is sized to the longest example so the sentence never reflows.
+  const longest = options.length
+    ? options.reduce((a, b) => (b.length > a.length ? b : a), placeholder)
+    : placeholder;
 
   useLayoutEffect(() => {
     if (mirrorRef.current) {
@@ -426,15 +477,14 @@ function AutoSizeInput({
       >
         {value || longest}
       </span>
-      {/* Rolling placeholder overlay (animated) */}
-      {rotate && (
+      {/* Typewriter placeholder overlay — terracotta + blinking caret */}
+      {typing && (
         <span
-          key={idx}
           aria-hidden
-          className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap px-3.5 font-serif italic text-txt-3 opacity-85"
-          style={{ animation: "cbRoll .45s cubic-bezier(.22,1,.36,1)" }}
+          className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap px-3.5 font-serif italic text-acc"
         >
-          {shownPlaceholder}
+          {typed}
+          <span className="ml-px inline-block w-px self-stretch bg-acc" style={{ animation: "cbBlink 1s step-end infinite" }} />
         </span>
       )}
       <input
@@ -443,14 +493,14 @@ function AutoSizeInput({
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
-        placeholder={rotate ? "" : placeholder}
+        placeholder={typing ? "" : placeholder}
         disabled={disabled}
         autoComplete="off"
         style={{ width }}
-        className={`border-b border-dashed px-3.5 py-px text-center align-baseline font-serif italic outline-none transition placeholder:italic placeholder:text-txt-3 placeholder:opacity-85 disabled:cursor-not-allowed ${
+        className={`cursor-text border-b border-dashed px-3.5 py-px text-center align-baseline font-serif italic outline-none transition placeholder:italic placeholder:text-txt-3 placeholder:opacity-85 disabled:cursor-not-allowed ${
           value
             ? "border-transparent bg-[rgba(200,81,42,0.12)] text-acc"
-            : "border-bdr-2 bg-transparent text-txt-3 focus:border-acc focus:bg-[rgba(200,81,42,0.06)] focus:text-txt"
+            : "border-acc/40 bg-transparent text-acc focus:border-acc focus:bg-[rgba(200,81,42,0.06)]"
         }`}
       />
     </span>
@@ -480,7 +530,7 @@ function RollingWord({ items }: { items: string[] }) {
       </span>
       <span
         key={idx}
-        className="absolute inset-0 flex items-center justify-center whitespace-nowrap"
+        className="absolute inset-0 flex items-center justify-center whitespace-nowrap text-acc"
         style={{ animation: "cbRoll .5s cubic-bezier(.22,1,.36,1)" }}
       >
         {items[idx]}
