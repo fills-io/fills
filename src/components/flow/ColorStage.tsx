@@ -7,7 +7,7 @@
  * + a regenerate that cycles palettes.)
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PALETTES, getPalette } from "@/lib/concept-palettes";
 import { seedPaletteIdForVibe } from "@/lib/quickflow-data";
 import type { FlowState } from "./FlowApp";
@@ -17,25 +17,25 @@ const ROLES = ["Dominant · 60%", "Secondary · 30%", "Accent · 10%", "Support"
 export default function ColorStage({
   state,
   patch,
-  onContinue,
 }: {
   state: FlowState;
   patch: (p: Partial<FlowState>) => void;
-  onContinue: () => void;
 }) {
   const seededId = state.paletteId || seedPaletteIdForVibe(state.vibe);
   const [paletteId, setPaletteId] = useState(seededId);
   const palette = getPalette(paletteId) ?? PALETTES[0];
 
+  // Keep the chosen palette in flow state live, so the top-bar Continue
+  // always advances with the current selection.
+  useEffect(() => {
+    patch({ paletteId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paletteId]);
+
   function regenerate() {
     const idx = PALETTES.findIndex((p) => p.id === paletteId);
     const next = PALETTES[(idx + 1) % PALETTES.length];
     setPaletteId(next.id);
-  }
-
-  function commit() {
-    patch({ paletteId });
-    onContinue();
   }
 
   return (
@@ -81,16 +81,10 @@ export default function ColorStage({
         AI · {palette.label}
       </div>
 
-      <div className="mt-8 flex flex-wrap gap-3 border-t border-bdr-2 pt-6">
-        <button
-          onClick={commit}
-          className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h active:scale-[0.98]"
-        >
-          Looks good →
-        </button>
+      <div className="mt-8 border-t border-bdr-2 pt-6">
         <button
           onClick={regenerate}
-          className="inline-flex items-center gap-2 border border-bdr-2 px-6 py-3.5 text-[13px] font-medium text-txt transition hover:border-acc hover:text-acc"
+          className="inline-flex items-center gap-2 border border-bdr-2 px-6 py-3.5 text-[13px] font-medium text-txt transition hover:border-acc hover:text-acc active:scale-[0.98]"
         >
           ↻ Regenerate
         </button>

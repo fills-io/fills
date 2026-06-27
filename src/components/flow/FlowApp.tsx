@@ -80,6 +80,15 @@ export default function FlowApp() {
   const isBuild = BUILD_PHASES.includes(phase);
   const buildIdx = BUILD_PHASES.indexOf(phase);
 
+  // Whether the user can advance from the current build step (drives the
+  // top-bar Continue button — the navigation now lives at the top).
+  const canAdvance =
+    phase === "project"
+      ? !!state.industry && state.spec.trim().length >= 3
+      : phase === "vibe"
+        ? state.picks.length >= 3
+        : true;
+
   function next() {
     setPhase((p) =>
       p === "project" ? "vibe" : p === "vibe" ? "color" : p === "color" ? "theater" : p,
@@ -127,41 +136,48 @@ export default function FlowApp() {
 
       {/* Body */}
       {isBuild ? (
-        <main className="mx-auto grid max-w-[1100px] grid-cols-1 gap-10 px-6 py-12 lg:grid-cols-[1fr_300px]">
-          <div>
-            <div key={phase} className="flow-stage-in">
-              {phase === "project" && (
-                <ProjectStage state={state} patch={patch} onContinue={next} />
-              )}
-              {phase === "vibe" && (
-                <VibeStage state={state} patch={patch} onContinue={next} />
-              )}
-              {phase === "color" && (
-                <ColorStage state={state} patch={patch} onContinue={next} />
-              )}
-            </div>
+        <main className="mx-auto max-w-[1100px] px-6 pb-12">
+          {/* Sticky top action bar — Back · progress · Continue (stays in
+              view as you scroll the step). */}
+          <div className="sticky top-[60px] z-30 -mx-6 mb-8 flex items-center justify-between gap-4 border-b border-bdr bg-[var(--nav-bg)] px-6 py-4 backdrop-blur-md">
+            <button
+              onClick={back}
+              disabled={buildIdx === 0}
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc disabled:opacity-30"
+            >
+              ← Back
+            </button>
 
-            {/* Build progress + back */}
-            <div className="mt-10 flex items-center justify-between border-t border-bdr-2 pt-5">
-              <button
-                onClick={back}
-                disabled={buildIdx === 0}
-                className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc disabled:opacity-30"
-              >
-                ← Back
-              </button>
-              <div className="h-[3px] w-28 overflow-hidden rounded-[1px] bg-bdr-2">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <span className="hidden font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 sm:inline">
+                Step {buildIdx + 1} of {BUILD_PHASES.length}
+              </span>
+              <div className="h-2 w-20 overflow-hidden rounded-full bg-bdr-2 sm:w-32">
                 <div
-                  className="h-full rounded-[1px] bg-acc transition-[width] duration-500 ease-out"
+                  className="h-full rounded-full bg-acc transition-[width] duration-500 ease-out"
                   style={{
                     width: `${((buildIdx + 1) / BUILD_PHASES.length) * 100}%`,
                   }}
                 />
               </div>
+              <button
+                onClick={next}
+                disabled={!canAdvance}
+                className="inline-flex items-center gap-2 bg-acc px-6 py-2.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-bdr-2 disabled:text-txt-3 disabled:opacity-70"
+              >
+                Continue →
+              </button>
             </div>
           </div>
 
-          <LiveBrief state={state} />
+          <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_300px]">
+            <div key={phase} className="flow-stage-in">
+              {phase === "project" && <ProjectStage state={state} patch={patch} />}
+              {phase === "vibe" && <VibeStage state={state} patch={patch} />}
+              {phase === "color" && <ColorStage state={state} patch={patch} />}
+            </div>
+            <LiveBrief state={state} />
+          </div>
         </main>
       ) : (
         <div key={phase} className="flow-stage-in">

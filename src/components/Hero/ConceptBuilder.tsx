@@ -32,6 +32,28 @@ function sample<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)] as T;
 }
 
+// Generic example sets so the "specifically…" and "vibe…" blanks roll
+// through suggestions even before an industry is picked (matching the
+// industry slot). Once an industry is chosen, the industry-specific
+// suggestions take over.
+const GENERIC_SPECS = [
+  "boutique hotel suite",
+  "cocktail bar",
+  "yoga studio",
+  "loft apartment",
+  "specialty café",
+  "fragrance boutique",
+  "founder's office",
+];
+const GENERIC_VIBES = [
+  "warm minimalism",
+  "japandi calm",
+  "1920s glam",
+  "moody intimate",
+  "Mediterranean",
+  "Belgian wabi",
+];
+
 export default function ConceptBuilder() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("quick");
@@ -304,16 +326,14 @@ function QuickPanel(props: {
         value={spec}
         onChange={setSpec}
         placeholder="specifically…"
-        placeholderOptions={specSuggestions}
-        disabled={!industryId}
+        placeholderOptions={specSuggestions.length ? specSuggestions : GENERIC_SPECS}
       />
       <span> that feels like </span>
       <AutoSizeInput
         value={vibe}
         onChange={setVibe}
         placeholder="vibe…"
-        placeholderOptions={vibeSuggestions}
-        disabled={!showVibe}
+        placeholderOptions={vibeSuggestions.length ? vibeSuggestions : GENERIC_VIBES}
       />
       <span>.</span>
 
