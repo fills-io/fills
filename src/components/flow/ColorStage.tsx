@@ -84,7 +84,7 @@ export default function ColorStage({
       <div className="mt-8 flex flex-wrap gap-3 border-t border-bdr-2 pt-6">
         <button
           onClick={commit}
-          className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h"
+          className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h active:scale-[0.98]"
         >
           Looks good →
         </button>

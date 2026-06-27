@@ -148,7 +148,7 @@ export default function ConceptBuilder() {
         <button
           onClick={build}
           disabled={tab === "quick" && !canGenerate}
-          className="inline-flex items-center gap-2 rounded-[2px] bg-acc px-[26px] py-[14px] text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-bdr-2 disabled:text-txt-3 disabled:opacity-70"
+          className="inline-flex items-center gap-2 rounded-[2px] bg-acc px-[26px] py-[14px] text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-bdr-2 disabled:text-txt-3 disabled:opacity-70"
         >
           {tab === "quick" && "Build my brief →"}
           {tab === "studio" && "Open Full Studio →"}
@@ -513,7 +513,7 @@ function ChipRow({
             key={`${c}-${i}`}
             type="button"
             onClick={() => onPick(c)}
-            className={`rounded-full border px-[11px] py-[5px] font-sans text-[11.5px] transition ${
+            className={`rounded-full border px-[11px] py-[5px] font-sans text-[11.5px] transition active:scale-95 ${
               isActive
                 ? "border-acc bg-[rgba(200,81,42,0.18)] text-acc"
                 : "border-bdr-2 text-txt-2 hover:border-acc hover:bg-[rgba(200,81,42,0.08)] hover:text-acc"

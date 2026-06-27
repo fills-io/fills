@@ -115,13 +115,15 @@ export default function VibeStage({
               key={p.id}
               type="button"
               onClick={() => toggle(p.id, p.label)}
-              className="group relative mb-3 block w-full break-inside-avoid"
+              className="group relative mb-3 block w-full break-inside-avoid transition-transform duration-200 active:scale-[0.97]"
             >
               <PlaceholderScene
                 label={p.label}
                 pattern={p.pattern}
-                className={`${RATIO_CLASS[p.ratio]} w-full transition ${
-                  isPicked ? "ring-2 ring-acc" : "group-hover:border-acc"
+                className={`${RATIO_CLASS[p.ratio]} w-full transition duration-200 ${
+                  isPicked
+                    ? "scale-[1.02] ring-2 ring-acc"
+                    : "group-hover:border-acc"
                 }`}
               />
               {isPicked && (
@@ -148,7 +150,7 @@ export default function VibeStage({
         <button
           onClick={onContinue}
           disabled={!ready}
-          className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-bdr-2 disabled:text-txt-3 disabled:opacity-70"
+          className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-bdr-2 disabled:text-txt-3 disabled:opacity-70"
         >
           {ready ? "Continue →" : `Pick ${MIN_PICKS - picked.length} more →`}
         </button>

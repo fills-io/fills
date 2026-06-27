@@ -150,15 +150,13 @@ export default function FlowApp() {
               >
                 ← Back
               </button>
-              <div className="flex gap-1.5">
-                {BUILD_PHASES.map((p, i) => (
-                  <span
-                    key={p}
-                    className={`h-[3px] w-8 rounded-[1px] ${
-                      i <= buildIdx ? "bg-acc" : "bg-bdr-2"
-                    }`}
-                  />
-                ))}
+              <div className="h-[3px] w-28 overflow-hidden rounded-[1px] bg-bdr-2">
+                <div
+                  className="h-full rounded-[1px] bg-acc transition-[width] duration-500 ease-out"
+                  style={{
+                    width: `${((buildIdx + 1) / BUILD_PHASES.length) * 100}%`,
+                  }}
+                />
               </div>
             </div>
           </div>
