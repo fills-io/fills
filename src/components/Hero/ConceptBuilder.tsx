@@ -307,7 +307,7 @@ function QuickPanel(props: {
           </div>
         )}
       </span>
-      <span> project — a </span>
+      <span> project, a </span>
       <AutoSizeInput
         value={spec}
         onChange={setSpec}
@@ -365,7 +365,7 @@ function QuickPanel(props: {
           ref={diceRef}
           type="button"
           onClick={randomize}
-          title="Surprise me — randomize all three"
+          title="Surprise me: randomize all three"
           className="dice-hover inline-flex items-center gap-1.5 rounded-full border border-acc/50 px-3.5 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-acc transition hover:border-acc hover:bg-[rgba(200,81,42,0.08)] active:scale-95"
         >
           <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden>
@@ -668,7 +668,7 @@ function UploadPanel() {
         Aggregated extraction: palette · materials · lighting · vibe
       </span>
       <span className="font-sans text-[11px] text-txt-3">
-        PNG · JPG · HEIC — screenshots or moodboard exports, up to 10 MB each
+        PNG · JPG · HEIC, screenshots or moodboard exports, up to 10 MB each
       </span>
       <input type="file" accept="image/*" multiple className="hidden" />
     </label>

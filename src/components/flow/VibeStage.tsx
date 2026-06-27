@@ -82,7 +82,7 @@ export default function VibeStage({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && runSearch()}
-          placeholder="Search a direction — e.g. warm minimalism, moody lounge…"
+          placeholder="Search a direction, e.g. warm minimalism or moody lounge…"
           disabled={searchesLeft <= 0}
           className="flex-1 border border-bdr-2 bg-bg-2 px-4 py-3 text-[14px] text-txt outline-none placeholder:text-txt-3 focus:border-acc disabled:opacity-50"
         />

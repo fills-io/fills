@@ -54,7 +54,7 @@ export default function UploadStage({
         Upload your <em className="italic text-acc">inspiration</em>
       </h2>
       <p className="mb-7 max-w-[520px] text-[14px] leading-relaxed text-txt-2">
-        Drop {REC_MIN} to {MAX} images — screenshots, moodboard exports, photos.
+        Drop {REC_MIN} to {MAX} images: screenshots, moodboard exports, photos.
         We&apos;ll read palette, materials, lighting, and vibe across all of them.
       </p>
 
@@ -84,7 +84,7 @@ export default function UploadStage({
           Drop images or <em className="italic text-acc">browse</em>
         </span>
         <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-txt-3">
-          PNG · JPG · HEIC — up to {MAX}
+          PNG · JPG · HEIC, up to {MAX}
         </span>
         <input
           ref={fileRef}

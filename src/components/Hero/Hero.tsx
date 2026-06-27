@@ -70,8 +70,8 @@ export default function Hero() {
         {/* Subhead */}
         <p className="mx-auto mb-10 max-w-[520px] text-sm font-light leading-relaxed text-txt-2">
           Where interior design and architecture meet a faster way to brief.
-          A complete editorial mood board — palette, materials, lighting,
-          furniture — in five minutes.
+          A complete editorial mood board with palette, materials, lighting,
+          and furniture, ready in five minutes.
         </p>
 
         {/* Concept builder with tabs */}

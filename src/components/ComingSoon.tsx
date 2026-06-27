@@ -124,7 +124,7 @@ export default function ComingSoon() {
           className="cs-fade-up mx-auto mb-10 max-w-[460px] text-[15px] leading-relaxed text-hero-cream-2"
           style={{ animationDelay: "1.15s" }}
         >
-          A new tool for interior designers and architects — palette,
+          A new tool for interior designers and architects. Palette,
           materials, lighting, furniture, all in five minutes. Currently in
           private build with a small group of designers.
         </p>

@@ -28,20 +28,21 @@ const dmMono = DM_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://fills.io"),
   title: {
-    default: "Fills — AI Mood Board & Interior Design Brief Generator",
+    default: "Interior Design Brief Generator & AI Mood Board Tool | Fills",
     template: "%s · Fills",
   },
   description:
-    "Fills turns a one-line brief into a complete editorial mood board — palette, materials, lighting, furniture — in five minutes. An AI interior design tool built by a working architect.",
+    "Turn a one-line brief into a complete interior design mood board: palette, materials, lighting and furniture, in five minutes. Built by a working architect, for designers.",
   keywords: [
-    "AI mood board generator",
-    "AI interior design",
     "interior design brief generator",
-    "mood board maker",
-    "interior design tool",
-    "AI design tool",
+    "interior design brief template",
+    "mood board generator",
+    "mood board maker for designers",
+    "AI mood board generator",
+    "design brief tool",
     "architecture mood board",
-    "moodboard generator for designers",
+    "interior design tool for designers",
+    "AI interior design",
   ],
   applicationName: "Fills",
   authors: [{ name: "Fills" }],
@@ -51,15 +52,15 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://fills.io",
     siteName: "Fills",
-    title: "Fills — AI Mood Board & Interior Design Brief Generator",
+    title: "Interior Design Brief Generator & AI Mood Board Tool | Fills",
     description:
-      "Turn a one-line brief into a complete editorial mood board — palette, materials, lighting, furniture — in five minutes. Built by a working architect.",
+      "Turn a one-line brief into a complete interior design mood board: palette, materials, lighting and furniture, in five minutes. Built by a working architect.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Fills — AI Mood Board & Interior Design Brief Generator",
+    title: "Interior Design Brief Generator & AI Mood Board Tool | Fills",
     description:
-      "Turn a one-line brief into a complete editorial mood board in five minutes. Built by a working architect.",
+      "Turn a one-line brief into a complete interior design mood board in five minutes. Built by a working architect.",
   },
 };
 
@@ -72,7 +73,7 @@ const STRUCTURED_DATA = {
   operatingSystem: "Web",
   url: "https://fills.io",
   description:
-    "An AI mood board and interior design brief generator. Turn a one-line brief into a complete editorial mood board — palette, materials, lighting, furniture — in five minutes. Built by a working architect.",
+    "An AI mood board and interior design brief generator. Turn a one-line brief into a complete editorial mood board (palette, materials, lighting, furniture) in five minutes. Built by a working architect.",
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   creator: {
     "@type": "Organization",
