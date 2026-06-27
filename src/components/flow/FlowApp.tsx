@@ -168,7 +168,7 @@ export default function FlowApp() {
       ) : phase === "theater" ? (
         <Theater onDone={() => setPhase("signup")} />
       ) : phase === "signup" ? (
-        <SignupGate onContinue={() => setPhase("concept")} />
+        <SignupGate state={state} onContinue={() => setPhase("concept")} />
       ) : phase === "concept" ? (
         <ConceptPage state={state} onCreateBoard={() => setPhase("board")} />
       ) : (

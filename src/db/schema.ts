@@ -245,3 +245,27 @@ export const moodBoards = pgTable("mood_boards", {
 
 export type MoodBoard = typeof moodBoards.$inferSelect;
 export type NewMoodBoard = typeof moodBoards.$inferInsert;
+
+// ─── leads ─────────────────────────────────────────────────────────────────
+// Early-access email captures from the flow's "view your concept" gate.
+// Stores the email plus what they were designing, so Aisha sees intent,
+// not just an address. Viewable in the Supabase Table Editor.
+
+export const leads = pgTable("leads", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  /** What they were building when they entered their email (optional). */
+  industry: text("industry"),
+  spec: text("spec"),
+  vibe: text("vibe"),
+  /** Which entry path they used: "quick" | "upload". */
+  source: text("source"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type Lead = typeof leads.$inferSelect;
+export type NewLead = typeof leads.$inferInsert;

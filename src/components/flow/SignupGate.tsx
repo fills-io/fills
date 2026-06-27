@@ -1,73 +1,82 @@
 "use client";
 
 /**
- * SignupGate — the "Your concept is ready" sign-in step. Design-first:
- * the providers are visual stubs; any of them (or the email Continue)
- * advances to the concept page. Real auth (Clerk) lands in Phase 6.
+ * SignupGate — honest email capture (no fake social sign-in).
+ *
+ * The visitor enters their email to view + save their concept. We store it
+ * as an early-access lead (with what they were designing) via /api/leads —
+ * best-effort, so a storage hiccup never blocks them. Real accounts (Clerk)
+ * land in Phase 6; until then this is a genuine waitlist, not a fake login.
  */
 
 import { useState } from "react";
+import type { FlowState } from "./FlowApp";
 
-export default function SignupGate({ onContinue }: { onContinue: () => void }) {
+export default function SignupGate({
+  state,
+  onContinue,
+}: {
+  state: FlowState;
+  onContinue: () => void;
+}) {
   const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    // Fire-and-forget: never block the user on storage.
+    try {
+      await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          industry: state.industry || undefined,
+          spec: state.spec || undefined,
+          vibe: state.vibe || undefined,
+          source: state.entryPath,
+        }),
+      });
+    } catch {
+      // ignore — still let them through
+    }
+    onContinue();
+  }
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-60px)] max-w-[440px] flex-col items-center justify-center px-6 py-16 text-center">
       <div className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
-        04 · Sign in to view
+        04 · Almost there
       </div>
       <h2 className="mb-3 font-serif text-[clamp(26px,4vw,38px)] font-normal leading-[1.1] tracking-tight text-txt">
         Your concept is <em className="italic text-acc">ready</em>.
       </h2>
-      <p className="mb-9 max-w-[360px] text-[14px] leading-relaxed text-txt-2">
-        Create a free account to view your full editorial brief, edit it, and
-        export a mood board.
+      <p className="mb-8 max-w-[360px] text-[14px] leading-relaxed text-txt-2">
+        Drop your email to view your full brief and save it — we&apos;ll send
+        you a copy and let you know when full accounts open.
       </p>
 
-      <div className="w-full space-y-2.5">
-        <button
-          onClick={onContinue}
-          className="flex w-full items-center justify-center gap-2.5 border border-bdr-2 bg-bg-2 px-5 py-3.5 text-[13px] font-medium text-txt transition hover:border-acc"
-        >
-          <span className="font-mono text-[13px]">G</span> Continue with Google
-        </button>
-        <button
-          onClick={onContinue}
-          className="flex w-full items-center justify-center gap-2.5 border border-bdr-2 bg-bg-2 px-5 py-3.5 text-[13px] font-medium text-txt transition hover:border-acc"
-        >
-          <span className="text-[14px]"></span> Continue with Apple
-        </button>
-      </div>
-
-      <div className="my-5 flex w-full items-center gap-3 font-mono text-[9px] uppercase tracking-[0.16em] text-txt-3">
-        <span className="h-px flex-1 bg-bdr-2" /> or <span className="h-px flex-1 bg-bdr-2" />
-      </div>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          onContinue();
-        }}
-        className="flex w-full gap-2"
-      >
+      <form onSubmit={submit} className="flex w-full flex-col gap-2.5">
         <input
           type="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@studio.com"
-          className="flex-1 border border-bdr-2 bg-bg-2 px-4 py-3.5 text-[14px] text-txt outline-none placeholder:text-txt-3 focus:border-acc"
+          className="w-full border border-bdr-2 bg-bg-2 px-4 py-3.5 text-center text-[15px] text-txt outline-none placeholder:text-txt-3 focus:border-acc"
         />
         <button
           type="submit"
-          className="bg-acc px-5 text-[12px] font-medium uppercase tracking-[0.08em] text-white transition hover:bg-acc-h"
+          disabled={busy}
+          className="inline-flex items-center justify-center gap-2 bg-acc px-6 py-3.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:opacity-70"
         >
-          Continue
+          {busy ? "One moment…" : "View my concept →"}
         </button>
       </form>
 
-      <p className="mt-6 font-mono text-[9px] uppercase tracking-[0.12em] text-txt-3">
-        Free trial · no card required
+      <p className="mt-5 font-mono text-[9px] uppercase tracking-[0.12em] text-txt-3">
+        Free · no card · no spam
       </p>
     </main>
   );
