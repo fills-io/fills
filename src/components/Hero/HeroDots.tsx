@@ -29,12 +29,12 @@ export default function HeroDots() {
     // Respect reduced-motion: draw the static lattice once, no interaction.
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const SPACING = 50;
-    const REPULSE = 140;
-    const MAX_PUSH = 18;
+    const SPACING = 34; // denser — reads as a fine paper texture
+    const REPULSE = 130;
+    const MAX_PUSH = 14;
     const FOLLOW = 0.2;
     const RETURN = 0.1;
-    const COLOR = "rgba(120,80,55,.38)";
+    const COLOR = "rgba(120,80,55,.30)"; // present but soft
     const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
 
     let dots: { ox: number; oy: number; x: number; y: number }[] = [];
@@ -88,7 +88,7 @@ export default function HeroDots() {
           d.x += (d.ox - d.x) * RETURN;
           d.y += (d.oy - d.y) * RETURN;
         }
-        ctx!.fillRect(d.x - 1.4, d.y - 1.4, 2.8, 2.8);
+        ctx!.fillRect(d.x - 1.1, d.y - 1.1, 2.2, 2.2);
       }
     }
 

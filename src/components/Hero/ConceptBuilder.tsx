@@ -191,6 +191,7 @@ export default function ConceptBuilder() {
           100% { transform: rotate(360deg) scale(1); }
         }
         .dice-rolling svg { animation: diceRoll 0.55s cubic-bezier(0.22,1,0.36,1); }
+        .dice-hover:hover svg { animation: diceRoll 0.55s cubic-bezier(0.22,1,0.36,1); }
         @keyframes cbRoll {
           0% { opacity: 0; transform: translateY(70%); }
           100% { opacity: 1; transform: translateY(0); }
@@ -265,25 +266,6 @@ function QuickPanel(props: {
       <span className="absolute -right-[2px] -top-[2px] h-3 w-3 border-r-[1.5px] border-t-[1.5px] border-acc opacity-60" />
       <span className="absolute -bottom-[2px] -left-[2px] h-3 w-3 border-b-[1.5px] border-l-[1.5px] border-acc opacity-60" />
       <span className="absolute -bottom-[2px] -right-[2px] h-3 w-3 border-b-[1.5px] border-r-[1.5px] border-acc opacity-60" />
-
-      {/* Surprise-me dice — top-right */}
-      <button
-        ref={diceRef}
-        type="button"
-        onClick={randomize}
-        title="Surprise me — randomize all three"
-        className="absolute right-3.5 top-3.5 inline-flex items-center gap-1.5 rounded-full border border-bdr-2 px-3 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-txt-3 transition hover:border-acc hover:text-acc"
-      >
-        <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden>
-          <rect x="1" y="1" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.2" />
-          <circle cx="5.5" cy="5.5" r="1.1" fill="currentColor" />
-          <circle cx="12.5" cy="5.5" r="1.1" fill="currentColor" />
-          <circle cx="9" cy="9" r="1.1" fill="currentColor" />
-          <circle cx="5.5" cy="12.5" r="1.1" fill="currentColor" />
-          <circle cx="12.5" cy="12.5" r="1.1" fill="currentColor" />
-        </svg>
-        Surprise me
-      </button>
 
       {/* Madlib sentence */}
       <span>I&apos;m working on a </span>
@@ -363,19 +345,39 @@ function QuickPanel(props: {
         </div>
       )}
 
-      {/* Progress */}
-      <div className="mt-3.5 flex items-center justify-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.06em] text-txt-3">
-        <span>{filled} of 3</span>
-        <div className="flex gap-[3px]">
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className={`h-[3px] w-6 rounded-[1px] transition-colors ${
-                i < filled ? "bg-acc" : "bg-bdr-2"
-              }`}
-            />
-          ))}
+      {/* Bottom row — progress (left) + Surprise me (right, terracotta) */}
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-bdr-2 pt-3.5">
+        <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.06em] text-txt-3">
+          <span>{filled} of 3</span>
+          <div className="flex gap-[3px]">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className={`h-[3px] w-6 rounded-[1px] transition-colors ${
+                  i < filled ? "bg-acc" : "bg-bdr-2"
+                }`}
+              />
+            ))}
+          </div>
         </div>
+
+        <button
+          ref={diceRef}
+          type="button"
+          onClick={randomize}
+          title="Surprise me — randomize all three"
+          className="dice-hover inline-flex items-center gap-1.5 rounded-full border border-acc/50 px-3.5 py-1.5 font-mono text-[9.5px] uppercase tracking-[0.14em] text-acc transition hover:border-acc hover:bg-[rgba(200,81,42,0.08)] active:scale-95"
+        >
+          <svg width="14" height="14" viewBox="0 0 18 18" fill="none" aria-hidden>
+            <rect x="1" y="1" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.2" />
+            <circle cx="5.5" cy="5.5" r="1.1" fill="currentColor" />
+            <circle cx="12.5" cy="5.5" r="1.1" fill="currentColor" />
+            <circle cx="9" cy="9" r="1.1" fill="currentColor" />
+            <circle cx="5.5" cy="12.5" r="1.1" fill="currentColor" />
+            <circle cx="12.5" cy="12.5" r="1.1" fill="currentColor" />
+          </svg>
+          Surprise me
+        </button>
       </div>
     </div>
   );
