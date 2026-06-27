@@ -55,7 +55,7 @@ export default function Hero() {
         <span className="mb-8 inline-flex items-center gap-2.5 rounded-full border border-bdr-2 bg-bg-2 px-3.5 py-1.5">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-acc" />
           <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-txt-2">
-            Interior · Architecture · AI
+            Interior · Architecture · Design
           </span>
         </span>
 
@@ -69,9 +69,9 @@ export default function Hero() {
 
         {/* Subhead */}
         <p className="mx-auto mb-10 max-w-[520px] text-sm font-light leading-relaxed text-txt-2">
-          Where interior design, architecture, and AI converge. Generate a
-          complete editorial mood board with palette, materials, lighting, and
-          furniture, in five minutes.
+          Where interior design and architecture meet a faster way to brief.
+          A complete editorial mood board with palette, materials, lighting,
+          and furniture, ready in five minutes.
         </p>
 
         {/* Concept builder with tabs */}

@@ -35,7 +35,7 @@ export default function GenerationOverlay() {
       <div className="max-w-md px-8 text-center">
         <div className="mb-6 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-acc" />
-          AI · generating your brief
+          Generating your brief
         </div>
         <h2 className="font-serif text-[clamp(28px,4vw,40px)] font-normal leading-[1.15] tracking-tight text-hero-cream">
           {PHASES[phase]}

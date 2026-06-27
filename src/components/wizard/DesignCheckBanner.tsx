@@ -99,7 +99,7 @@ export default function DesignCheckBanner({ state }: Props) {
         <div className="flex items-center gap-3">
           <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-acc" />
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-hero-dim">
-            AI · reading your brief…
+            Reading your brief…
           </span>
         </div>
       </div>
@@ -142,7 +142,7 @@ export default function DesignCheckBanner({ state }: Props) {
           <span
             className={`font-mono text-[10px] uppercase tracking-[0.18em] ${style.chip}`}
           >
-            AI design check · {style.label}
+            Design check · {style.label}
           </span>
         </div>
         <button

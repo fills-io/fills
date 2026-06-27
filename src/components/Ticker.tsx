@@ -1,12 +1,12 @@
 const TICKER_ITEMS = [
-  { text: "Mood Board AI", accent: true },
-  { text: "Color Intelligence", accent: false },
+  { text: "Mood Board Studio", accent: true },
+  { text: "Color System", accent: false },
   { text: "3D Visualization", accent: true },
   { text: "Pinterest Integration", accent: false },
   { text: "Designer Handoff", accent: true },
   { text: "Material Analysis", accent: false },
   { text: "PDF Export", accent: true },
-  { text: "Floor Plan AI", accent: false },
+  { text: "Floor Plans", accent: false },
   { text: "Concept Wizard", accent: true },
   { text: "Shareable Boards", accent: false },
 ];

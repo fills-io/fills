@@ -111,7 +111,7 @@ function QuickIntro() {
     <>
       <p className="font-serif text-[clamp(20px,2.2vw,24px)] leading-[1.85] tracking-tight text-hero-cream-2">
         You&apos;re working on a{" "}
-        <em className="not-italic text-acc-2">{industry || "—"}</em> project — a{" "}
+        <em className="not-italic text-acc-2">{industry || "—"}</em> project, a{" "}
         <em className="not-italic text-acc-2">{spec || "—"}</em> that feels like{" "}
         <em className="not-italic text-acc-2">{vibe || "—"}</em>.
       </p>
@@ -119,7 +119,7 @@ function QuickIntro() {
       <p className="mt-6 text-[14px] leading-relaxed text-hero-dim">
         We received your starting direction. When the wizard goes live, this is
         where you&apos;ll see Pinterest-driven boards for vibe, color, materials,
-        lighting, and furniture — auto-built around the three things above, then
+        lighting, and furniture, auto-built around the three things above, then
         analyzed into a complete Design DNA brief.
       </p>
 
