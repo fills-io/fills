@@ -34,7 +34,7 @@ export default function HeroDots() {
     const MAX_PUSH = 14;
     const FOLLOW = 0.2;
     const RETURN = 0.1;
-    const COLOR = "rgba(120,80,55,.20)"; // lighter
+    const COLOR = "rgba(120,80,55,.30)"; // present but soft
     const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
 
     let dots: { ox: number; oy: number; x: number; y: number }[] = [];
