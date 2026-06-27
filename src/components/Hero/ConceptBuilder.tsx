@@ -14,7 +14,7 @@
  * Theme-aware throughout (works on the cream light hero + the dark hero).
  */
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   INDUSTRIES,
@@ -169,6 +169,10 @@ export default function ConceptBuilder() {
           100% { transform: rotate(360deg) scale(1); }
         }
         .dice-rolling svg { animation: diceRoll 0.55s cubic-bezier(0.22,1,0.36,1); }
+        @keyframes cbRoll {
+          0% { opacity: 0; transform: translateY(70%); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
     </div>
   );
@@ -267,7 +271,11 @@ function QuickPanel(props: {
               : "border border-dashed border-bdr-2 text-txt-3 hover:border-acc hover:text-acc"
           }`}
         >
-          <span>{industry?.label ?? "choose industry"}</span>
+          {industry ? (
+            <span>{industry.label}</span>
+          ) : (
+            <RollingWord items={ROLLING_INDUSTRIES} />
+          )}
           <span className={`text-[10px] not-italic transition ${ddOpen ? "rotate-180" : ""}`}>▾</span>
         </button>
 
@@ -296,6 +304,7 @@ function QuickPanel(props: {
         value={spec}
         onChange={setSpec}
         placeholder="specifically…"
+        placeholderOptions={specSuggestions}
         disabled={!industryId}
       />
       <span> that feels like </span>
@@ -303,6 +312,7 @@ function QuickPanel(props: {
         value={vibe}
         onChange={setVibe}
         placeholder="vibe…"
+        placeholderOptions={vibeSuggestions}
         disabled={!showVibe}
       />
       <span>.</span>
@@ -347,26 +357,45 @@ function QuickPanel(props: {
   );
 }
 
-/* Auto-sizing inline text input (serif, italic, dashed underline). */
+/* Auto-sizing inline text input (serif, italic, dashed underline).
+ * When empty + unfocused, the placeholder rolls through real examples
+ * (placeholderOptions) to guide the user — pauses on focus or typing. */
 function AutoSizeInput({
   value,
   onChange,
   placeholder,
+  placeholderOptions,
   disabled,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder: string;
+  placeholderOptions?: string[];
   disabled?: boolean;
 }) {
   const mirrorRef = useRef<HTMLSpanElement>(null);
   const [width, setWidth] = useState(160);
+  const [focused, setFocused] = useState(false);
+
+  // Rotate through example placeholders only while empty + unfocused.
+  const rotate =
+    !disabled && !value && !focused && (placeholderOptions?.length ?? 0) > 1;
+  const idx = useRotatingIndex(placeholderOptions?.length ?? 0, 2200, rotate);
+  const shownPlaceholder = rotate
+    ? placeholderOptions![idx % placeholderOptions!.length]
+    : placeholder;
+
+  // Width is sized to the longest example so it never jitters as it rolls.
+  const longest =
+    placeholderOptions && placeholderOptions.length
+      ? placeholderOptions.reduce((a, b) => (b.length > a.length ? b : a), placeholder)
+      : placeholder;
 
   useLayoutEffect(() => {
     if (mirrorRef.current) {
       setWidth(Math.max(120, mirrorRef.current.offsetWidth + 8));
     }
-  }, [value, placeholder]);
+  }, [value, longest]);
 
   return (
     <span className={`relative inline-block align-baseline ${disabled ? "opacity-40" : ""}`}>
@@ -375,13 +404,26 @@ function AutoSizeInput({
         aria-hidden
         className="invisible absolute left-0 top-0 whitespace-pre px-3.5 font-serif italic"
       >
-        {value || placeholder}
+        {value || longest}
       </span>
+      {/* Rolling placeholder overlay (animated) */}
+      {rotate && (
+        <span
+          key={idx}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap px-3.5 font-serif italic text-txt-3 opacity-85"
+          style={{ animation: "cbRoll .45s cubic-bezier(.22,1,.36,1)" }}
+        >
+          {shownPlaceholder}
+        </span>
+      )}
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        placeholder={rotate ? "" : placeholder}
         disabled={disabled}
         autoComplete="off"
         style={{ width }}
@@ -393,6 +435,50 @@ function AutoSizeInput({
       />
     </span>
   );
+}
+
+/* Rolling-word ticker: cycles items with a vertical roll. Width is fixed to
+ * the longest item so surrounding text never reflows. */
+const ROLLING_INDUSTRIES = [
+  "Hospitality",
+  "a café",
+  "Retail",
+  "a studio",
+  "Workplace",
+  "a gallery",
+  "Wellness",
+  "a salon",
+];
+
+function RollingWord({ items }: { items: string[] }) {
+  const idx = useRotatingIndex(items.length, 2000, true);
+  const longest = items.reduce((a, b) => (b.length > a.length ? b : a), "");
+  return (
+    <span className="relative inline-block overflow-hidden align-baseline" style={{ height: "1.4em" }}>
+      <span className="invisible" aria-hidden>
+        {longest}
+      </span>
+      <span
+        key={idx}
+        className="absolute inset-0 flex items-center justify-center whitespace-nowrap"
+        style={{ animation: "cbRoll .5s cubic-bezier(.22,1,.36,1)" }}
+      >
+        {items[idx]}
+      </span>
+    </span>
+  );
+}
+
+/* Shared rotating index. enabled=false freezes it (and resets to 0). */
+function useRotatingIndex(length: number, intervalMs: number, enabled: boolean) {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    if (!enabled || length < 2) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = setInterval(() => setIdx((i) => (i + 1) % length), intervalMs);
+    return () => clearInterval(id);
+  }, [length, intervalMs, enabled]);
+  return idx;
 }
 
 /* AI suggestion chip row. */
