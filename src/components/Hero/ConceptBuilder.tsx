@@ -181,6 +181,27 @@ export default function ConceptBuilder() {
         </button>
       </div>
 
+      {/* Hint when the Quick CTA is gated — tells the user what's missing
+          instead of showing a silent, unexplained disabled button. */}
+      {tab === "quick" && !canGenerate && (
+        <p className="mt-3 text-center text-[12px] text-txt-3">
+          {!industryId
+            ? "Pick what you're working on"
+            : !spec.trim()
+              ? "Add the specifics"
+              : "Add a vibe"}{" "}
+          to continue, or{" "}
+          <button
+            type="button"
+            onClick={randomize}
+            className="text-acc underline underline-offset-2 transition hover:text-acc-h"
+          >
+            surprise me
+          </button>
+          .
+        </p>
+      )}
+
       {/* Rolling dice animation */}
       <style>{`
         @keyframes diceRoll {

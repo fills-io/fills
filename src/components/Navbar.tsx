@@ -2,10 +2,10 @@ import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
-  { label: "Platform", href: "/#how" },
-  { label: "Showcase", href: "/#works" },
-  { label: "Mood Boards", href: "/#samples" },
-  { label: "Journal", href: "/blog" },
+  { label: "How it works", href: "/#how" },
+  { label: "Examples", href: "/#samples" },
+  { label: "Architect", href: "/#architect" },
+  { label: "Blog", href: "/blog" },
 ];
 
 export default function Navbar() {
@@ -49,7 +49,7 @@ export default function Navbar() {
           Sign in
         </button>
         <Link
-          href="/concept?mode=quick"
+          href="/create?path=quick"
           className="flex h-[60px] items-center border-l border-bdr bg-acc px-6 text-xs font-medium text-white transition hover:bg-acc-d"
         >
           Get started →

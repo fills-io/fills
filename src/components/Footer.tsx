@@ -1,28 +1,28 @@
-const COLUMNS = [
+const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
-    title: "Platform",
-    links: ["Mood board", "Color system", "3D visualization", "Handoff export", "Pricing"],
-  },
-  {
-    title: "For",
+    title: "Product",
     links: [
-      "Interior designers",
-      "Architects",
-      "Homeowners",
-      "Restaurants",
-      "Retail & Hospitality",
+      { label: "How it works", href: "/#how" },
+      { label: "What you get", href: "/#output" },
+      { label: "Examples", href: "/#samples" },
+      { label: "Start a brief", href: "/create?path=quick" },
     ],
   },
   {
-    title: "Company",
-    links: ["About", "Showcase", "Blog", "Contact", "Careers"],
+    title: "Resources",
+    links: [
+      { label: "Blog", href: "/blog" },
+      { label: "Free brief template", href: "/interior-design-brief-template" },
+      { label: "FAQ", href: "/#faq" },
+      { label: "The architect", href: "/#architect" },
+    ],
   },
 ];
 
 export default function Footer() {
   return (
     <footer className="bg-bg-2 px-8 pt-20 pb-6">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 md:grid-cols-[1.6fr_1fr_1fr]">
         {/* Brand column */}
         <div>
           <div className="flex items-center gap-3">
@@ -52,11 +52,11 @@ export default function Footer() {
             <div className="flex flex-col gap-2.5">
               {col.links.map((link) => (
                 <a
-                  key={link}
-                  href={link === "Blog" ? "/blog" : "#"}
+                  key={link.label}
+                  href={link.href}
                   className="text-[13px] text-txt-2 transition hover:text-acc"
                 >
-                  {link}
+                  {link.label}
                 </a>
               ))}
             </div>
@@ -64,13 +64,11 @@ export default function Footer() {
         ))}
       </div>
 
-      <div className="mx-auto mt-16 flex max-w-6xl flex-col items-center justify-between gap-4 border-t border-bdr pt-6 text-[11.5px] text-txt-3 md:flex-row">
+      <div className="mx-auto mt-16 flex max-w-6xl items-center justify-between gap-4 border-t border-bdr pt-6 text-[11.5px] text-txt-3">
         <span>© 2026 Fills Ltd. All rights reserved.</span>
-        <div className="flex gap-6">
-          <a href="#" className="transition hover:text-acc">Privacy</a>
-          <a href="#" className="transition hover:text-acc">Terms</a>
-          <a href="#" className="transition hover:text-acc">Cookies</a>
-        </div>
+        <a href="/blog" className="transition hover:text-acc">
+          Blog
+        </a>
       </div>
     </footer>
   );

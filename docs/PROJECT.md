@@ -28,7 +28,15 @@ and **what's next**. Updated as we go.
 7. **Design language:** architectural-editorial — cream/dark themes with full
    day + night parity, Playfair serif headlines, terracotta accent, drafting
    marks and corner brackets.
-8. **AI models:** re-researched before any recommendation; never assumed.
+8. **AI models:** re-researched before any recommendation; never assumed. We
+   update to the best AI/image platform as better releases land. The Pinterest
+   source (Apify scraper) is swappable if a better one appears.
+9. **Goal-oriented:** every page drives toward the core action (build a brief →
+   capture the user).
+10. **SEO always:** factored into every change, not bolted on.
+11. **Canva-level ease:** the UX bar is effortless, obvious, delightful.
+12. **Constant work in progress:** we periodically run a website critique
+    (Goal / SEO / UX) and act on the findings.
 
 ---
 

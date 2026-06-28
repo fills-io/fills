@@ -119,7 +119,7 @@ export default async function PostPage({
           <div className="mt-16 border-t border-bdr pt-8">
             <p className="text-[13.5px] leading-[1.7] text-txt-2">{AUTHOR.bio}</p>
             <Link
-              href="/concept?mode=quick"
+              href="/create?path=quick"
               className="mt-6 inline-flex items-center gap-2 bg-acc px-6 py-3.5 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition hover:bg-acc-d"
             >
               Build your brief with Fills →

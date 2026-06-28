@@ -132,7 +132,7 @@ const HOW_TO_WRITE_A_BRIEF: Post = {
     {
       k: "cta",
       t: "Skip the blank page. Describe your project and get a complete brief in five minutes.",
-      href: "/concept?mode=quick",
+      href: "/create?path=quick",
       label: "Build your brief",
     },
     {
