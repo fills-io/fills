@@ -256,7 +256,7 @@ export default function WizardClient() {
 
   return (
     <>
-      <WizardProgress current={current} />
+      <WizardProgress current={current} onJump={setCurrent} />
 
       {/* Full-screen overlay during generation */}
       {generationStatus === "generating" && <GenerationOverlay />}
