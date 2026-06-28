@@ -1,13 +1,14 @@
 import type { MetadataRoute } from "next";
-import { POSTS } from "@/content/blog/posts";
+import { getPublishedPosts } from "@/lib/blog-store";
 
 /** XML sitemap at /sitemap.xml — tells Google which pages to index. */
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = "https://fills.io";
 
-  const postEntries: MetadataRoute.Sitemap = POSTS.map((p) => ({
+  const posts = await getPublishedPosts();
+  const postEntries: MetadataRoute.Sitemap = posts.map((p) => ({
     url: `${base}/blog/${p.slug}`,
-    lastModified: new Date(p.date),
+    lastModified: new Date(p.dateISO),
     changeFrequency: "monthly",
     priority: 0.7,
   }));

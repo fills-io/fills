@@ -4,13 +4,13 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import PostBody from "@/components/blog/PostBody";
-import { POSTS, getPost, AUTHOR } from "@/content/blog/posts";
+import { AUTHOR } from "@/content/blog/posts";
+import { getPostBySlug } from "@/lib/blog-store";
 
 type Params = { slug: string };
 
-export function generateStaticParams(): Params[] {
-  return POSTS.map((p) => ({ slug: p.slug }));
-}
+// Posts are database-backed; render on demand so new posts appear immediately.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -18,27 +18,28 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = getPost(slug);
+  const post = await getPostBySlug(slug);
   if (!post) return {};
 
   const url = `https://fills.io/blog/${post.slug}`;
+  const title = post.metaTitle ?? `${post.title} | Fills`;
   return {
-    title: post.metaTitle ? { absolute: post.metaTitle } : post.title,
+    title: { absolute: title },
     description: post.description,
     keywords: post.keywords,
-    authors: [{ name: AUTHOR.name }],
+    authors: [{ name: post.author }],
     alternates: { canonical: url },
     openGraph: {
       type: "article",
       url,
-      title: post.metaTitle ?? `${post.title} | Fills`,
+      title,
       description: post.description,
-      publishedTime: post.date,
-      authors: [AUTHOR.name],
+      publishedTime: post.dateISO,
+      authors: [post.author],
     },
     twitter: {
       card: "summary_large_image",
-      title: post.metaTitle ?? `${post.title} | Fills`,
+      title,
       description: post.description,
     },
   };
@@ -50,7 +51,7 @@ export default async function PostPage({
   params: Promise<Params>;
 }) {
   const { slug } = await params;
-  const post = getPost(slug);
+  const post = await getPostBySlug(slug);
   if (!post) notFound();
 
   const url = `https://fills.io/blog/${post.slug}`;
@@ -59,9 +60,9 @@ export default async function PostPage({
     "@type": "Article",
     headline: post.title,
     description: post.description,
-    datePublished: post.date,
-    dateModified: post.date,
-    author: { "@type": "Person", name: AUTHOR.name },
+    datePublished: post.dateISO,
+    dateModified: post.dateISO,
+    author: { "@type": "Person", name: post.author },
     publisher: {
       "@type": "Organization",
       name: "Fills",
@@ -79,15 +80,13 @@ export default async function PostPage({
       />
       <main className="min-h-screen bg-bg px-6 py-16 sm:px-8">
         <article className="mx-auto max-w-[680px]">
-          {/* Back link */}
           <Link
             href="/blog"
             className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
           >
-            ← The Journal
+            ← The Blog
           </Link>
 
-          {/* Header */}
           <div className="mt-8 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3">
             <span className="text-acc">{post.category}</span>
             <span>·</span>
@@ -102,26 +101,23 @@ export default async function PostPage({
           {/* Byline */}
           <div className="mt-7 flex items-center gap-3 border-y border-bdr py-4">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-acc font-mono text-[12px] font-medium text-white">
-              {AUTHOR.name.charAt(0)}
+              {post.author.charAt(0)}
             </span>
             <div>
               <div className="text-[13px] font-medium text-txt">
-                {AUTHOR.name}
+                {post.author}
               </div>
               <div className="text-[11.5px] text-txt-2">{AUTHOR.role}</div>
             </div>
           </div>
 
-          {/* Body */}
           <div className="mt-12">
-            <PostBody blocks={post.body} />
+            <PostBody blocks={post.blocks} />
           </div>
 
           {/* Author bio + closing CTA */}
           <div className="mt-16 border-t border-bdr pt-8">
-            <p className="text-[13.5px] leading-[1.7] text-txt-2">
-              {AUTHOR.bio}
-            </p>
+            <p className="text-[13.5px] leading-[1.7] text-txt-2">{AUTHOR.bio}</p>
             <Link
               href="/concept?mode=quick"
               className="mt-6 inline-flex items-center gap-2 bg-acc px-6 py-3.5 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition hover:bg-acc-d"

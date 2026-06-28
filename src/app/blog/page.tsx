@@ -2,23 +2,28 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { POSTS } from "@/content/blog/posts";
+import { getPublishedPosts } from "@/lib/blog-store";
+
+// Posts come from the database (authored in /admin), so render fresh each time.
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: { absolute: "Interior Design Journal | Fills" },
+  title: { absolute: "Interior Design Blog | Fills" },
   description:
     "Practical notes on writing interior design briefs, building mood boards, and briefing a space well. Written by a working architect.",
   alternates: { canonical: "https://fills.io/blog" },
   openGraph: {
     type: "website",
     url: "https://fills.io/blog",
-    title: "Journal · Interior Design Briefs & Mood Boards | Fills",
+    title: "Interior Design Blog | Fills",
     description:
       "Practical notes on writing interior design briefs and building mood boards, from a working architect.",
   },
 };
 
-export default function BlogIndex() {
+export default async function BlogIndex() {
+  const posts = await getPublishedPosts();
+
   return (
     <>
       <Navbar />
@@ -27,7 +32,7 @@ export default function BlogIndex() {
           {/* Header */}
           <span className="inline-flex items-center gap-2.5 font-mono text-[9px] font-medium uppercase tracking-[0.18em] text-acc">
             <span className="inline-block h-px w-6 bg-acc" />
-            The Journal
+            The Blog
           </span>
           <h1 className="mt-5 font-serif text-[clamp(34px,5vw,52px)] font-medium leading-[1.05] tracking-tight text-txt">
             Notes on briefing a space well.
@@ -62,30 +67,36 @@ export default function BlogIndex() {
 
           {/* Post list */}
           <div className="mt-14 border-t border-bdr">
-            {POSTS.map((post) => (
-              <Link
-                key={post.slug}
-                href={`/blog/${post.slug}`}
-                className="group block border-b border-bdr py-9 transition"
-              >
-                <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3">
-                  <span className="text-acc">{post.category}</span>
-                  <span>·</span>
-                  <span>{post.dateLabel}</span>
-                  <span>·</span>
-                  <span>{post.readingTime}</span>
-                </div>
-                <h2 className="mt-3 font-serif text-[26px] font-medium leading-tight tracking-tight text-txt transition group-hover:text-acc">
-                  {post.title}
-                </h2>
-                <p className="mt-2 max-w-xl text-[14.5px] leading-[1.75] font-light text-txt-2">
-                  {post.excerpt}
-                </p>
-                <span className="mt-4 inline-block font-mono text-[11px] uppercase tracking-[0.1em] text-txt-3 transition group-hover:text-acc">
-                  Read →
-                </span>
-              </Link>
-            ))}
+            {posts.length === 0 ? (
+              <p className="py-16 text-center font-serif text-[18px] italic text-txt-3">
+                No posts yet. The first one is on its way.
+              </p>
+            ) : (
+              posts.map((post) => (
+                <Link
+                  key={post.slug}
+                  href={`/blog/${post.slug}`}
+                  className="group block border-b border-bdr py-9 transition"
+                >
+                  <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3">
+                    <span className="text-acc">{post.category}</span>
+                    <span>·</span>
+                    <span>{post.dateLabel}</span>
+                    <span>·</span>
+                    <span>{post.readingTime}</span>
+                  </div>
+                  <h2 className="mt-3 font-serif text-[26px] font-medium leading-tight tracking-tight text-txt transition group-hover:text-acc">
+                    {post.title}
+                  </h2>
+                  <p className="mt-2 max-w-xl text-[14.5px] leading-[1.75] font-light text-txt-2">
+                    {post.excerpt}
+                  </p>
+                  <span className="mt-4 inline-block font-mono text-[11px] uppercase tracking-[0.1em] text-txt-3 transition group-hover:text-acc">
+                    Read →
+                  </span>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </main>
