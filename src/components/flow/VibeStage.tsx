@@ -180,14 +180,16 @@ export default function VibeStage({
                 type="button"
                 onClick={() => toggle(pin)}
                 disabled={blocked}
-                className="group relative mb-3 block w-full break-inside-avoid overflow-hidden transition-transform duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+                className="group relative mb-3 block w-full break-inside-avoid overflow-hidden bg-bg-2 transition-transform duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={pin.imageUrl}
+                  src={pin.imageUrl.replace(/\/(736x|originals)\//, "/474x/")}
                   alt={pin.altText || pin.title || "Design reference"}
                   loading="lazy"
-                  className={`w-full transition duration-200 ${
+                  decoding="async"
+                  onLoad={(e) => e.currentTarget.classList.remove("opacity-0")}
+                  className={`w-full opacity-0 transition duration-300 ${
                     isPicked ? "scale-[1.02] ring-2 ring-acc" : "group-hover:opacity-90"
                   }`}
                 />

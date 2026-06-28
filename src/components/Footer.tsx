@@ -1,20 +1,30 @@
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
-    title: "Product",
+    title: "Platform",
     links: [
-      { label: "How it works", href: "/#how" },
-      { label: "What you get", href: "/#output" },
+      { label: "Design brief", href: "/#output" },
+      { label: "Mood & palette", href: "/#output" },
       { label: "Examples", href: "/#samples" },
+      { label: "Free brief template", href: "/interior-design-brief-template" },
       { label: "Start a brief", href: "/create?path=quick" },
     ],
   },
   {
-    title: "Resources",
+    title: "For",
     links: [
-      { label: "Blog", href: "/blog" },
-      { label: "Free brief template", href: "/interior-design-brief-template" },
-      { label: "FAQ", href: "/#faq" },
+      { label: "Interior designers", href: "/#made-for" },
+      { label: "Architects", href: "/#made-for" },
+      { label: "Homeowners", href: "/#made-for" },
+      { label: "Retail & commercial", href: "/#made-for" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { label: "How it works", href: "/#how" },
       { label: "The architect", href: "/#architect" },
+      { label: "FAQ", href: "/#faq" },
+      { label: "Blog", href: "/blog" },
     ],
   },
 ];
@@ -22,7 +32,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
 export default function Footer() {
   return (
     <footer className="bg-bg-2 px-8 pt-20 pb-6">
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 md:grid-cols-[1.6fr_1fr_1fr]">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
         {/* Brand column */}
         <div>
           <div className="flex items-center gap-3">
@@ -41,6 +51,14 @@ export default function Footer() {
           <p className="mt-5 max-w-xs text-[13px] leading-[1.7] text-txt-2">
             Where interior design and architecture meet a faster way to brief. Build your concept brief in minutes.
           </p>
+          <div className="mt-6">
+            <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-txt-3">
+              On the roadmap
+            </div>
+            <p className="mt-1.5 text-[12px] text-txt-2">
+              Layout · Visualization · Design package · BOQ
+            </p>
+          </div>
         </div>
 
         {/* Link columns */}

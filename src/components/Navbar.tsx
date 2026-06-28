@@ -2,9 +2,9 @@ import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
-  { label: "How it works", href: "/#how" },
-  { label: "Examples", href: "/#samples" },
-  { label: "Architect", href: "/#architect" },
+  { label: "Platform", href: "/#how" },
+  { label: "Showcase", href: "/#samples" },
+  { label: "For designers", href: "/#made-for" },
   { label: "Blog", href: "/blog" },
 ];
 

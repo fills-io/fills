@@ -42,3 +42,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .claude/worktrees/
+
+# Private strategy docs (do not commit to public repo)
+Fills-Strategy-Roadmap.docx
+Fills-Strategy-Roadmap.pdf
