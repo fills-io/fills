@@ -37,7 +37,7 @@ export default function LightingStep({ state, setState }: Props) {
       onChange={({ pins, query }) =>
         setState({ lightingPins: pins, lightingQuery: query })
       }
-      helperText="Mood, task, accent — try to cover all three layers in your three picks."
+      helperText="Mood, task, accent: try to cover all three layers in your three picks."
     />
   );
 }

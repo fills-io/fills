@@ -35,7 +35,7 @@ export const WIZARD_STEPS: readonly WizardStep[] = [
     id: "space",
     label: "Space",
     description:
-      "Tell us about the space itself — what kind of room, how it's used, who it's for.",
+      "Tell us about the space itself: what kind of room, how it's used, who it's for.",
   },
   {
     id: "vibe",
@@ -47,19 +47,19 @@ export const WIZARD_STEPS: readonly WizardStep[] = [
     id: "colors",
     label: "Colors",
     description:
-      "Choose a palette — pull from an image, build from scratch, or refine an AI suggestion.",
+      "Choose a palette: pull from an image, build from scratch, or refine an AI suggestion.",
   },
   {
     id: "furniture",
     label: "Furniture",
     description:
-      "Sofas, chairs, tables, beds — whatever the space needs, picked one category at a time.",
+      "Sofas, chairs, tables, beds, whatever the space needs, picked one category at a time.",
   },
   {
     id: "lighting",
     label: "Lighting",
     description:
-      "Mood, task, accent. Pendants, sconces, recessed — set the atmosphere.",
+      "Mood, task, accent. Pendants, sconces, recessed. Set the atmosphere.",
   },
   {
     id: "flooring",
@@ -71,13 +71,13 @@ export const WIZARD_STEPS: readonly WizardStep[] = [
     id: "ceiling",
     label: "Ceiling",
     description:
-      "The fifth wall — coffers, beams, plaster, exposed structure, painted color.",
+      "The fifth wall: coffers, beams, plaster, exposed structure, painted color.",
   },
   {
     id: "materials",
     label: "Materials",
     description:
-      "Surfaces, textures, finishes — the close-up details that make a space feel real.",
+      "Surfaces, textures, finishes, the close-up details that make a space feel real.",
   },
   {
     id: "review",

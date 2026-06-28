@@ -36,7 +36,7 @@ export default function MaterialsStep({ state, setState }: Props) {
       onChange={({ pins, query }) =>
         setState({ materialsPins: pins, materialsQuery: query })
       }
-      helperText="Close-up shots — stone, plaster, wood grain, fabric, metal patina."
+      helperText="Close-up shots: stone, plaster, wood grain, fabric, metal patina."
     />
   );
 }

@@ -33,8 +33,8 @@ export default function ReviewStep({ state, goToStep }: Props) {
   return (
     <div className="space-y-8">
       <p className="text-[14px] text-hero-cream-2">
-        One last look. If anything is off, jump back to that step and adjust —
-        nothing is locked in until you generate the brief.
+        One last look. If anything is off, jump back to that step and adjust.
+        Nothing is locked in until you generate the brief.
       </p>
 
       {/* AI design check — coherence reading across all picks */}

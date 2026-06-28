@@ -181,7 +181,7 @@ export default function SpaceStep({ state, setState }: Props) {
                   className="mt-3 block w-full resize-none border border-dark-3 bg-[rgba(34,30,24,0.6)] p-3 text-[14px] text-hero-cream placeholder:text-hero-dim focus:border-acc focus:outline-none"
                 />
                 <p className="mt-2 text-[11px] text-hero-dim">
-                  Anything the AI should know — orientation, materials already
+                  Anything the AI should know: orientation, materials already
                   in place, what's not working, who uses it.
                 </p>
               </div>

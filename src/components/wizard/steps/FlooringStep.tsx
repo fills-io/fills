@@ -36,7 +36,7 @@ export default function FlooringStep({ state, setState }: Props) {
       onChange={({ pins, query }) =>
         setState({ flooringPins: pins, flooringQuery: query })
       }
-      helperText="Wood, stone, tile, concrete, carpet — the plane that grounds the room."
+      helperText="Wood, stone, tile, concrete, carpet: the plane that grounds the room."
     />
   );
 }
