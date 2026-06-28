@@ -269,3 +269,45 @@ export const leads = pgTable("leads", {
 
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
+
+// ─── posts ───────────────────────────────────────────────────────────────────
+// Blog posts authored from the /admin Blog manager. Body is stored as light
+// markdown (headings, lists, bold, links). Cover + inline images land in a
+// later increment (the `cover_image_url` column is reserved for it). Published
+// posts render at /blog; drafts stay hidden from the public.
+
+export const postStatusEnum = pgEnum("post_status", ["draft", "published"]);
+
+export const posts = pgTable("posts", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  /** URL slug, e.g. "how-to-write-an-interior-design-brief". Unique. */
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  /** One-line summary shown on the blog index and in search results. */
+  excerpt: text("excerpt"),
+  /** The article body, stored as light markdown. */
+  body: text("body").notNull().default(""),
+  /** Eyebrow category, e.g. "Interior design". */
+  category: text("category").notNull().default("Interior design"),
+  /** Reserved for the image-upload increment. NULL for now. */
+  coverImageUrl: text("cover_image_url"),
+  /** SEO overrides — fall back to title / excerpt when empty. */
+  metaTitle: text("meta_title"),
+  description: text("description"),
+  keywords: jsonb("keywords").$type<string[]>(),
+  status: postStatusEnum("status").notNull().default("draft"),
+  /** Byline name; falls back to the site author when empty. */
+  author: text("author"),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type Post = typeof posts.$inferSelect;
+export type NewPost = typeof posts.$inferInsert;

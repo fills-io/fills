@@ -12,7 +12,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  // Gate the admin pages AND the admin write API behind the same Basic Auth.
+  matcher: ["/admin/:path*", "/api/admin/:path*"],
 };
 
 export function middleware(request: NextRequest) {
