@@ -80,9 +80,11 @@ export default async function AdminPage() {
               <thead>
                 <tr className="border-b border-bdr-2 bg-bg-2 font-mono text-[9px] uppercase tracking-[0.12em] text-txt-3">
                   <th className="px-4 py-3 font-medium">Email</th>
+                  <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Industry</th>
                   <th className="px-4 py-3 font-medium">Specifically</th>
                   <th className="px-4 py-3 font-medium">Vibe</th>
+                  <th className="px-4 py-3 font-medium">Message</th>
                   <th className="px-4 py-3 font-medium">Via</th>
                   <th className="px-4 py-3 font-medium">When</th>
                 </tr>
@@ -91,9 +93,16 @@ export default async function AdminPage() {
                 {rows.map((r) => (
                   <tr key={r.id} className="border-b border-bdr-2 last:border-0">
                     <td className="px-4 py-3 font-medium text-txt">{r.email}</td>
+                    <td className="px-4 py-3 text-txt-2">{r.name || "—"}</td>
                     <td className="px-4 py-3 text-txt-2">{r.industry || "—"}</td>
                     <td className="px-4 py-3 text-txt-2">{r.spec || "—"}</td>
                     <td className="px-4 py-3 italic text-txt-2">{r.vibe || "—"}</td>
+                    <td
+                      className="max-w-[260px] truncate px-4 py-3 text-txt-2"
+                      title={r.message || ""}
+                    >
+                      {r.message || "—"}
+                    </td>
                     <td className="px-4 py-3 font-mono text-[10px] uppercase tracking-[0.08em] text-txt-3">
                       {r.source || "—"}
                     </td>

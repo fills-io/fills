@@ -23,6 +23,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
     links: [
       { label: "How it works", href: "/#how" },
       { label: "The architect", href: "/#architect" },
+      { label: "Talk to a designer", href: "/talk-to-a-designer" },
       { label: "FAQ", href: "/#faq" },
       { label: "Blog", href: "/blog" },
     ],

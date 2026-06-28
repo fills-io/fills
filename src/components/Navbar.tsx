@@ -45,6 +45,12 @@ export default function Navbar() {
       {/* Right cluster: theme toggle + auth */}
       <div className="flex border-l border-bdr">
         <ThemeToggle />
+        <Link
+          href="/talk-to-a-designer"
+          className="hidden h-[60px] items-center border-l border-bdr px-5 text-xs text-txt-2 transition hover:bg-bg-2 hover:text-txt sm:flex"
+        >
+          Talk to a designer
+        </Link>
         <button className="h-[60px] border-l border-bdr px-5 text-xs text-txt-2 transition hover:bg-bg-2 hover:text-txt">
           Sign in
         </button>
