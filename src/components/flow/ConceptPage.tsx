@@ -16,6 +16,7 @@ import {
   buildNarrative,
 } from "@/lib/quickflow-data";
 import PlaceholderScene from "./PlaceholderScene";
+import { useVibeImages, sliceImages, VibeImage } from "./vibeImages";
 import type { FlowState } from "./FlowApp";
 
 export default function ConceptPage({
@@ -31,6 +32,7 @@ export default function ConceptPage({
   );
   const [elementIdx, setElementIdx] = useState<Record<string, number>>({});
   const narrative = buildNarrative(state.spec, state.vibe);
+  const images = useVibeImages(state.vibe, state.spec, state.picks);
 
   function cycleElement(id: string) {
     const alts = ELEMENT_ALTERNATIVES[id] ?? [];
@@ -107,7 +109,7 @@ export default function ConceptPage({
 
       {/* Visual element bars */}
       <section className="mt-9 space-y-4">
-        {CONCEPT_ELEMENTS.map((el) => {
+        {CONCEPT_ELEMENTS.map((el, elIdx) => {
           const alts = ELEMENT_ALTERNATIVES[el.id] ?? [];
           const idx = elementIdx[el.id] ?? 0;
           const direction = alts[idx] ?? el.label;
@@ -129,13 +131,21 @@ export default function ConceptPage({
                 </button>
               </div>
               <div className="grid grid-cols-4 gap-2">
-                {[0, 1, 2, 3].map((i) => (
-                  <PlaceholderScene
-                    key={i}
-                    pattern={(["arch", "window", "col", "plain"] as const)[i]}
-                    className="aspect-[4/3] w-full"
-                  />
-                ))}
+                {images.length > 0
+                  ? sliceImages(images, elIdx * 4, 4).map((src, i) => (
+                      <VibeImage
+                        key={i}
+                        src={src}
+                        className="aspect-[4/3] w-full"
+                      />
+                    ))
+                  : [0, 1, 2, 3].map((i) => (
+                      <PlaceholderScene
+                        key={i}
+                        pattern={(["arch", "window", "col", "plain"] as const)[i]}
+                        className="aspect-[4/3] w-full"
+                      />
+                    ))}
               </div>
             </div>
           );
