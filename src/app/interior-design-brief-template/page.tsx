@@ -81,7 +81,7 @@ export default function TemplatePage() {
               and share in five minutes.
             </p>
             <Link
-              href="/create?path=quick"
+              href="/concept/wizard"
               className="mt-6 inline-flex items-center gap-2 bg-acc px-6 py-3.5 font-mono text-[11px] uppercase tracking-[0.1em] text-white transition hover:bg-acc-d"
             >
               Build your brief with Fills →

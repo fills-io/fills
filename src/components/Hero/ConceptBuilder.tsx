@@ -97,13 +97,13 @@ export default function ConceptBuilder() {
         spec: spec.trim(),
         vibe: vibe.trim(),
       });
-      router.push(`/create?${qs.toString()}`);
+      router.push(`/concept/wizard?${qs.toString()}`);
     } else if (tab === "upload") {
       // → new QuickFlow upload path.
-      router.push("/create?path=upload");
+      router.push("/concept/wizard");
     } else {
       // Full Studio keeps the existing detailed wizard.
-      router.push("/concept?mode=studio");
+      router.push("/concept/wizard");
     }
   }
 

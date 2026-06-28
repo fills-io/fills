@@ -61,7 +61,6 @@ export default function WizardClient() {
   const [generationError, setGenerationError] = useState<string | null>(null);
 
   const params = useSearchParams();
-  const mode = params.get("mode") ?? "studio";
 
   // ── Hydrate on mount ───────────────────────────────────────────────────
   // Priority order:
@@ -75,12 +74,15 @@ export default function WizardClient() {
       setResumedAt(saved.savedAt);
     } else {
       const industryParam = params.get("industry");
-      if (industryParam) {
-        const matched = findIndustryByLabel(industryParam);
-        if (matched) {
-          setWizardState((prev) => ({ ...prev, industryId: matched.id }));
-        }
-      }
+      const specParam = params.get("spec");
+      const vibeParam = params.get("vibe");
+      const matched = industryParam ? findIndustryByLabel(industryParam) : null;
+      setWizardState((prev) => ({
+        ...prev,
+        ...(matched ? { industryId: matched.id } : {}),
+        ...(specParam ? { spaceDescription: specParam } : {}),
+        ...(vibeParam ? { vibeQuery: vibeParam } : {}),
+      }));
     }
     hydrated.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -339,10 +341,10 @@ export default function WizardClient() {
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-dark-3 pt-8 sm:flex-row">
           {isFirst ? (
             <Link
-              href={`/concept?mode=${encodeURIComponent(mode)}`}
+              href="/"
               className="font-mono text-[10px] uppercase tracking-[0.14em] text-hero-dim transition hover:text-acc"
             >
-              ← Back to intro
+              ← Home
             </Link>
           ) : (
             <button

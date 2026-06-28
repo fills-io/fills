@@ -18,7 +18,7 @@ const DOORS = [
     label: "Quick · 5 min",
     desc: "Pick three things, we fill in five more. The fastest way to a finished brief.",
     cta: "Try Quick",
-    href: "/create?path=quick",
+    href: "/concept/wizard",
     primary: true,
   },
   {
@@ -26,7 +26,7 @@ const DOORS = [
     label: "Upload · 1 min",
     desc: "Drop a reference image and we extract the brief automatically. Start to finish in about a minute.",
     cta: "Upload images",
-    href: "/create?path=upload",
+    href: "/concept/wizard",
     primary: false,
   },
   {
@@ -34,7 +34,7 @@ const DOORS = [
     label: "Full Studio · 10 min",
     desc: "Step through every dimension yourself. No auto-fill, every choice is yours.",
     cta: "Open Studio",
-    href: "/concept?mode=studio",
+    href: "/concept/wizard",
     primary: false,
   },
 ];

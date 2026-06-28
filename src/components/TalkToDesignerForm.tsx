@@ -63,7 +63,7 @@ export default function TalkToDesignerForm({
         <p className="mt-3 text-[14px] leading-relaxed text-txt-2">
           A designer will reply by email shortly. While you wait, you can{" "}
           <a
-            href="/create?path=quick"
+            href="/concept/wizard"
             className="text-acc underline decoration-acc/40 underline-offset-2 hover:decoration-acc"
           >
             start a brief

@@ -55,7 +55,7 @@ export default function Navbar() {
           Sign in
         </button>
         <Link
-          href="/create?path=quick"
+          href="/concept/wizard"
           className="flex h-[60px] items-center border-l border-bdr bg-acc px-6 text-xs font-medium text-white transition hover:bg-acc-d"
         >
           Get started →

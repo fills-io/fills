@@ -6,7 +6,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Mood & palette", href: "/#output" },
       { label: "Examples", href: "/#samples" },
       { label: "Free brief template", href: "/interior-design-brief-template" },
-      { label: "Start a brief", href: "/create?path=quick" },
+      { label: "Start a brief", href: "/concept/wizard" },
     ],
   },
   {
