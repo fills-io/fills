@@ -634,20 +634,121 @@ const STUDIO_STEPS: { label: string; note: string }[] = [
   { label: "Review", note: "review, then generate" },
 ];
 
+/** A small on-brand preview of what each studio step produces. */
+function studioVisual(i: number) {
+  switch (i) {
+    case 0: // Space — a plan
+      return (
+        <svg viewBox="0 0 200 80" preserveAspectRatio="none" className="h-full w-full text-txt-3" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round">
+          <rect x="10" y="12" width="108" height="56" />
+          <rect x="124" y="30" width="66" height="38" />
+          <path d="M42 68 Q82 68 120 62" strokeDasharray="3 3" />
+          <circle cx="178" cy="18" r="5" />
+        </svg>
+      );
+    case 1: // Vibe — warm mood
+      return <div className="h-full w-full bg-gradient-to-br from-[#E8C4B0] via-[#D4C2A3] to-[#A89890]" />;
+    case 2: // Colors — palette
+      return (
+        <div className="flex h-full">
+          {["#E8DCC8", "#D4C2A3", "#A89890", "#C8512A", "#1A1714", "#F0D5C4"].map((c, n) => (
+            <span key={n} className="flex-1" style={{ backgroundColor: c }} />
+          ))}
+        </div>
+      );
+    case 3: // Furniture — line art
+      return (
+        <div className="flex h-full items-center justify-center gap-6 text-txt-3">
+          <svg width="46" height="40" viewBox="0 0 60 60" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
+            <path d="M8 48 L8 26 Q8 18 16 18 L44 18 Q52 18 52 26 L52 48" />
+            <path d="M14 48 L14 34 L46 34 L46 48" />
+          </svg>
+          <svg width="46" height="40" viewBox="0 0 60 60" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <line x1="10" y1="22" x2="50" y2="22" />
+            <line x1="13" y1="22" x2="13" y2="50" />
+            <line x1="47" y1="22" x2="47" y2="50" />
+          </svg>
+          <svg width="46" height="40" viewBox="0 0 60 60" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
+            <path d="M22 14 L38 14 L42 26 L18 26 Z" />
+            <line x1="30" y1="26" x2="30" y2="52" />
+          </svg>
+        </div>
+      );
+    case 4: // Lighting
+      return (
+        <svg viewBox="0 0 200 80" className="h-full w-full text-txt-3" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="14" y1="12" x2="186" y2="12" />
+          <path d="M55 12 L48 32 L62 32 Z" />
+          <path d="M125 12 L118 32 L132 32 Z" />
+          <line x1="90" y1="12" x2="90" y2="48" />
+          <circle cx="90" cy="52" r="4" />
+          <line x1="166" y1="42" x2="182" y2="42" />
+        </svg>
+      );
+    case 5: // Flooring — wood
+      return (
+        <div className="relative h-full w-full bg-gradient-to-b from-[#8B6F47] to-[#5C4730]">
+          <svg viewBox="0 0 200 80" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" stroke="#3d2f1e" strokeWidth="0.8" opacity="0.5">
+            <line x1="0" y1="20" x2="200" y2="20" />
+            <line x1="0" y1="40" x2="200" y2="40" />
+            <line x1="0" y1="60" x2="200" y2="60" />
+            <line x1="70" y1="0" x2="70" y2="20" />
+            <line x1="140" y1="20" x2="140" y2="40" />
+            <line x1="50" y1="40" x2="50" y2="60" />
+          </svg>
+        </div>
+      );
+    case 6: // Ceiling — slats
+      return (
+        <svg viewBox="0 0 200 80" preserveAspectRatio="none" className="h-full w-full text-txt-3" stroke="currentColor" strokeWidth="1" fill="none">
+          {Array.from({ length: 9 }).map((_, n) => (
+            <line key={n} x1={14 + n * 21.5} y1="6" x2={14 + n * 21.5} y2="74" />
+          ))}
+        </svg>
+      );
+    case 7: // Materials — gradient swatches
+      return (
+        <div className="flex h-full gap-1.5 p-1.5">
+          <div className="flex-1 bg-gradient-to-br from-[#D4C2A3] to-[#A89890]" />
+          <div className="flex-1 bg-gradient-to-br from-[#8B6F47] to-[#5C4730]" />
+          <div className="flex-1 bg-gradient-to-br from-[#E0D4BE] to-[#B8A888]" />
+        </div>
+      );
+    case 8: // Review — the assembled brief
+      return (
+        <div className="flex h-full gap-1.5 p-1.5">
+          <div className="flex w-1/2 flex-col gap-1.5">
+            <div className="flex flex-1">
+              {["#E8DCC8", "#C8512A", "#A89890", "#1A1714"].map((c, n) => (
+                <span key={n} className="flex-1" style={{ backgroundColor: c }} />
+              ))}
+            </div>
+            <div className="flex-1 bg-gradient-to-br from-[#8B6F47] to-[#5C4730]" />
+          </div>
+          <div className="w-1/2 bg-gradient-to-br from-[#E8C4B0] to-[#A89890]" />
+        </div>
+      );
+    default:
+      return null;
+  }
+}
+
 function StudioPanel() {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
 
-  // Auto-walk through the real steps so the panel feels alive, like the
-  // Quick madlib's rolling examples. Pauses while the user hovers a step.
+  // Auto-walk through the real steps, showing a preview of each, so the panel
+  // feels alive like the Quick madlib. Pauses while the user hovers a step.
   useEffect(() => {
     if (paused) return;
     const t = setInterval(
       () => setActive((a) => (a + 1) % STUDIO_STEPS.length),
-      1100,
+      1400,
     );
     return () => clearInterval(t);
   }, [paused]);
+
+  const step = STUDIO_STEPS[active];
 
   return (
     <div
@@ -668,41 +769,48 @@ function StudioPanel() {
         ready to export as a PDF.
       </p>
 
-      {/* Live walkthrough of the real nine steps — auto-advances, hover to explore. */}
-      <div className="mt-5">
-        <div className="flex flex-wrap gap-1.5">
-          {STUDIO_STEPS.map((s, i) => {
-            const on = i === active;
-            return (
-              <button
-                key={s.label}
-                type="button"
-                onMouseEnter={() => {
-                  setActive(i);
-                  setPaused(true);
-                }}
-                onFocus={() => {
-                  setActive(i);
-                  setPaused(true);
-                }}
-                className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.06em] transition-all duration-300 ${
-                  on
-                    ? "scale-105 border-acc bg-acc text-white"
-                    : "border-bdr-2 text-txt-3 hover:border-acc hover:text-acc"
-                }`}
-              >
-                {String(i + 1).padStart(2, "0")} {s.label}
-              </button>
-            );
-          })}
+      {/* Step chips — auto-advance, hover to explore (which drives the preview). */}
+      <div className="mt-5 flex flex-wrap gap-1.5">
+        {STUDIO_STEPS.map((s, i) => {
+          const on = i === active;
+          return (
+            <button
+              key={s.label}
+              type="button"
+              onMouseEnter={() => {
+                setActive(i);
+                setPaused(true);
+              }}
+              onFocus={() => {
+                setActive(i);
+                setPaused(true);
+              }}
+              className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.06em] transition-all duration-300 ${
+                on
+                  ? "scale-105 border-acc bg-acc text-white"
+                  : "border-bdr-2 text-txt-3 hover:border-acc hover:text-acc"
+              }`}
+            >
+              {String(i + 1).padStart(2, "0")} {s.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Live preview of what the active step produces. */}
+      <div className="relative mt-3 h-[84px] overflow-hidden border border-bdr-2 bg-bg-3">
+        <div key={active} className="flow-stage-in absolute inset-0">
+          {studioVisual(active)}
         </div>
-        <div className="mt-3 flex items-center gap-2 font-mono text-[10.5px] uppercase tracking-[0.1em] text-acc">
-          <span className="inline-block h-px w-5 bg-acc" />
-          {STUDIO_STEPS[active].note}
+        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/55 to-transparent px-3 py-1.5">
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-white">
+            {String(active + 1).padStart(2, "0")} · {step.label}
+          </span>
+          <span className="text-[10.5px] italic text-white/85">{step.note}</span>
         </div>
       </div>
 
-      <p className="mt-5 text-[12px] italic text-txt-3">
+      <p className="mt-4 text-[12px] italic text-txt-3">
         Best when you want a project considered down to the last detail.
       </p>
     </div>
