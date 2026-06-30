@@ -736,6 +736,24 @@ function studioVisual(i: number) {
 function StudioPanel() {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [imgs, setImgs] = useState<string[]>([]);
+
+  // Pull real reference images once (only when the Full Studio tab is open) so
+  // the preview shows the actual image-choosing process, not abstract
+  // placeholders. Cached server-side, so it's a single cheap call.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/pinterest/search?q=interior%20design%20moodboard&limit=14")
+      .then((r) => r.json())
+      .then((d: { pins?: { imageUrl?: string }[] }) => {
+        if (cancelled || !Array.isArray(d.pins)) return;
+        setImgs(d.pins.map((p) => p.imageUrl || "").filter(Boolean));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Auto-walk through the real steps, showing a preview of each, so the panel
   // feels alive like the Quick madlib. Pauses while the user hovers a step.
@@ -749,6 +767,12 @@ function StudioPanel() {
   }, [paused]);
 
   const step = STUDIO_STEPS[active];
+  // A shifting window of real references, so each step browses a fresh set.
+  const win =
+    imgs.length > 0
+      ? Array.from({ length: 6 }, (_, k) => imgs[(active * 2 + k) % imgs.length])
+      : [];
+  const picked = [1, 4];
 
   return (
     <div
@@ -797,16 +821,51 @@ function StudioPanel() {
         })}
       </div>
 
-      {/* Live preview of what the active step produces. */}
-      <div className="relative mt-3 h-[84px] overflow-hidden border border-bdr-2 bg-bg-3">
-        <div key={active} className="flow-stage-in absolute inset-0">
-          {studioVisual(active)}
-        </div>
-        <div className="absolute inset-x-0 bottom-0 flex items-center justify-between bg-gradient-to-t from-black/55 to-transparent px-3 py-1.5">
-          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-white">
+      {/* Live preview of the real image-choosing process. */}
+      <div className="mt-3 border border-bdr-2 bg-bg-3 p-2">
+        {win.length > 0 ? (
+          <div className="grid grid-cols-6 gap-1.5">
+            {win.map((src, n) => {
+              const sel = picked.includes(n);
+              return (
+                <div
+                  key={n}
+                  className="relative aspect-square overflow-hidden bg-bg-2"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src.replace("/736x/", "/236x/")}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                  />
+                  {sel && (
+                    <>
+                      <span className="absolute inset-0 ring-2 ring-inset ring-acc" />
+                      <span className="absolute right-1 top-1 grid h-4 w-4 place-items-center rounded-full bg-acc text-[8px] text-white">
+                        ✓
+                      </span>
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="relative h-[68px]">
+            <div key={active} className="flow-stage-in absolute inset-0">
+              {studioVisual(active)}
+            </div>
+          </div>
+        )}
+        <div className="mt-2 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.12em]">
+          <span className="text-acc">
             {String(active + 1).padStart(2, "0")} · {step.label}
           </span>
-          <span className="text-[10.5px] italic text-white/85">{step.note}</span>
+          <span className="text-txt-3">
+            {win.length ? "choosing references" : step.note}
+          </span>
         </div>
       </div>
 
