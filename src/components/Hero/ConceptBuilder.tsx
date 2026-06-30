@@ -622,60 +622,38 @@ function ChipRow({
 
 /* ─────────────────────────── Studio panel ─────────────────────────── */
 
+const STUDIO_STEPS: { label: string; note: string }[] = [
+  { label: "Space", note: "what it is, who it's for" },
+  { label: "Vibe", note: "the feeling, in references" },
+  { label: "Colors", note: "your palette" },
+  { label: "Furniture", note: "pieces, by category" },
+  { label: "Lighting", note: "mood, task, accent" },
+  { label: "Flooring", note: "the plane underfoot" },
+  { label: "Ceiling", note: "the fifth wall" },
+  { label: "Materials", note: "textures and finishes" },
+  { label: "Review", note: "review, then generate" },
+];
+
 function StudioPanel() {
-  const phaseSvg = {
-    width: 12,
-    height: 12,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: 1.8,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
-  const PHASES: { label: string; icon: React.ReactNode }[] = [
-    {
-      label: "Space",
-      icon: (
-        <svg {...phaseSvg} aria-hidden>
-          <rect x="4" y="4" width="16" height="16" rx="1.5" />
-          <path d="M4 13a7 7 0 0 0 7-7" />
-        </svg>
-      ),
-    },
-    {
-      label: "Vibe",
-      icon: (
-        <svg {...phaseSvg} aria-hidden>
-          <rect x="3" y="6" width="13.5" height="13.5" rx="1.5" />
-          <circle cx="7.5" cy="11" r="1.1" />
-          <path d="M3.5 17 7.5 13.4 10.3 15.6" />
-          <path d="M9 6V4.5A1.5 1.5 0 0 1 10.5 3H20a1 1 0 0 1 1 1v9.5A1.5 1.5 0 0 1 19.5 15H17" />
-        </svg>
-      ),
-    },
-    {
-      label: "Build",
-      icon: (
-        <svg {...phaseSvg} aria-hidden>
-          <path d="M12 3 21 7.5 12 12 3 7.5Z" />
-          <path d="M3 12 12 16.5 21 12" />
-          <path d="M3 16.5 12 21 21 16.5" />
-        </svg>
-      ),
-    },
-    {
-      label: "Refine",
-      icon: (
-        <svg {...phaseSvg} aria-hidden>
-          <path d="M4 12.5 9 17.5 20 6.5" />
-        </svg>
-      ),
-    },
-  ];
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  // Auto-walk through the real steps so the panel feels alive, like the
+  // Quick madlib's rolling examples. Pauses while the user hovers a step.
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(
+      () => setActive((a) => (a + 1) % STUDIO_STEPS.length),
+      1100,
+    );
+    return () => clearInterval(t);
+  }, [paused]);
 
   return (
-    <div className="relative border border-bdr-2 bg-bg-2 p-7 text-left">
+    <div
+      className="relative border border-bdr-2 bg-bg-2 p-7 text-left"
+      onMouseLeave={() => setPaused(false)}
+    >
       <span className="absolute -left-[2px] -top-[2px] h-[18px] w-[18px] border-l border-t border-acc" />
       <span className="absolute -right-[2px] -top-[2px] h-[18px] w-[18px] border-r border-t border-acc" />
       <span className="absolute -bottom-[2px] -left-[2px] h-[18px] w-[18px] border-b border-l border-acc" />
@@ -685,28 +663,43 @@ function StudioPanel() {
         Shape the whole <em className="italic text-acc">vision</em>.
       </div>
       <p className="mt-2.5 max-w-[470px] text-[13.5px] leading-relaxed text-txt-2">
-        Ten guided minutes, and you walk away with a complete, client-ready
-        brief: palette, materials, lighting, furniture, and more, ready to
-        export as a PDF.
+        Nine guided steps, about ten minutes, and you walk away with a complete,
+        client-ready brief: palette, materials, lighting, furniture, and more,
+        ready to export as a PDF.
       </p>
 
-      {/* The short, clear journey — friendlier than a 9-item checklist. */}
-      <div className="mt-5 flex flex-wrap items-center gap-y-2">
-        {PHASES.map((p, i) => (
-          <span key={p.label} className="inline-flex items-center">
-            <span className="inline-flex items-center gap-1.5 font-mono text-[10.5px] uppercase tracking-[0.1em] text-txt">
-              <span className="grid h-6 w-6 place-items-center rounded-full border border-bdr-2 text-acc">
-                {p.icon}
-              </span>
-              {p.label}
-            </span>
-            {i < PHASES.length - 1 && (
-              <span className="mx-2.5 text-txt-3" aria-hidden>
-                →
-              </span>
-            )}
-          </span>
-        ))}
+      {/* Live walkthrough of the real nine steps — auto-advances, hover to explore. */}
+      <div className="mt-5">
+        <div className="flex flex-wrap gap-1.5">
+          {STUDIO_STEPS.map((s, i) => {
+            const on = i === active;
+            return (
+              <button
+                key={s.label}
+                type="button"
+                onMouseEnter={() => {
+                  setActive(i);
+                  setPaused(true);
+                }}
+                onFocus={() => {
+                  setActive(i);
+                  setPaused(true);
+                }}
+                className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.06em] transition-all duration-300 ${
+                  on
+                    ? "scale-105 border-acc bg-acc text-white"
+                    : "border-bdr-2 text-txt-3 hover:border-acc hover:text-acc"
+                }`}
+              >
+                {String(i + 1).padStart(2, "0")} {s.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="mt-3 flex items-center gap-2 font-mono text-[10.5px] uppercase tracking-[0.1em] text-acc">
+          <span className="inline-block h-px w-5 bg-acc" />
+          {STUDIO_STEPS[active].note}
+        </div>
       </div>
 
       <p className="mt-5 text-[12px] italic text-txt-3">
