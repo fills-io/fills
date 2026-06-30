@@ -634,103 +634,91 @@ const STUDIO_STEPS: { label: string; note: string }[] = [
   { label: "Review", note: "review, then generate" },
 ];
 
-/** A small on-brand preview of what each studio step produces. */
-function studioVisual(i: number) {
-  switch (i) {
-    case 0: // Space — a plan
-      return (
-        <svg viewBox="0 0 200 80" preserveAspectRatio="none" className="h-full w-full text-txt-3" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round">
-          <rect x="10" y="12" width="108" height="56" />
-          <rect x="124" y="30" width="66" height="38" />
-          <path d="M42 68 Q82 68 120 62" strokeDasharray="3 3" />
-          <circle cx="178" cy="18" r="5" />
-        </svg>
-      );
-    case 1: // Vibe — warm mood
-      return <div className="h-full w-full bg-gradient-to-br from-[#E8C4B0] via-[#D4C2A3] to-[#A89890]" />;
-    case 2: // Colors — palette
-      return (
-        <div className="flex h-full">
-          {["#E8DCC8", "#D4C2A3", "#A89890", "#C8512A", "#1A1714", "#F0D5C4"].map((c, n) => (
-            <span key={n} className="flex-1" style={{ backgroundColor: c }} />
-          ))}
-        </div>
-      );
-    case 3: // Furniture — line art
-      return (
-        <div className="flex h-full items-center justify-center gap-6 text-txt-3">
-          <svg width="46" height="40" viewBox="0 0 60 60" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
-            <path d="M8 48 L8 26 Q8 18 16 18 L44 18 Q52 18 52 26 L52 48" />
-            <path d="M14 48 L14 34 L46 34 L46 48" />
-          </svg>
-          <svg width="46" height="40" viewBox="0 0 60 60" fill="none" stroke="currentColor" strokeWidth="1.4">
-            <line x1="10" y1="22" x2="50" y2="22" />
-            <line x1="13" y1="22" x2="13" y2="50" />
-            <line x1="47" y1="22" x2="47" y2="50" />
-          </svg>
-          <svg width="46" height="40" viewBox="0 0 60 60" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
-            <path d="M22 14 L38 14 L42 26 L18 26 Z" />
-            <line x1="30" y1="26" x2="30" y2="52" />
-          </svg>
-        </div>
-      );
-    case 4: // Lighting
-      return (
-        <svg viewBox="0 0 200 80" className="h-full w-full text-txt-3" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="14" y1="12" x2="186" y2="12" />
-          <path d="M55 12 L48 32 L62 32 Z" />
-          <path d="M125 12 L118 32 L132 32 Z" />
-          <line x1="90" y1="12" x2="90" y2="48" />
-          <circle cx="90" cy="52" r="4" />
-          <line x1="166" y1="42" x2="182" y2="42" />
-        </svg>
-      );
-    case 5: // Flooring — wood
-      return (
-        <div className="relative h-full w-full bg-gradient-to-b from-[#8B6F47] to-[#5C4730]">
-          <svg viewBox="0 0 200 80" preserveAspectRatio="none" className="absolute inset-0 h-full w-full" stroke="#3d2f1e" strokeWidth="0.8" opacity="0.5">
-            <line x1="0" y1="20" x2="200" y2="20" />
-            <line x1="0" y1="40" x2="200" y2="40" />
-            <line x1="0" y1="60" x2="200" y2="60" />
-            <line x1="70" y1="0" x2="70" y2="20" />
-            <line x1="140" y1="20" x2="140" y2="40" />
-            <line x1="50" y1="40" x2="50" y2="60" />
-          </svg>
-        </div>
-      );
-    case 6: // Ceiling — slats
-      return (
-        <svg viewBox="0 0 200 80" preserveAspectRatio="none" className="h-full w-full text-txt-3" stroke="currentColor" strokeWidth="1" fill="none">
-          {Array.from({ length: 9 }).map((_, n) => (
-            <line key={n} x1={14 + n * 21.5} y1="6" x2={14 + n * 21.5} y2="74" />
-          ))}
-        </svg>
-      );
-    case 7: // Materials — gradient swatches
-      return (
-        <div className="flex h-full gap-1.5 p-1.5">
-          <div className="flex-1 bg-gradient-to-br from-[#D4C2A3] to-[#A89890]" />
-          <div className="flex-1 bg-gradient-to-br from-[#8B6F47] to-[#5C4730]" />
-          <div className="flex-1 bg-gradient-to-br from-[#E0D4BE] to-[#B8A888]" />
-        </div>
-      );
-    case 8: // Review — the assembled brief
-      return (
-        <div className="flex h-full gap-1.5 p-1.5">
-          <div className="flex w-1/2 flex-col gap-1.5">
-            <div className="flex flex-1">
-              {["#E8DCC8", "#C8512A", "#A89890", "#1A1714"].map((c, n) => (
-                <span key={n} className="flex-1" style={{ backgroundColor: c }} />
-              ))}
+/** Order the simulated cursor picks references in (cell indices in a 3x2 grid). */
+const PICK_ORDER = [4, 1, 5];
+
+/**
+ * Animated demo of the image-choosing experience: a simulated cursor glides
+ * across a grid of real references and "picks" three, one at a time. A timed
+ * sequence drives the cursor position; CSS handles the smooth glide and the
+ * checkmark pop. Falls back to soft placeholder tiles if images haven't loaded.
+ */
+function StudioPickDemo({ images }: { images: string[] }) {
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setPhase((p) => (p + 1) % 5), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // phase 0–2: pick each in turn · 3: hold all picked · 4: reset
+  const cursorCell =
+    phase <= 2 ? PICK_ORDER[phase] : phase === 3 ? PICK_ORDER[2] : 1;
+  const count = phase <= 2 ? phase + 1 : phase === 3 ? 3 : 0;
+  const selected = PICK_ORDER.slice(0, count);
+
+  const left = (((cursorCell % 3) + 0.5) / 3) * 100;
+  const top = ((Math.floor(cursorCell / 3) + 0.5) / 2) * 100;
+
+  return (
+    <div className="relative">
+      <div className="grid grid-cols-3 gap-1.5">
+        {Array.from({ length: 6 }, (_, i) => images[i]).map((src, i) => {
+          const sel = selected.includes(i);
+          return (
+            <div key={i} className="relative aspect-[4/3] overflow-hidden bg-bg-2">
+              {src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={src.replace("/736x/", "/236x/")}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-bdr-2 to-bg-3" />
+              )}
+              <span
+                className={`pointer-events-none absolute inset-0 ring-2 ring-inset ring-acc transition-opacity duration-300 ${
+                  sel ? "opacity-100 delay-[380ms]" : "opacity-0"
+                }`}
+              />
+              <span
+                className={`pointer-events-none absolute right-1 top-1 grid h-4 w-4 place-items-center rounded-full bg-acc text-[8px] text-white transition-transform duration-300 ${
+                  sel ? "scale-100 delay-[380ms]" : "scale-0"
+                }`}
+              >
+                ✓
+              </span>
             </div>
-            <div className="flex-1 bg-gradient-to-br from-[#8B6F47] to-[#5C4730]" />
-          </div>
-          <div className="w-1/2 bg-gradient-to-br from-[#E8C4B0] to-[#A89890]" />
-        </div>
-      );
-    default:
-      return null;
-  }
+          );
+        })}
+      </div>
+
+      {/* Simulated cursor — glides between cells via the CSS transition. */}
+      <div
+        className="pointer-events-none absolute z-10"
+        style={{
+          left: `${left}%`,
+          top: `${top}%`,
+          transform: "translate(-45%,-35%)",
+          transition:
+            "left 0.5s cubic-bezier(0.22,1,0.36,1), top 0.5s cubic-bezier(0.22,1,0.36,1)",
+        }}
+      >
+        <svg width="15" height="15" viewBox="0 0 16 16">
+          <path
+            d="M2 1 L2 13 L5.5 9.5 L8 14.5 L10 13.5 L7.5 8.5 L12 8 Z"
+            fill="#1A1714"
+            stroke="#fff"
+            strokeWidth="1.2"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
+    </div>
+  );
 }
 
 function StudioPanel() {
@@ -765,14 +753,6 @@ function StudioPanel() {
     );
     return () => clearInterval(t);
   }, [paused]);
-
-  const step = STUDIO_STEPS[active];
-  // A shifting window of real references, so each step browses a fresh set.
-  const win =
-    imgs.length > 0
-      ? Array.from({ length: 6 }, (_, k) => imgs[(active * 2 + k) % imgs.length])
-      : [];
-  const picked = [1, 4];
 
   return (
     <div
@@ -821,50 +801,13 @@ function StudioPanel() {
         })}
       </div>
 
-      {/* Live preview of the real image-choosing process. */}
+      {/* Animated demo of how you pick references in the studio. */}
       <div className="mt-3 border border-bdr-2 bg-bg-3 p-2">
-        {win.length > 0 ? (
-          <div className="grid grid-cols-6 gap-1.5">
-            {win.map((src, n) => {
-              const sel = picked.includes(n);
-              return (
-                <div
-                  key={n}
-                  className="relative aspect-square overflow-hidden bg-bg-2"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={src.replace("/736x/", "/236x/")}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    className="h-full w-full object-cover"
-                  />
-                  {sel && (
-                    <>
-                      <span className="absolute inset-0 ring-2 ring-inset ring-acc" />
-                      <span className="absolute right-1 top-1 grid h-4 w-4 place-items-center rounded-full bg-acc text-[8px] text-white">
-                        ✓
-                      </span>
-                    </>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="relative h-[68px]">
-            <div key={active} className="flow-stage-in absolute inset-0">
-              {studioVisual(active)}
-            </div>
-          </div>
-        )}
+        <StudioPickDemo images={imgs} />
         <div className="mt-2 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.12em]">
-          <span className="text-acc">
-            {String(active + 1).padStart(2, "0")} · {step.label}
-          </span>
+          <span className="text-acc">Picking references</span>
           <span className="text-txt-3">
-            {win.length ? "choosing references" : step.note}
+            {String(active + 1).padStart(2, "0")} · {STUDIO_STEPS[active].label}
           </span>
         </div>
       </div>
