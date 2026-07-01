@@ -275,7 +275,7 @@ Finding related searches…
       {status === "idle" && pins.length === 0 && submittedQuery && (
         <p className="border border-dark-3 bg-[rgba(34,30,24,0.4)] p-6 text-center text-[13px] text-hero-dim">
           No pins came back for &ldquo;{submittedQuery}&rdquo;. Try a different
-          phrase — short descriptive nouns work best.
+          phrase. Short descriptive nouns work best.
         </p>
       )}
 

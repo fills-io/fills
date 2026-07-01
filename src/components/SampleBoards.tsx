@@ -181,7 +181,7 @@ export default function SampleBoards() {
                 </div>
               </div>
               <Link
-                href="/create?path=quick"
+                href="/concept/wizard"
                 className="mt-2 inline-flex w-fit items-center gap-2 bg-acc px-5 py-3 text-[12px] font-medium uppercase tracking-[0.08em] text-white transition hover:gap-3 hover:bg-acc-h"
               >
                 Build a brief like this →

@@ -3,9 +3,9 @@ import ThemeToggle from "./ThemeToggle";
 
 const navLinks = [
   { label: "Platform", href: "/#how" },
-  { label: "Showcase", href: "/#works" },
-  { label: "Mood Boards", href: "/#samples" },
-  { label: "Journal", href: "/blog" },
+  { label: "Showcase", href: "/#samples" },
+  { label: "Who it's for", href: "/#made-for" },
+  { label: "Blog", href: "/blog" },
 ];
 
 export default function Navbar() {
@@ -45,11 +45,17 @@ export default function Navbar() {
       {/* Right cluster: theme toggle + auth */}
       <div className="flex border-l border-bdr">
         <ThemeToggle />
+        <Link
+          href="/talk-to-a-designer"
+          className="hidden h-[60px] items-center border-l border-bdr px-5 text-xs text-txt-2 transition hover:bg-bg-2 hover:text-txt sm:flex"
+        >
+          Talk to a designer
+        </Link>
         <button className="h-[60px] border-l border-bdr px-5 text-xs text-txt-2 transition hover:bg-bg-2 hover:text-txt">
           Sign in
         </button>
         <Link
-          href="/concept?mode=quick"
+          href="/concept/wizard"
           className="flex h-[60px] items-center border-l border-bdr bg-acc px-6 text-xs font-medium text-white transition hover:bg-acc-d"
         >
           Get started →

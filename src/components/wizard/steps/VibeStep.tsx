@@ -55,7 +55,7 @@ export default function VibeStep({ state, setState }: Props) {
           vibeQuery: seededQuery,
         })
       }
-      helperText="Pick three pins that capture the feeling you want. Sharp picks beat broad picks — the AI uses these as the emotional anchor for the whole brief."
+      helperText="Pick three pins that capture the feeling you want. Sharp picks beat broad picks. The AI uses these as the emotional anchor for the whole brief."
       suggestionContext={{
         step: "vibe",
         industry: industry?.label,

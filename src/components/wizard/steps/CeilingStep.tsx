@@ -36,7 +36,7 @@ export default function CeilingStep({ state, setState }: Props) {
       onChange={({ pins, query }) =>
         setState({ ceilingPins: pins, ceilingQuery: query })
       }
-      helperText="Coffers, beams, plaster, exposed structure, painted color — the often-forgotten surface."
+      helperText="Coffers, beams, plaster, exposed structure, painted color: the often-forgotten surface."
     />
   );
 }

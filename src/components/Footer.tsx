@@ -1,21 +1,32 @@
-const COLUMNS = [
+const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Platform",
-    links: ["Mood board", "Color system", "3D visualization", "Handoff export", "Pricing"],
+    links: [
+      { label: "Design brief", href: "/#output" },
+      { label: "Mood & palette", href: "/#output" },
+      { label: "Examples", href: "/#samples" },
+      { label: "Free brief template", href: "/interior-design-brief-template" },
+      { label: "Start a brief", href: "/concept/wizard" },
+    ],
   },
   {
     title: "For",
     links: [
-      "Interior designers",
-      "Architects",
-      "Homeowners",
-      "Restaurants",
-      "Retail & Hospitality",
+      { label: "Interior designers", href: "/#made-for" },
+      { label: "Architects", href: "/#made-for" },
+      { label: "Homeowners", href: "/#made-for" },
+      { label: "Retail & commercial", href: "/#made-for" },
     ],
   },
   {
     title: "Company",
-    links: ["About", "Showcase", "Blog", "Contact", "Careers"],
+    links: [
+      { label: "How it works", href: "/#how" },
+      { label: "The architect", href: "/#architect" },
+      { label: "Talk to a designer", href: "/talk-to-a-designer" },
+      { label: "FAQ", href: "/#faq" },
+      { label: "Blog", href: "/blog" },
+    ],
   },
 ];
 
@@ -41,6 +52,14 @@ export default function Footer() {
           <p className="mt-5 max-w-xs text-[13px] leading-[1.7] text-txt-2">
             Where interior design and architecture meet a faster way to brief. Build your concept brief in minutes.
           </p>
+          <div className="mt-6">
+            <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-txt-3">
+              On the roadmap
+            </div>
+            <p className="mt-1.5 text-[12px] text-txt-2">
+              Layout · Visualization · Design package · BOQ
+            </p>
+          </div>
         </div>
 
         {/* Link columns */}
@@ -52,11 +71,11 @@ export default function Footer() {
             <div className="flex flex-col gap-2.5">
               {col.links.map((link) => (
                 <a
-                  key={link}
-                  href={link === "Blog" ? "/blog" : "#"}
+                  key={link.label}
+                  href={link.href}
                   className="text-[13px] text-txt-2 transition hover:text-acc"
                 >
-                  {link}
+                  {link.label}
                 </a>
               ))}
             </div>
@@ -64,13 +83,11 @@ export default function Footer() {
         ))}
       </div>
 
-      <div className="mx-auto mt-16 flex max-w-6xl flex-col items-center justify-between gap-4 border-t border-bdr pt-6 text-[11.5px] text-txt-3 md:flex-row">
+      <div className="mx-auto mt-16 flex max-w-6xl items-center justify-between gap-4 border-t border-bdr pt-6 text-[11.5px] text-txt-3">
         <span>© 2026 Fills Ltd. All rights reserved.</span>
-        <div className="flex gap-6">
-          <a href="#" className="transition hover:text-acc">Privacy</a>
-          <a href="#" className="transition hover:text-acc">Terms</a>
-          <a href="#" className="transition hover:text-acc">Cookies</a>
-        </div>
+        <a href="/blog" className="transition hover:text-acc">
+          Blog
+        </a>
       </div>
     </footer>
   );

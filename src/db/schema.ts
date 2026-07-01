@@ -260,7 +260,10 @@ export const leads = pgTable("leads", {
   industry: text("industry"),
   spec: text("spec"),
   vibe: text("vibe"),
-  /** Which entry path they used: "quick" | "upload". */
+  /** For "talk to a designer" inquiries: their name + free-text message. */
+  name: text("name"),
+  message: text("message"),
+  /** Entry path / lead type: "quick" | "upload" | "talk-to-designer". */
   source: text("source"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

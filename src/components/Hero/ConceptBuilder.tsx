@@ -97,13 +97,13 @@ export default function ConceptBuilder() {
         spec: spec.trim(),
         vibe: vibe.trim(),
       });
-      router.push(`/create?${qs.toString()}`);
+      router.push(`/concept/wizard?${qs.toString()}`);
     } else if (tab === "upload") {
       // → new QuickFlow upload path.
-      router.push("/create?path=upload");
+      router.push("/concept/wizard");
     } else {
       // Full Studio keeps the existing detailed wizard.
-      router.push("/concept?mode=studio");
+      router.push("/concept/wizard");
     }
   }
 
@@ -180,6 +180,27 @@ export default function ConceptBuilder() {
           View samples
         </button>
       </div>
+
+      {/* Hint when the Quick CTA is gated — tells the user what's missing
+          instead of showing a silent, unexplained disabled button. */}
+      {tab === "quick" && !canGenerate && (
+        <p className="mt-3 text-center text-[12px] text-txt-3">
+          {!industryId
+            ? "Pick what you're working on"
+            : !spec.trim()
+              ? "Add the specifics"
+              : "Add a vibe"}{" "}
+          to continue, or{" "}
+          <button
+            type="button"
+            onClick={randomize}
+            className="text-acc underline underline-offset-2 transition hover:text-acc-h"
+          >
+            surprise me
+          </button>
+          .
+        </p>
+      )}
 
       {/* Rolling dice animation */}
       <style>{`
@@ -601,51 +622,311 @@ function ChipRow({
 
 /* ─────────────────────────── Studio panel ─────────────────────────── */
 
-function StudioPanel() {
+const STUDIO_STEPS: { label: string; note: string }[] = [
+  { label: "Space", note: "what it is, who it's for" },
+  { label: "Vibe", note: "the feeling, in references" },
+  { label: "Colors", note: "your palette" },
+  { label: "Furniture", note: "pieces, by category" },
+  { label: "Lighting", note: "mood, task, accent" },
+  { label: "Flooring", note: "the plane underfoot" },
+  { label: "Ceiling", note: "the fifth wall" },
+  { label: "Materials", note: "textures and finishes" },
+  { label: "Review", note: "review, then generate" },
+];
+
+/** Per-step reference search (null = the Colors step, which shows a palette). */
+const STUDIO_QUERIES: (string | null)[] = [
+  "interior design moodboard", // 1 Space
+  "interior mood board vibe", // 2 Vibe
+  null, // 3 Colors → palette + eyedropper
+  "furniture interior design", // 4 Furniture
+  "interior lighting design", // 5 Lighting
+  "flooring interior wood", // 6 Flooring
+  "ceiling design interior", // 7 Ceiling
+  "interior materials texture", // 8 Materials
+  "interior moodboard editorial", // 9 Review
+];
+
+/** Arrow cursor that glides to a CSS left/top percentage. */
+function DemoCursor({ left, top }: { left: number; top: number }) {
   return (
-    <div className="relative border border-bdr-2 bg-bg-2 p-7">
+    <div
+      className="pointer-events-none absolute z-20"
+      style={{
+        left: `${left}%`,
+        top: `${top}%`,
+        transform: "translate(-40%,-30%)",
+        transition:
+          "left 0.45s cubic-bezier(0.22,1,0.36,1), top 0.45s cubic-bezier(0.22,1,0.36,1)",
+      }}
+    >
+      <svg width="15" height="15" viewBox="0 0 16 16">
+        <path
+          d="M2 1 L2 13 L5.5 9.5 L8 14.5 L10 13.5 L7.5 8.5 L12 8 Z"
+          fill="#1A1714"
+          stroke="#fff"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
+/**
+ * Category image-picking demo: the cursor glides to two references and they
+ * turn red (selected). Remounted per step so it replays for each category.
+ */
+function ImagePickDemo({ images }: { images: string[] }) {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setPhase((p) => (p < 3 ? p + 1 : p)), 720);
+    return () => clearInterval(t);
+  }, []);
+
+  const A = 1;
+  const B = 4;
+  const cursorCell = phase === 0 ? 0 : phase === 1 ? A : B;
+  const selected = phase >= 2 ? [A, B] : phase >= 1 ? [A] : [];
+  const left = ((cursorCell + 0.5) / 6) * 100;
+
+  return (
+    <div className="relative">
+      <div className="grid grid-cols-6 gap-1.5">
+        {Array.from({ length: 6 }, (_, i) => images[i]).map((src, i) => {
+          const sel = selected.includes(i);
+          return (
+            <div key={i} className="relative aspect-[3/4] overflow-hidden bg-bg-2">
+              {src ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={src.replace("/736x/", "/236x/")}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full bg-gradient-to-br from-bdr-2 to-bg-3" />
+              )}
+              {/* red wash + border + check when the cursor selects it */}
+              <span
+                className={`pointer-events-none absolute inset-0 bg-acc mix-blend-multiply transition-opacity duration-300 ${
+                  sel ? "opacity-40 delay-[340ms]" : "opacity-0"
+                }`}
+              />
+              <span
+                className={`pointer-events-none absolute inset-0 ring-2 ring-inset ring-acc transition-opacity duration-300 ${
+                  sel ? "opacity-100 delay-[340ms]" : "opacity-0"
+                }`}
+              />
+              <span
+                className={`pointer-events-none absolute right-1 top-1 grid h-4 w-4 place-items-center rounded-full bg-acc text-[8px] text-white transition-transform duration-300 ${
+                  sel ? "scale-100 delay-[340ms]" : "scale-0"
+                }`}
+              >
+                ✓
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      <DemoCursor left={left} top={50} />
+    </div>
+  );
+}
+
+/** Colors step: an eyedropper glides along and fills the palette swatch by swatch. */
+function ColorPickDemo() {
+  const COLORS = ["#C8512A", "#E8DCC8", "#A89890", "#8B6F47", "#1A1714"];
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const t = setInterval(
+      () => setPhase((p) => (p < COLORS.length ? p + 1 : p)),
+      520,
+    );
+    return () => clearInterval(t);
+  }, [COLORS.length]);
+
+  const slot = Math.min(phase, COLORS.length - 1);
+  const left = ((slot + 0.5) / COLORS.length) * 100;
+
+  return (
+    <div className="relative">
+      <div className="flex h-[150px] gap-1.5">
+        {COLORS.map((c, i) => {
+          const filled = phase > i;
+          return (
+            <div
+              key={i}
+              className="relative flex-1 overflow-hidden border border-bdr-2 bg-bg-2"
+            >
+              <div
+                className="absolute inset-0 transition-all duration-300"
+                style={{ backgroundColor: c, opacity: filled ? 1 : 0 }}
+              />
+              {!filled && (
+                <span className="absolute inset-2 border border-dashed border-bdr-2" />
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {/* eyedropper, gliding to the slot it's filling */}
+      <div
+        className="pointer-events-none absolute top-0 z-20"
+        style={{
+          left: `${left}%`,
+          transform: "translate(-50%,-55%)",
+          transition: "left 0.4s cubic-bezier(0.22,1,0.36,1)",
+        }}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#1A1714"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4 20l2-0.5 9-9" />
+          <path d="M13.5 6.5l4 4" />
+          <path d="M16 4a2 2 0 1 1 3 3l-2 2-3-3z" fill="#C8512A" stroke="none" />
+          <path d="M16 4a2 2 0 1 1 3 3l-2 2-3-3z" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+function StudioPanel() {
+  const [active, setActive] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const [byQuery, setByQuery] = useState<Record<string, string[]>>({});
+
+  // Pull category-specific references once (only when the Full Studio tab is
+  // open) so each step browses its own kind of image — furniture on the
+  // Furniture step, lighting on Lighting, and so on. Cached server-side.
+  useEffect(() => {
+    let cancelled = false;
+    const uniq = [...new Set(STUDIO_QUERIES.filter((q): q is string => !!q))];
+    Promise.all(
+      uniq.map((q) =>
+        fetch(`/api/pinterest/search?q=${encodeURIComponent(q)}&limit=8`)
+          .then((r) => r.json())
+          .then(
+            (d: { pins?: { imageUrl?: string }[] }) =>
+              [
+                q,
+                Array.isArray(d.pins)
+                  ? d.pins.map((p) => p.imageUrl || "").filter(Boolean)
+                  : [],
+              ] as [string, string[]],
+          )
+          .catch(() => [q, []] as [string, string[]]),
+      ),
+    ).then((entries) => {
+      if (!cancelled) setByQuery(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Auto-walk through the real steps, showing a preview of each, so the panel
+  // feels alive like the Quick madlib. Pauses while the user hovers a step.
+  useEffect(() => {
+    if (paused) return;
+    const t = setInterval(
+      () => setActive((a) => (a + 1) % STUDIO_STEPS.length),
+      2800,
+    );
+    return () => clearInterval(t);
+  }, [paused]);
+
+  // Guarantee every tile has a real photo: if a category returns fewer than
+  // six references, top it up from the pool of all fetched images. Once the
+  // fetch resolves there are no placeholder tiles.
+  const pool = Object.values(byQuery).flat();
+  const q = STUDIO_QUERIES[active];
+  const own = q ? byQuery[q] ?? [] : [];
+  const stepImages =
+    own.length >= 6
+      ? own.slice(0, 6)
+      : [...new Set([...own, ...pool])].slice(0, 6);
+
+  return (
+    <div
+      className="relative border border-bdr-2 bg-bg-2 p-7 text-left"
+      onMouseLeave={() => setPaused(false)}
+    >
       <span className="absolute -left-[2px] -top-[2px] h-[18px] w-[18px] border-l border-t border-acc" />
       <span className="absolute -right-[2px] -top-[2px] h-[18px] w-[18px] border-r border-t border-acc" />
       <span className="absolute -bottom-[2px] -left-[2px] h-[18px] w-[18px] border-b border-l border-acc" />
       <span className="absolute -bottom-[2px] -right-[2px] h-[18px] w-[18px] border-b border-r border-acc" />
 
-      <div className="flex items-start gap-3.5">
-        <span className="grid h-10 w-10 flex-shrink-0 place-items-center border border-bdr-2 text-txt-2">
-          <svg width="18" height="18" viewBox="0 0 14 14" fill="none">
-            <rect x="1" y="1" width="5.5" height="5.5" stroke="currentColor" strokeWidth="1.1" />
-            <rect x="7.5" y="1" width="5.5" height="5.5" stroke="currentColor" strokeWidth="1.1" />
-            <rect x="1" y="7.5" width="5.5" height="5.5" stroke="currentColor" strokeWidth="1.1" />
-            <rect x="7.5" y="7.5" width="5.5" height="5.5" stroke="currentColor" strokeWidth="1.1" />
-          </svg>
-        </span>
-        <div className="text-left">
-          <div className="font-serif text-[22px] font-medium leading-tight text-txt">
-            Multi-zone <em className="italic text-acc">authoring</em>
-          </div>
-          <div className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-txt-3">
-            9 categories · ~10 min · for architects &amp; designers
-          </div>
+      <div className="font-serif text-[24px] font-medium leading-[1.15] text-txt">
+        Shape the whole <em className="italic text-acc">vision</em>.
+      </div>
+      <p className="mt-2.5 max-w-[470px] text-[13.5px] leading-relaxed text-txt-2">
+        Nine guided steps, about ten minutes, and you walk away with a complete,
+        client-ready brief: palette, materials, lighting, furniture, and more,
+        ready to export as a PDF.
+      </p>
+
+      {/* Step chips — auto-advance, hover to explore (which drives the preview). */}
+      <div className="mt-5 flex flex-wrap gap-1.5">
+        {STUDIO_STEPS.map((s, i) => {
+          const on = i === active;
+          return (
+            <button
+              key={s.label}
+              type="button"
+              onMouseEnter={() => {
+                setActive(i);
+                setPaused(true);
+              }}
+              onFocus={() => {
+                setActive(i);
+                setPaused(true);
+              }}
+              className={`rounded-full border px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.06em] transition-all duration-300 ${
+                on
+                  ? "scale-105 border-acc bg-acc text-white"
+                  : "border-bdr-2 text-txt-3 hover:border-acc hover:text-acc"
+              }`}
+            >
+              {String(i + 1).padStart(2, "0")} {s.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Animated demo of how you choose, per category. */}
+      <div className="mt-3 border border-bdr-2 bg-bg-3 p-2">
+        {active === 2 ? (
+          <ColorPickDemo key="colors" />
+        ) : (
+          <ImagePickDemo
+            key={active}
+            images={stepImages}
+          />
+        )}
+        <div className="mt-2 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.12em]">
+          <span className="text-acc">
+            {active === 2 ? "Building palette" : "Picking references"}
+          </span>
+          <span className="text-txt-3">
+            {String(active + 1).padStart(2, "0")} · {STUDIO_STEPS[active].label}
+          </span>
         </div>
       </div>
 
-      <div className="mt-5 grid grid-cols-2 gap-x-[18px] gap-y-[9px] text-left sm:grid-cols-3">
-        {[
-          "Industry & function",
-          "Spatial layout",
-          "Material palette",
-          "Color system",
-          "Lighting plan",
-          "Furniture brief",
-          "Mood references",
-          "Constraints",
-          "Output format",
-        ].map((s) => (
-          <span key={s} className="inline-flex items-center gap-2 font-sans text-[12px] text-txt-2">
-            <span className="h-1 w-1 flex-shrink-0 rounded-full bg-acc" />
-            {s}
-          </span>
-        ))}
-      </div>
+      <p className="mt-4 text-[12px] italic text-txt-3">
+        Best when you want a project considered down to the last detail.
+      </p>
     </div>
   );
 }

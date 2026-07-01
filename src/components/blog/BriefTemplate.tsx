@@ -173,7 +173,7 @@ export default function BriefTemplate() {
             </p>
           </div>
           <a
-            href="/concept?mode=quick"
+            href="/concept/wizard"
             className="font-mono"
             style={{ whiteSpace: "nowrap", background: CREAM, color: "#A33F1E", fontSize: "11px", letterSpacing: ".08em", textTransform: "uppercase", padding: "11px 16px", textDecoration: "none" }}
           >

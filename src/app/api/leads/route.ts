@@ -19,10 +19,12 @@ export const dynamic = "force-dynamic";
 
 const bodySchema = z.object({
   email: z.string().email().max(200),
+  name: z.string().max(120).optional(),
   industry: z.string().max(120).optional(),
   spec: z.string().max(200).optional(),
   vibe: z.string().max(200).optional(),
-  source: z.enum(["quick", "upload"]).optional(),
+  message: z.string().max(2000).optional(),
+  source: z.enum(["quick", "upload", "talk-to-designer"]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -42,9 +44,11 @@ export async function POST(request: NextRequest) {
   try {
     await db.insert(leads).values({
       email: parsed.data.email.trim().toLowerCase(),
+      name: parsed.data.name || null,
       industry: parsed.data.industry || null,
       spec: parsed.data.spec || null,
       vibe: parsed.data.vibe || null,
+      message: parsed.data.message || null,
       source: parsed.data.source || null,
     });
     return NextResponse.json({ ok: true });

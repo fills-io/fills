@@ -11,6 +11,7 @@
 import { getPalette } from "@/lib/concept-palettes";
 import { buildNarrative } from "@/lib/quickflow-data";
 import PlaceholderScene from "./PlaceholderScene";
+import { useVibeImages, sliceImages, VibeImage } from "./vibeImages";
 import type { FlowState } from "./FlowApp";
 
 export default function MoodBoard({
@@ -22,6 +23,7 @@ export default function MoodBoard({
 }) {
   const palette = getPalette(state.paletteId);
   const narrative = buildNarrative(state.spec, state.vibe);
+  const images = useVibeImages(state.vibe, state.spec, state.picks);
 
   return (
     <main className="mx-auto max-w-[1000px] px-6 py-12">
@@ -42,7 +44,11 @@ export default function MoodBoard({
 
       {/* Hero banner */}
       <div className="relative mb-3 h-[300px] w-full overflow-hidden border border-bdr-2">
-        <PlaceholderScene pattern="arch" className="h-full w-full" />
+        {images[0] ? (
+          <VibeImage src={images[0]} className="h-full w-full" />
+        ) : (
+          <PlaceholderScene pattern="arch" className="h-full w-full" />
+        )}
         <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/40 to-transparent p-8">
           <p className="max-w-[480px] font-serif text-[clamp(18px,2.4vw,26px)] italic leading-[1.3] text-white">
             “{state.vibe || "A warm, considered direction"}.”
@@ -66,22 +72,40 @@ export default function MoodBoard({
         {/* Materials */}
         <BoardCard title="Materials">
           <div className="grid grid-cols-3 gap-2">
-            {["arch", "window", "col"].map((p, i) => (
-              <PlaceholderScene key={i} pattern={p as "arch"} className="aspect-square w-full" />
-            ))}
+            {images.length > 1
+              ? sliceImages(images, 1, 3).map((src, i) => (
+                  <VibeImage key={i} src={src} className="aspect-square w-full" />
+                ))
+              : ["arch", "window", "col"].map((p, i) => (
+                  <PlaceholderScene key={i} pattern={p as "arch"} className="aspect-square w-full" />
+                ))}
           </div>
         </BoardCard>
 
         {/* Furniture */}
         <BoardCard title="Furniture">
+          {images.length > 4 && (
+            <div className="mb-3 grid grid-cols-3 gap-2">
+              {sliceImages(images, 4, 3).map((src, i) => (
+                <VibeImage key={i} src={src} className="aspect-square w-full" />
+              ))}
+            </div>
+          )}
           <p className="font-serif text-[14px] leading-[1.6] text-txt-2">
-            Low, sculptural silhouettes in considered materials — a hero piece,
+            Low, sculptural silhouettes in considered materials, a hero piece,
             a few quiet supporting forms, room to breathe.
           </p>
         </BoardCard>
 
         {/* Lighting */}
         <BoardCard title="Lighting">
+          {images.length > 7 && (
+            <div className="mb-3 grid grid-cols-3 gap-2">
+              {sliceImages(images, 7, 3).map((src, i) => (
+                <VibeImage key={i} src={src} className="aspect-square w-full" />
+              ))}
+            </div>
+          )}
           <p className="font-serif text-[14px] leading-[1.6] text-txt-2">
             Warm pools at human height, daylight left to lead, accents only
             where the eye should rest.

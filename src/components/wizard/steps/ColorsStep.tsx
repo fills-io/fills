@@ -147,7 +147,7 @@ export default function ColorsStep({ state, setState }: Props) {
       />
 
       <p className="text-[11px] text-hero-dim">
-        Tip: leave a name blank if you&apos;re still scouting — those slots
+        Tip: leave a name blank if you&apos;re still scouting; those slots
         get replaced when you tap &ldquo;Suggest a palette.&rdquo; Name a slot
         to lock it before generating.
       </p>
