@@ -110,7 +110,7 @@ export default function ConceptBuilder() {
   return (
     <div className="w-full max-w-[700px]">
       {/* ── Pill tabs ── */}
-      <div className="mb-[18px] inline-flex gap-0.5 rounded-sm border border-bdr-2 bg-bg p-1">
+      <div className="mb-[18px] flex w-full gap-0.5 rounded-sm border border-bdr-2 bg-bg p-1 sm:inline-flex sm:w-auto">
         {(
           [
             ["quick", "Quick", "~5 min"],
@@ -122,19 +122,19 @@ export default function ConceptBuilder() {
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={`inline-flex items-center gap-2 rounded-[1px] px-[18px] py-[9px] text-[13px] font-medium transition ${
+            className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-[1px] px-2 py-[9px] text-[12px] font-medium transition sm:flex-none sm:justify-start sm:gap-2 sm:px-[18px] sm:text-[13px] ${
               tab === id
                 ? "bg-acc text-white"
                 : "text-txt-3 hover:text-txt-2"
             }`}
           >
             <span
-              className={`h-[5px] w-[5px] rounded-full border ${
+              className={`hidden h-[5px] w-[5px] shrink-0 rounded-full border sm:block ${
                 tab === id ? "border-white bg-white" : "border-current bg-transparent"
               }`}
             />
-            {label}
-            <span className="text-[11px] italic opacity-70">{meta}</span>
+            <span className="truncate">{label}</span>
+            <span className="hidden text-[11px] italic opacity-70 sm:inline">{meta}</span>
           </button>
         ))}
       </div>
@@ -280,7 +280,7 @@ function QuickPanel(props: {
   return (
     <div
       ref={wrapRef}
-      className="relative border border-bdr-2 bg-bg-2 p-8 text-center font-serif text-[clamp(20px,2.4vw,26px)] font-normal leading-[1.85] tracking-tight text-txt-3 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.18)]"
+      className="relative border border-bdr-2 bg-bg-2 p-5 text-center font-serif text-[clamp(18px,2.4vw,26px)] font-normal leading-[1.85] tracking-tight text-txt-3 shadow-[0_20px_60px_-12px_rgba(0,0,0,0.18)] sm:p-8"
     >
       {/* Architectural bracket corners */}
       <span className="absolute -left-[2px] -top-[2px] h-3 w-3 border-l-[1.5px] border-t-[1.5px] border-acc opacity-60" />
@@ -492,7 +492,7 @@ function AutoSizeInput({
   }, [value, longest]);
 
   return (
-    <span className={`relative inline-block align-baseline ${disabled ? "opacity-40" : ""}`}>
+    <span className={`relative inline-block max-w-full align-baseline ${disabled ? "opacity-40" : ""}`}>
       <span
         ref={mirrorRef}
         aria-hidden
@@ -519,8 +519,8 @@ function AutoSizeInput({
         placeholder={typing ? "" : placeholder}
         disabled={disabled}
         autoComplete="off"
-        style={{ width }}
-        className={`cursor-text border-b border-dashed px-3.5 py-px text-center align-baseline font-serif italic outline-none transition placeholder:italic placeholder:text-txt-3 placeholder:opacity-85 disabled:cursor-not-allowed ${
+        style={{ width, maxWidth: "100%" }}
+        className={`max-w-full cursor-text border-b border-dashed px-3.5 py-px text-center align-baseline font-serif italic outline-none transition placeholder:italic placeholder:text-txt-3 placeholder:opacity-85 disabled:cursor-not-allowed ${
           value
             ? "border-transparent bg-[rgba(200,81,42,0.12)] text-acc"
             : "border-acc/40 bg-transparent text-acc focus:border-acc focus:bg-[rgba(200,81,42,0.06)]"

@@ -233,7 +233,7 @@ export default function WizardClient() {
   // ── Final brief view (replaces the wizard chrome when done) ──────────
   if (generationStatus === "done" && generatedBrief) {
     return (
-      <main className="mx-auto max-w-4xl px-8 py-12 sm:py-16">
+      <main className="mx-auto max-w-4xl px-6 py-12 sm:px-8 sm:py-16">
         <BriefDisplay
           brief={generatedBrief}
           pins={{
@@ -261,7 +261,7 @@ export default function WizardClient() {
       {/* Full-screen overlay during generation */}
       {generationStatus === "generating" && <GenerationOverlay />}
 
-      <main className="mx-auto max-w-4xl px-8 py-12 sm:py-16">
+      <main className="mx-auto max-w-4xl px-6 py-12 sm:px-8 sm:py-16">
         {/* Generation error banner */}
         {generationStatus === "error" && generationError && (
           <div className="mb-8 border border-rose-700/50 bg-rose-950/30 p-5">

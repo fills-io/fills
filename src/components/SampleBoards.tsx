@@ -47,7 +47,7 @@ export default function SampleBoards() {
   const board = open === null ? null : SAMPLE_BOARDS[open];
 
   return (
-    <section id="samples" className="border-b border-bdr bg-bg px-8 py-[104px]">
+    <section id="samples" className="border-b border-bdr bg-bg px-6 py-[104px] sm:px-8">
       <div className="mx-auto max-w-[1280px]">
         {/* Header */}
         <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
@@ -66,7 +66,7 @@ export default function SampleBoards() {
         </div>
 
         {/* Horizontal rail */}
-        <div className="-mx-8 flex snap-x snap-mandatory gap-5 overflow-x-auto px-8 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-6 flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:-mx-8 sm:px-8">
           {SAMPLE_BOARDS.map((b, i) => (
             <button
               key={b.name}

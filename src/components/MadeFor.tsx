@@ -46,7 +46,7 @@ export default function MadeFor() {
       className="grid grid-cols-1 border-b border-bdr lg:grid-cols-[1fr_1.6fr]"
     >
       {/* Dark left side */}
-      <div className="relative overflow-hidden bg-dark px-10 py-20 lg:sticky lg:top-[60px] lg:h-[calc(100vh-60px)] lg:py-24">
+      <div className="relative overflow-hidden bg-dark px-6 py-14 sm:px-10 sm:py-20 lg:sticky lg:top-[60px] lg:h-[calc(100vh-60px)] lg:py-24">
         <div
           className="pointer-events-none absolute inset-0"
           style={{

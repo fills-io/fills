@@ -26,7 +26,7 @@ export default function WizardPage() {
       <Navbar />
       <Suspense
         fallback={
-          <div className="mx-auto max-w-4xl px-8 py-24 text-hero-dim">
+          <div className="mx-auto max-w-4xl px-6 py-24 sm:px-8 text-hero-dim">
             Loading your wizard…
           </div>
         }

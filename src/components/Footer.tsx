@@ -32,7 +32,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
 
 export default function Footer() {
   return (
-    <footer className="bg-bg-2 px-8 pt-20 pb-6">
+    <footer className="bg-bg-2 px-6 pt-20 pb-6 sm:px-8">
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
         {/* Brand column */}
         <div>

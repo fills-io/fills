@@ -79,7 +79,7 @@ const STATIONS = [
 
 export default function HowItWorks() {
   return (
-    <section id="how" className="border-b border-bdr bg-bg px-8 py-[104px]">
+    <section id="how" className="border-b border-bdr bg-bg px-6 py-[104px] sm:px-8">
       <SectionHeader
         eyebrow="04 · How it works"
         headline="From a few choices to a complete brief."

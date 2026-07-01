@@ -87,7 +87,7 @@ const OUTPUT_CARDS = [
 
 export default function Output() {
   return (
-    <section id="output" className="border-b border-bdr bg-bg px-8 py-[104px]">
+    <section id="output" className="border-b border-bdr bg-bg px-6 py-[104px] sm:px-8">
       <SectionHeader
         eyebrow="02 · The Output"
         headline="Designer-grade output, in five minutes."

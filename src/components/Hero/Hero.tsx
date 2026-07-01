@@ -13,7 +13,7 @@ import HeroDots from "./HeroDots";
  */
 export default function Hero() {
   return (
-    <section className="relative min-h-[780px] overflow-hidden border-b border-bdr bg-bg px-8 pb-12 pt-10">
+    <section className="relative min-h-[780px] overflow-hidden border-b border-bdr bg-bg px-6 pb-12 pt-10 sm:px-8">
       {/* Interactive sketchbook dot grid — light mode, reacts to cursor */}
       <HeroDots />
 
