@@ -846,6 +846,17 @@ function StudioPanel() {
     return () => clearInterval(t);
   }, [paused]);
 
+  // Guarantee every tile has a real photo: if a category returns fewer than
+  // six references, top it up from the pool of all fetched images. Once the
+  // fetch resolves there are no placeholder tiles.
+  const pool = Object.values(byQuery).flat();
+  const q = STUDIO_QUERIES[active];
+  const own = q ? byQuery[q] ?? [] : [];
+  const stepImages =
+    own.length >= 6
+      ? own.slice(0, 6)
+      : [...new Set([...own, ...pool])].slice(0, 6);
+
   return (
     <div
       className="relative border border-bdr-2 bg-bg-2 p-7 text-left"
@@ -900,7 +911,7 @@ function StudioPanel() {
         ) : (
           <ImagePickDemo
             key={active}
-            images={byQuery[STUDIO_QUERIES[active] ?? ""] ?? []}
+            images={stepImages}
           />
         )}
         <div className="mt-2 flex items-center justify-between font-mono text-[9px] uppercase tracking-[0.12em]">
