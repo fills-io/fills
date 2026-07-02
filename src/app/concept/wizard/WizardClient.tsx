@@ -110,9 +110,14 @@ export default function WizardClient() {
   /** Can the user advance from the current step? */
   function canAdvance(): boolean {
     switch (current) {
-      case "space":
-        // Space step: industry + specific space required, the rest optional.
-        return !!(wizardState.industryId && wizardState.spaceId);
+      case "space": {
+        // Space step: project type required, plus either a specific space
+        // (one or more) or, for "Other", a free-text project description.
+        if (!wizardState.industryId) return false;
+        const ind = getIndustry(wizardState.industryId);
+        if (ind?.freeform) return !!wizardState.customIndustry?.trim();
+        return (wizardState.spaceIds?.length ?? 0) > 0 || !!wizardState.spaceId;
+      }
       case "vibe":
         // Vibe step: at least one pin picked (max 3 enforced by the grid).
         return (wizardState.vibePins?.length ?? 0) > 0;
@@ -165,9 +170,19 @@ export default function WizardClient() {
     const industry = wizardState.industryId
       ? getIndustry(wizardState.industryId)
       : null;
-    const spaceLabel = industry?.spaces.find(
-      (s) => s.id === wizardState.spaceId,
-    )?.label;
+    const isOther = !!industry?.freeform;
+    const spaceIds =
+      wizardState.spaceIds ??
+      (wizardState.spaceId ? [wizardState.spaceId] : []);
+    const industryLabel = isOther
+      ? wizardState.customIndustry?.trim() || "Other"
+      : industry?.label;
+    const spaceLabel = isOther
+      ? wizardState.customIndustry?.trim()
+      : spaceIds
+          .map((id) => industry?.spaces.find((s) => s.id === id)?.label)
+          .filter(Boolean)
+          .join(", ") || undefined;
     const titleList = (pins?: { title?: string }[]) =>
       (pins ?? [])
         .map((p) => p.title?.trim())
@@ -175,7 +190,7 @@ export default function WizardClient() {
         .slice(0, 5);
 
     const body = {
-      industry: industry?.label,
+      industry: industryLabel,
       space: spaceLabel,
       spaceDescription: wizardState.spaceDescription,
       spaceSize: wizardState.spaceSize,
