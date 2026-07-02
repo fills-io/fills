@@ -92,7 +92,7 @@ export default function ColorsStep({ state, setState }: Props) {
 
   return (
     <div className="space-y-6">
-      <p className="text-[14px] text-hero-cream-2">
+      <p className="text-[14px] text-txt-2">
         Build the palette in four roles. The names and materials you write here
         feed straight into the final Design DNA brief, so think of them as
         designer-to-designer notes, not generic labels.
@@ -112,7 +112,7 @@ export default function ColorsStep({ state, setState }: Props) {
           {vibePinsWithColors.length > 0 && (
             <button
               onClick={pullFromVibe}
-              className="inline-flex items-center gap-2 border border-dark-3 px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-hero-cream-2 transition hover:border-hero-cream-2 hover:text-hero-cream"
+              className="inline-flex items-center gap-2 border border-bdr-2 px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-txt-2 transition hover:border-txt-2 hover:text-txt"
             >
               <span
                 className="flex h-3 w-3 items-center justify-center gap-px"
@@ -130,7 +130,7 @@ export default function ColorsStep({ state, setState }: Props) {
             </button>
           )}
         </div>
-        <p className="text-[11px] text-hero-dim">
+        <p className="text-[11px] text-txt-3">
           Both buttons replace unnamed slots only. Slots you&apos;ve named stay.
         </p>
       </div>
@@ -146,7 +146,7 @@ export default function ColorsStep({ state, setState }: Props) {
         onChange={(next) => setState({ palette: next })}
       />
 
-      <p className="text-[11px] text-hero-dim">
+      <p className="text-[11px] text-txt-3">
         Tip: leave a name blank if you&apos;re still scouting; those slots
         get replaced when you tap &ldquo;Suggest a palette.&rdquo; Name a slot
         to lock it before generating.

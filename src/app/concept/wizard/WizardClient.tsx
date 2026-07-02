@@ -268,7 +268,7 @@ export default function WizardClient() {
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-rose-300">
               Generation failed
             </p>
-            <p className="mt-2 text-[13px] text-hero-cream-2">{generationError}</p>
+            <p className="mt-2 text-[13px] text-txt-2">{generationError}</p>
             <button
               onClick={generateBrief}
               className="mt-3 text-[12px] underline underline-offset-2 text-rose-200 hover:text-rose-100"
@@ -284,7 +284,7 @@ export default function WizardClient() {
             <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-acc">
               Resumed
             </span>
-            <p className="flex-1 text-hero-cream-2">
+            <p className="flex-1 text-txt-2">
               Picked up your in-progress brief from{" "}
               {formatRelative(resumedAt)}. Your work is saved automatically as
               you go.
@@ -298,11 +298,11 @@ export default function WizardClient() {
           Step {String(idx).padStart(2, "0")} / {String(total).padStart(2, "0")}
         </div>
 
-        <h1 className="font-serif text-[clamp(32px,4.5vw,48px)] font-normal leading-[1.1] tracking-tight text-hero-cream">
+        <h1 className="font-serif text-[clamp(32px,4.5vw,48px)] font-normal leading-[1.1] tracking-tight text-txt">
           {step.label}
         </h1>
 
-        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-hero-cream-2">
+        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-txt-2">
           {step.description}
         </p>
 
@@ -338,18 +338,18 @@ export default function WizardClient() {
         </div>
 
         {/* Step navigation */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-dark-3 pt-8 sm:flex-row">
+        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-bdr-2 pt-8 sm:flex-row">
           {isFirst ? (
             <Link
               href="/"
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-hero-dim transition hover:text-acc"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
             >
               ← Home
             </Link>
           ) : (
             <button
               onClick={goBack}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-hero-cream-2 transition hover:text-acc"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
             >
               ← Back
             </button>
@@ -358,15 +358,11 @@ export default function WizardClient() {
           <button
             onClick={isLast ? generateBrief : goNext}
             disabled={!canAdvance() || generationStatus === "generating"}
-            className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-sm font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-dark-3 disabled:text-hero-dim disabled:opacity-70"
+            className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-sm font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-bg-3 disabled:text-txt-3 disabled:opacity-70"
           >
             {isLast ? "Generate brief →" : "Next →"}
           </button>
         </div>
-
-        <p className="mt-10 text-center font-mono text-[9px] uppercase tracking-[0.14em] text-hero-dim">
-          Wizard in progress · steps land over upcoming PRs
-        </p>
       </main>
     </>
   );
@@ -396,11 +392,11 @@ function PlaceholderStep({
   stepLabel: string;
 }) {
   return (
-    <div className="border border-dark-3 bg-[rgba(34,30,24,0.6)] p-10 text-center backdrop-blur-sm">
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-hero-dim">
+    <div className="border border-bdr-2 bg-bg-2 p-10 text-center backdrop-blur-sm">
+      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-txt-3">
         {stepId} step · placeholder
       </p>
-      <p className="mx-auto mt-3 max-w-md text-[14px] leading-relaxed text-hero-cream-2">
+      <p className="mx-auto mt-3 max-w-md text-[14px] leading-relaxed text-txt-2">
         The real {stepLabel.toLowerCase()} controls (Pinterest grids, AI
         suggestions, color builder, etc.) plug in here in an upcoming PR.
       </p>

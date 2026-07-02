@@ -86,12 +86,12 @@ export default function ColorPaletteBuilder({ palette, onChange }: Props) {
         return (
           <div
             key={slot.role}
-            className="flex flex-col gap-4 border border-dark-3 bg-[rgba(34,30,24,0.45)] p-4 sm:flex-row sm:items-stretch"
+            className="flex flex-col gap-4 border border-bdr-2 bg-bg-2 p-4 sm:flex-row sm:items-stretch"
           >
             {/* Swatch + hex input */}
             <div className="flex flex-row gap-3 sm:flex-col sm:items-stretch">
               <label
-                className="relative block h-20 w-20 cursor-pointer border border-dark-3 transition hover:border-acc sm:h-24 sm:w-24"
+                className="relative block h-20 w-20 cursor-pointer border border-bdr-2 transition hover:border-acc sm:h-24 sm:w-24"
                 style={{ backgroundColor: entry.hex }}
                 aria-label={`${slot.label} color picker`}
               >
@@ -114,7 +114,7 @@ export default function ColorPaletteBuilder({ palette, onChange }: Props) {
                     updateSlot(i, { hex: v });
                   }
                 }}
-                className="w-24 border border-dark-3 bg-transparent px-2 py-1.5 text-center font-mono text-[11px] uppercase text-hero-cream focus:border-acc focus:outline-none sm:w-24"
+                className="w-24 border border-bdr-2 bg-transparent px-2 py-1.5 text-center font-mono text-[11px] uppercase text-txt focus:border-acc focus:outline-none sm:w-24"
               />
             </div>
 
@@ -125,11 +125,11 @@ export default function ColorPaletteBuilder({ palette, onChange }: Props) {
                   {slot.label}
                 </h3>
               </div>
-              <p className="text-[12px] text-hero-dim">{slot.blurb}</p>
+              <p className="text-[12px] text-txt-3">{slot.blurb}</p>
 
               <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div>
-                  <label className="font-mono text-[9px] uppercase tracking-[0.14em] text-hero-dim">
+                  <label className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
                     Color name
                   </label>
                   <input
@@ -137,11 +137,11 @@ export default function ColorPaletteBuilder({ palette, onChange }: Props) {
                     value={entry.name}
                     onChange={(e) => updateSlot(i, { name: e.target.value })}
                     placeholder="e.g. Travertine"
-                    className="mt-1 block w-full border-b border-dark-3 bg-transparent px-1 py-1.5 text-[13px] text-hero-cream placeholder:text-hero-dim focus:border-acc focus:outline-none"
+                    className="mt-1 block w-full border-b border-bdr-2 bg-transparent px-1 py-1.5 text-[13px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="font-mono text-[9px] uppercase tracking-[0.14em] text-hero-dim">
+                  <label className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
                     Where it lives
                   </label>
                   <input
@@ -151,7 +151,7 @@ export default function ColorPaletteBuilder({ palette, onChange }: Props) {
                       updateSlot(i, { material: e.target.value })
                     }
                     placeholder="e.g. Wall plaster"
-                    className="mt-1 block w-full border-b border-dark-3 bg-transparent px-1 py-1.5 text-[13px] text-hero-cream placeholder:text-hero-dim focus:border-acc focus:outline-none"
+                    className="mt-1 block w-full border-b border-bdr-2 bg-transparent px-1 py-1.5 text-[13px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
                   />
                 </div>
               </div>

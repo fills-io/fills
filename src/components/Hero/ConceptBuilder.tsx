@@ -25,6 +25,7 @@ import {
   SPEC_BY_IND,
   VIBE_BY_IND,
 } from "@/lib/concept-taxonomy";
+import { REFERENCE_IMAGES } from "@/data/reference-images";
 
 type Tab = "quick" | "upload" | "studio";
 
@@ -634,17 +635,18 @@ const STUDIO_STEPS: { label: string; note: string }[] = [
   { label: "Review", note: "review, then generate" },
 ];
 
-/** Per-step reference search (null = the Colors step, which shows a palette). */
-const STUDIO_QUERIES: (string | null)[] = [
-  "interior design moodboard", // 1 Space
-  "interior mood board vibe", // 2 Vibe
+/** Per-step reference category (null = the Colors step, which shows a palette).
+ *  Keys map into the curated REFERENCE_IMAGES set — no live scraping. */
+const STUDIO_CATEGORIES: (string | null)[] = [
+  "space", // 1 Space
+  "vibe", // 2 Vibe
   null, // 3 Colors → palette + eyedropper
-  "furniture interior design", // 4 Furniture
-  "interior lighting design", // 5 Lighting
-  "flooring interior wood", // 6 Flooring
-  "ceiling design interior", // 7 Ceiling
-  "interior materials texture", // 8 Materials
-  "interior moodboard editorial", // 9 Review
+  "furniture", // 4 Furniture
+  "lighting", // 5 Lighting
+  "flooring", // 6 Flooring
+  "ceiling", // 7 Ceiling
+  "materials", // 8 Materials
+  "review", // 9 Review
 ];
 
 /** Arrow cursor that glides to a CSS left/top percentage. */
@@ -804,36 +806,6 @@ function ColorPickDemo() {
 function StudioPanel() {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const [byQuery, setByQuery] = useState<Record<string, string[]>>({});
-
-  // Pull category-specific references once (only when the Full Studio tab is
-  // open) so each step browses its own kind of image — furniture on the
-  // Furniture step, lighting on Lighting, and so on. Cached server-side.
-  useEffect(() => {
-    let cancelled = false;
-    const uniq = [...new Set(STUDIO_QUERIES.filter((q): q is string => !!q))];
-    Promise.all(
-      uniq.map((q) =>
-        fetch(`/api/pinterest/search?q=${encodeURIComponent(q)}&limit=8`)
-          .then((r) => r.json())
-          .then(
-            (d: { pins?: { imageUrl?: string }[] }) =>
-              [
-                q,
-                Array.isArray(d.pins)
-                  ? d.pins.map((p) => p.imageUrl || "").filter(Boolean)
-                  : [],
-              ] as [string, string[]],
-          )
-          .catch(() => [q, []] as [string, string[]]),
-      ),
-    ).then((entries) => {
-      if (!cancelled) setByQuery(Object.fromEntries(entries));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Auto-walk through the real steps, showing a preview of each, so the panel
   // feels alive like the Quick madlib. Pauses while the user hovers a step.
@@ -846,16 +818,10 @@ function StudioPanel() {
     return () => clearInterval(t);
   }, [paused]);
 
-  // Guarantee every tile has a real photo: if a category returns fewer than
-  // six references, top it up from the pool of all fetched images. Once the
-  // fetch resolves there are no placeholder tiles.
-  const pool = Object.values(byQuery).flat();
-  const q = STUDIO_QUERIES[active];
-  const own = q ? byQuery[q] ?? [] : [];
-  const stepImages =
-    own.length >= 6
-      ? own.slice(0, 6)
-      : [...new Set([...own, ...pool])].slice(0, 6);
+  // Curated, committed reference set — no live scraping, so it loads instantly
+  // and never incurs a per-session scraper charge.
+  const cat = STUDIO_CATEGORIES[active];
+  const stepImages = (cat ? REFERENCE_IMAGES[cat] ?? [] : []).slice(0, 6);
 
   return (
     <div

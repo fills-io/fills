@@ -189,18 +189,18 @@ export default function PinterestGrid({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="warm minimalism…"
-            className="flex-1 border border-dark-3 bg-[rgba(34,30,24,0.6)] px-3 py-2.5 text-[14px] text-hero-cream placeholder:text-hero-dim focus:border-acc focus:outline-none"
+            className="flex-1 border border-bdr-2 bg-bg-2 px-3 py-2.5 text-[14px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
           />
           <button
             type="submit"
             disabled={status === "loading"}
-            className="border border-dark-3 px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-hero-cream transition hover:border-acc hover:text-acc disabled:opacity-50"
+            className="border border-bdr-2 px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-txt transition hover:border-acc hover:text-acc disabled:opacity-50"
           >
             {status === "loading" ? "Searching…" : "Search"}
           </button>
         </div>
         {helperText && (
-          <p className="text-[12px] text-hero-dim">{helperText}</p>
+          <p className="text-[12px] text-txt-3">{helperText}</p>
         )}
       </form>
 
@@ -218,7 +218,7 @@ Try also
                 setQuery(s);
                 setSubmittedQuery(s);
               }}
-              className="border border-dark-3 px-3 py-1 text-[11px] text-hero-cream-2 transition hover:border-acc hover:text-acc"
+              className="border border-bdr-2 px-3 py-1 text-[11px] text-txt-2 transition hover:border-acc hover:text-acc"
             >
               {s}
             </button>
@@ -226,18 +226,18 @@ Try also
         </div>
       )}
       {suggestionContext && suggestionsStatus === "loading" && (
-        <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-hero-dim">
+        <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-txt-3">
 Finding related searches…
         </div>
       )}
 
       {/* Selection counter */}
       <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.14em]">
-        <span className={atMax ? "text-acc" : "text-hero-dim"}>
+        <span className={atMax ? "text-acc" : "text-txt-3"}>
           {selectedPins.length} of {maxSelections} selected
         </span>
         {atMax && (
-          <span className="text-hero-dim">
+          <span className="text-txt-3">
             Tap a selected pin to swap it
           </span>
         )}
@@ -265,7 +265,7 @@ Finding related searches…
           {Array.from({ length: 8 }).map((_, i) => (
             <div
               key={i}
-              className="aspect-[3/4] animate-pulse border border-dark-3 bg-dark-2"
+              className="aspect-[3/4] animate-pulse border border-bdr-2 bg-bg-2"
             />
           ))}
         </div>
@@ -273,7 +273,7 @@ Finding related searches…
 
       {/* Empty state */}
       {status === "idle" && pins.length === 0 && submittedQuery && (
-        <p className="border border-dark-3 bg-[rgba(34,30,24,0.4)] p-6 text-center text-[13px] text-hero-dim">
+        <p className="border border-bdr-2 bg-bg-2 p-6 text-center text-[13px] text-txt-3">
           No pins came back for &ldquo;{submittedQuery}&rdquo;. Try a different
           phrase. Short descriptive nouns work best.
         </p>
@@ -292,8 +292,8 @@ Finding related searches…
                 disabled={cannotSelect}
                 className={`group relative aspect-[3/4] overflow-hidden border transition disabled:cursor-not-allowed disabled:opacity-40 ${
                   isSelected
-                    ? "border-acc ring-2 ring-acc ring-offset-2 ring-offset-dark"
-                    : "border-dark-3 hover:border-hero-cream-2"
+                    ? "border-acc ring-2 ring-acc ring-offset-2 ring-offset-bg"
+                    : "border-bdr-2 hover:border-txt-2"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -306,7 +306,7 @@ Finding related searches…
                 {/* Caption — only visible on hover */}
                 {pin.title && (
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 transition group-hover:opacity-100">
-                    <p className="line-clamp-2 text-[11px] text-hero-cream">
+                    <p className="line-clamp-2 text-[11px] text-txt">
                       {pin.title}
                     </p>
                   </div>

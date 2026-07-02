@@ -80,7 +80,7 @@ export default function WizardProgress({
   const currentPhase = PHASES.findIndex((p) => p.steps.includes(current));
 
   return (
-    <div className="border-b border-dark-3 bg-[rgba(34,30,24,0.4)] px-5 py-4 backdrop-blur-sm sm:px-8">
+    <div className="border-b border-bdr-2 bg-bg-2 px-5 py-4 backdrop-blur-sm sm:px-8">
       <div className="mx-auto flex max-w-2xl items-start">
         {PHASES.map((p, i) => {
           const state =
@@ -97,7 +97,7 @@ export default function WizardProgress({
                 <span
                   aria-hidden
                   className={`absolute right-1/2 top-[19px] z-0 h-[2px] w-full transition-colors duration-300 ${
-                    reached ? "bg-acc" : "bg-dark-3"
+                    reached ? "bg-acc" : "bg-bg-3"
                   }`}
                 />
               )}
@@ -111,8 +111,8 @@ export default function WizardProgress({
                   state === "done"
                     ? "border-acc bg-acc text-white"
                     : state === "current"
-                      ? "border-acc bg-dark text-acc ring-2 ring-acc/30"
-                      : "border-dark-3 bg-dark text-hero-dim"
+                      ? "border-acc bg-bg text-acc ring-2 ring-acc/30"
+                      : "border-bdr-2 bg-bg text-txt-3"
                 } ${
                   clickable
                     ? "cursor-pointer hover:scale-110 hover:border-acc-h hover:bg-acc-h hover:text-white active:scale-95"
@@ -126,8 +126,8 @@ export default function WizardProgress({
                   state === "current"
                     ? "text-acc"
                     : state === "done"
-                      ? "text-hero-cream-2"
-                      : "text-hero-dim"
+                      ? "text-txt-2"
+                      : "text-txt-3"
                 }`}
               >
                 {p.label}
@@ -138,7 +138,7 @@ export default function WizardProgress({
       </div>
 
       {/* Precise step counter under the phases */}
-      <div className="mx-auto mt-3 max-w-2xl text-center font-mono text-[9px] uppercase tracking-[0.16em] text-hero-dim">
+      <div className="mx-auto mt-3 max-w-2xl text-center font-mono text-[9px] uppercase tracking-[0.16em] text-txt-3">
         Step {currentIdx} of {WIZARD_STEPS.length} · {WIZARD_STEPS[currentIdx - 1]?.label}
       </div>
     </div>

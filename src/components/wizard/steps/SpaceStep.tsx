@@ -46,7 +46,7 @@ export default function SpaceStep({ state, setState }: Props) {
         <h2 className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           01 · Industry
         </h2>
-        <p className="text-[14px] text-hero-cream-2">
+        <p className="text-[14px] text-txt-2">
           What kind of project is this?
         </p>
 
@@ -100,7 +100,7 @@ export default function SpaceStep({ state, setState }: Props) {
           <h2 className="mb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
             02 · Specific space
           </h2>
-          <p className="text-[14px] text-hero-cream-2">
+          <p className="text-[14px] text-txt-2">
             What exactly are we designing inside that {selectedIndustry.label.toLowerCase()}?
           </p>
 
@@ -123,7 +123,7 @@ export default function SpaceStep({ state, setState }: Props) {
           <button
             type="button"
             onClick={() => setShowDetails((v) => !v)}
-            className="font-mono text-[10px] uppercase tracking-[0.14em] text-hero-dim transition hover:text-acc"
+            className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
           >
             {showDetails ? "− Hide details" : "+ Add details (optional)"}
           </button>
@@ -149,11 +149,11 @@ export default function SpaceStep({ state, setState }: Props) {
                         className={`flex flex-col items-start border p-3 text-left transition ${
                           isSelected
                             ? "border-acc bg-[rgba(200,81,42,0.08)] text-acc"
-                            : "border-dark-3 text-hero-cream hover:border-hero-cream-2"
+                            : "border-bdr-2 text-txt hover:border-txt-2"
                         }`}
                       >
                         <span className="text-[14px] font-medium">{s.label}</span>
-                        <span className="mt-0.5 text-[11px] text-hero-dim">
+                        <span className="mt-0.5 text-[11px] text-txt-3">
                           {s.hint}
                         </span>
                       </button>
@@ -178,9 +178,9 @@ export default function SpaceStep({ state, setState }: Props) {
                   }
                   placeholder="e.g. North-facing, double-height ceiling, opens onto a small terrace. Client wants warm but not heavy."
                   rows={4}
-                  className="mt-3 block w-full resize-none border border-dark-3 bg-[rgba(34,30,24,0.6)] p-3 text-[14px] text-hero-cream placeholder:text-hero-dim focus:border-acc focus:outline-none"
+                  className="mt-3 block w-full resize-none border border-bdr-2 bg-bg-2 p-3 text-[14px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
                 />
-                <p className="mt-2 text-[11px] text-hero-dim">
+                <p className="mt-2 text-[11px] text-txt-3">
                   Anything the AI should know: orientation, materials already
                   in place, what's not working, who uses it.
                 </p>
@@ -210,17 +210,17 @@ function SpaceCard({
       className={`flex flex-col items-start border p-4 text-left transition ${
         isSelected
           ? "border-acc bg-[rgba(200,81,42,0.08)]"
-          : "border-dark-3 hover:border-hero-cream-2"
+          : "border-bdr-2 hover:border-txt-2"
       }`}
     >
       <span
         className={`text-[15px] font-medium ${
-          isSelected ? "text-acc" : "text-hero-cream"
+          isSelected ? "text-acc" : "text-txt"
         }`}
       >
         {space.label}
       </span>
-      <span className="mt-1 text-[12px] text-hero-dim">{space.hint}</span>
+      <span className="mt-1 text-[12px] text-txt-3">{space.hint}</span>
     </button>
   );
 }
