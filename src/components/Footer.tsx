@@ -1,3 +1,5 @@
+import FillsLogo from "./FillsLogo";
+
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Platform",
@@ -36,18 +38,8 @@ export default function Footer() {
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
         {/* Brand column */}
         <div>
-          <div className="flex items-center gap-3">
-            <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
-              <rect x="2" y="2" width="11" height="11" rx="1" fill="#C8512A" />
-              <rect x="15" y="2" width="11" height="5" rx="1" fill="currentColor" className="text-txt" />
-              <rect x="15" y="9" width="11" height="4" rx="1" fill="currentColor" className="text-txt-3" />
-              <rect x="2" y="15" width="5" height="11" rx="1" fill="currentColor" className="text-txt-3" />
-              <rect x="9" y="15" width="4" height="11" rx="1" fill="#C8512A" opacity="0.4" />
-              <rect x="15" y="15" width="11" height="11" rx="1" fill="currentColor" className="text-txt" />
-            </svg>
-            <span className="font-medium tracking-tight text-txt">
-              Fills<b className="font-medium text-acc">.io</b>
-            </span>
+          <div className="flex items-center">
+            <FillsLogo size={24} />
           </div>
           <p className="mt-5 max-w-xs text-[13px] leading-[1.7] text-txt-2">
             Where interior design and architecture meet a faster way to brief. Build your concept brief in minutes.

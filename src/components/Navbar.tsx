@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 import DevicePreview from "./DevicePreview";
+import FillsLogo from "./FillsLogo";
 
 const navLinks = [
   { label: "Platform", href: "/#how" },
@@ -22,19 +23,14 @@ export default function Navbar() {
       style={{ background: "var(--nav-bg)" }}
     >
       <div className="flex h-[60px] items-center justify-between pl-4 sm:pl-8">
-        {/* Logo — v40 moodboard swatch-stack mark */}
-        <Link href="/" className="flex items-center gap-3" onClick={close}>
-          <svg width="24" height="24" viewBox="0 0 28 28" fill="none" aria-hidden>
-            <rect x="2" y="2" width="11" height="11" rx="1" fill="#C8512A" />
-            <rect x="15" y="2" width="11" height="5" rx="1" className="fill-txt" />
-            <rect x="15" y="9" width="11" height="4" rx="1" className="fill-txt-3" />
-            <rect x="2" y="15" width="5" height="11" rx="1" className="fill-txt-3" />
-            <rect x="9" y="15" width="4" height="11" rx="1" fill="#C8512A" opacity="0.4" />
-            <rect x="15" y="15" width="11" height="11" rx="1" className="fill-txt" />
-          </svg>
-          <span className="text-sm font-medium tracking-tight text-txt">
-            Fills<b className="font-medium text-acc">.io</b>
-          </span>
+        {/* Brand wordmark */}
+        <Link
+          href="/"
+          className="flex items-center"
+          onClick={close}
+          aria-label="Fills.io home"
+        >
+          <FillsLogo size={22} />
         </Link>
 
         {/* Desktop nav links — hidden on small screens */}

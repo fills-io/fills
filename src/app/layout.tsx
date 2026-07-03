@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Playfair_Display, DM_Sans, DM_Mono } from "next/font/google";
+import { Playfair_Display, DM_Sans, DM_Mono, Archivo } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
@@ -22,6 +22,14 @@ const dmMono = DM_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
   weight: ["400", "500"],
+  display: "swap",
+});
+
+// Archivo powers the brand wordmark (fi[caret]s.io): 800 letters, 500 brackets.
+const archivo = Archivo({
+  variable: "--font-archivo",
+  subsets: ["latin"],
+  weight: ["500", "800"],
   display: "swap",
 });
 
@@ -101,7 +109,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${playfair.variable} ${dmSans.variable} ${dmMono.variable}`}
+      className={`${playfair.variable} ${dmSans.variable} ${dmMono.variable} ${archivo.variable}`}
       suppressHydrationWarning
     >
       <head>
