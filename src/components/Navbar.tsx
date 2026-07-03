@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import ThemeToggle from "./ThemeToggle";
+import DevicePreview from "./DevicePreview";
 
 const navLinks = [
   { label: "Platform", href: "/#how" },
@@ -52,6 +53,7 @@ export default function Navbar() {
         {/* Right cluster: theme toggle + auth + mobile menu button */}
         <div className="flex items-center border-l border-bdr">
           <ThemeToggle />
+          <DevicePreview />
           <Link
             href="/talk-to-a-designer"
             className="hidden h-[60px] items-center whitespace-nowrap border-l border-bdr px-5 text-xs text-txt-2 transition hover:bg-bg-2 hover:text-txt lg:flex"
