@@ -1,36 +1,39 @@
-// Build a curated, committed reference-image set per category by hitting the
-// production Pinterest API ONCE. The app reads the generated static file
-// (src/data/reference-images.ts) instead of scraping live every session — which
-// kills load lag and per-session Apify charges. Regenerate to refresh the set.
+// Build the curated, committed reference-image sets by hitting the production
+// Pinterest API ONCE. The app reads the generated static file
+// (src/data/reference-images.ts) instead of scraping live every session — no
+// load lag, no per-session Apify cost. Regenerate to refresh.
 //
-// Each pin keeps its id/title/dominantColor (for the palette step) and a
-// `style` tag (the query family it came from) so the Vibe step can adapt:
-// once the user picks a pin, similar-style pins get surfaced first.
+// Produces two exports:
+//   CURATED_PINS  — per-step sets (space, furniture, lighting, ...) + a generic
+//                   vibe fallback. Each pin keeps id/title/dominantColor + a
+//                   `style` tag (its query family) for the adaptive picker.
+//   CURATED_VIBE  — per-INDUSTRY vibe sets, so the Vibe step reflects the
+//                   project category (restaurant vibes for F&B, office vibes for
+//                   workplace, etc.), each still tagged by style mood.
 //
 // Run: node scripts/build-refs.mjs
 import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
 const BASE = "https://www.fills.io/api/pinterest/search";
+const LIMIT = 12;
+const CONCURRENCY = 8;
 
-// Each category pulls from several distinct queries so the set has genuine
-// variety (different styles/moods), not near-duplicates. The key of each
-// entry becomes the pin's `style` tag.
+// Per-step sets. Each key's queries give genuine variety (distinct moods), not
+// near-duplicates. The object key becomes the pin's `style` tag.
 const CATEGORIES = {
   space: {
     moodboard: "interior design moodboard",
     "living room": "modern living room interior",
     bedroom: "bedroom interior design",
   },
+  // Generic vibe — fallback for "Other" / unknown industry.
   vibe: {
     "warm minimalism": "warm minimalist interior",
     japandi: "japandi interior design",
-    "mid-century modern": "mid century modern living room",
-    "industrial loft": "industrial loft interior",
+    "mid-century": "mid century modern interior",
+    industrial: "industrial loft interior",
     scandinavian: "scandinavian interior design",
-    coastal: "coastal interior design",
-    "art deco": "art deco interior",
-    "rustic farmhouse": "rustic farmhouse interior",
   },
   furniture: {
     statement: "furniture interior design",
@@ -63,13 +66,35 @@ const CATEGORIES = {
   },
 };
 
-// Vibe powers the adaptive picker, so it gets a deeper pool.
-const CAP = { vibe: 64 };
-const DEFAULT_CAP = 24;
+// Per-industry vibe: base noun that anchors each query to the category.
+const VIBE_NOUN = {
+  residential: "living room interior",
+  hospitality: "hotel lobby interior",
+  "food-beverage": "restaurant interior",
+  retail: "boutique store interior",
+  workplace: "modern office interior",
+  healthcare: "clinic interior",
+  education: "modern classroom interior",
+  cultural: "art gallery interior",
+  "fitness-wellness": "luxury spa interior",
+  "beauty-salon": "beauty salon interior",
+  "real-estate": "luxury show apartment interior",
+};
+
+// Style moods layered over each industry noun (become the vibe style chips).
+const VIBE_STYLES = {
+  "warm minimalism": "warm minimalist",
+  japandi: "japandi",
+  "mid-century": "mid century modern",
+  industrial: "industrial",
+  luxe: "luxury elegant",
+};
+
+const CAP = { vibeIndustry: 45, category: 24 };
 
 async function fetchQuery(style, q) {
   try {
-    const r = await fetch(`${BASE}?q=${encodeURIComponent(q)}&limit=12`);
+    const r = await fetch(`${BASE}?q=${encodeURIComponent(q)}&limit=${LIMIT}`);
     const d = await r.json();
     if (!Array.isArray(d.pins)) return [];
     return d.pins
@@ -86,53 +111,105 @@ async function fetchQuery(style, q) {
   }
 }
 
-const out = {};
-await Promise.all(
-  Object.entries(CATEGORIES).map(async ([cat, styles]) => {
-    const lists = await Promise.all(
-      Object.entries(styles).map(([style, q]) => fetchQuery(style, q)),
-    );
-    // Round-robin interleave across styles so the set alternates moods.
-    const seen = new Set();
-    const merged = [];
-    let i = 0;
-    let added = true;
-    while (added) {
-      added = false;
-      for (const list of lists) {
-        if (i < list.length) {
-          added = true;
-          const p = list[i];
-          if (p.imageUrl && !seen.has(p.imageUrl)) {
-            seen.add(p.imageUrl);
-            merged.push(p);
-          }
+/** Run tasks with a concurrency cap so we don't hammer the scraper at once. */
+async function pool(limit, tasks) {
+  const results = new Array(tasks.length);
+  let i = 0;
+  async function worker() {
+    while (i < tasks.length) {
+      const idx = i++;
+      results[idx] = await tasks[idx]();
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
+  return results;
+}
+
+/** Round-robin interleave across style lists, dedup by URL, cap the total. */
+function interleave(lists, cap) {
+  const seen = new Set();
+  const out = [];
+  let i = 0;
+  let added = true;
+  while (added && out.length < cap) {
+    added = false;
+    for (const list of lists) {
+      if (i < list.length) {
+        added = true;
+        const p = list[i];
+        if (p.imageUrl && !seen.has(p.imageUrl)) {
+          seen.add(p.imageUrl);
+          out.push(p);
         }
       }
-      i++;
     }
-    out[cat] = merged.slice(0, CAP[cat] ?? DEFAULT_CAP);
-  }),
+    i++;
+  }
+  return out.slice(0, cap);
+}
+
+// Flatten every query into a single task list, then run with a concurrency cap.
+const jobs = [];
+for (const [cat, styles] of Object.entries(CATEGORIES)) {
+  for (const [style, q] of Object.entries(styles)) {
+    jobs.push({ kind: "category", cat, style, q });
+  }
+}
+for (const [ind, noun] of Object.entries(VIBE_NOUN)) {
+  for (const [style, frag] of Object.entries(VIBE_STYLES)) {
+    jobs.push({ kind: "vibe", ind, style, q: `${frag} ${noun}` });
+  }
+}
+
+console.log(`fetching ${jobs.length} queries (concurrency ${CONCURRENCY})…`);
+const fetched = await pool(
+  CONCURRENCY,
+  jobs.map((j) => () => fetchQuery(j.style, j.q)),
 );
+
+// Regroup results.
+const catLists = {};
+const vibeLists = {};
+jobs.forEach((j, idx) => {
+  const pins = fetched[idx] ?? [];
+  if (j.kind === "category") {
+    (catLists[j.cat] ??= []).push(pins);
+  } else {
+    (vibeLists[j.ind] ??= []).push(pins);
+  }
+});
+
+const CURATED_PINS = {};
+for (const [cat, lists] of Object.entries(catLists)) {
+  CURATED_PINS[cat] = interleave(lists, CAP.category);
+}
+const CURATED_VIBE = {};
+for (const [ind, lists] of Object.entries(vibeLists)) {
+  CURATED_VIBE[ind] = interleave(lists, CAP.vibeIndustry);
+}
 
 const outPath = process.argv[2] || "src/data/reference-images.ts";
 mkdirSync(dirname(outPath), { recursive: true });
 
-const file = `// AUTO-GENERATED — curated reference images per category.
-// Built once from the Pinterest scraper (scripts/build-refs.mjs) so the app never
-// scrapes live per session: no load lag, no per-session Apify cost. The same set
-// is reused for every user/session. Regenerate to refresh.
+const file = `// AUTO-GENERATED — curated reference images. Built once from the Pinterest
+// scraper (scripts/build-refs.mjs) so the app never scrapes live per session:
+// no load lag, no per-session Apify cost. The same sets are reused for every
+// user/session. Regenerate to refresh.
 
 export type CuratedPin = {
   id: string;
   title: string;
   imageUrl: string;
   dominantColor: string;
-  /** The style family this pin came from — drives the adaptive vibe picker. */
+  /** The style/mood family this pin came from — drives the adaptive picker. */
   style: string;
 };
 
-export const CURATED_PINS: Record<string, CuratedPin[]> = ${JSON.stringify(out, null, 2)};
+/** Per-step reference sets (space, furniture, lighting, ...) + generic vibe. */
+export const CURATED_PINS: Record<string, CuratedPin[]> = ${JSON.stringify(CURATED_PINS, null, 2)};
+
+/** Per-industry vibe sets so the Vibe step reflects the project category. */
+export const CURATED_VIBE: Record<string, CuratedPin[]> = ${JSON.stringify(CURATED_VIBE, null, 2)};
 
 /** Flat per-category URL lists (used by the homepage Full Studio demo). */
 export const REFERENCE_IMAGES: Record<string, string[]> = Object.fromEntries(
@@ -146,8 +223,8 @@ writeFileSync(outPath, file);
 console.log(
   "wrote",
   outPath,
-  "->",
-  Object.entries(out)
-    .map(([k, v]) => `${k}:${v.length}`)
-    .join(" "),
+  "\n  categories:",
+  Object.entries(CURATED_PINS).map(([k, v]) => `${k}:${v.length}`).join(" "),
+  "\n  vibe/industry:",
+  Object.entries(CURATED_VIBE).map(([k, v]) => `${k}:${v.length}`).join(" "),
 );

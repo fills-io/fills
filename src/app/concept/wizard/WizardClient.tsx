@@ -321,8 +321,36 @@ export default function WizardClient() {
           {step.description}
         </p>
 
+        {/* Step navigation — placed above the content so you can go Back / Next
+            without scrolling past a long grid of images. */}
+        <div className="mt-8 flex items-center justify-between gap-4 border-b border-bdr-2 pb-6">
+          {isFirst ? (
+            <Link
+              href="/"
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
+            >
+              ← Home
+            </Link>
+          ) : (
+            <button
+              onClick={goBack}
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
+            >
+              ← Back
+            </button>
+          )}
+
+          <button
+            onClick={isLast ? generateBrief : goNext}
+            disabled={!canAdvance() || generationStatus === "generating"}
+            className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-sm font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-bg-3 disabled:text-txt-3 disabled:opacity-70"
+          >
+            {isLast ? "Generate brief →" : "Next →"}
+          </button>
+        </div>
+
         {/* Step body */}
-        <div className="mt-10">
+        <div className="mt-8">
           {current === "space" && (
             <SpaceStep state={wizardState} setState={patchState} />
           )}
@@ -352,32 +380,6 @@ export default function WizardClient() {
           )}
         </div>
 
-        {/* Step navigation */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-bdr-2 pt-8 sm:flex-row">
-          {isFirst ? (
-            <Link
-              href="/"
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
-            >
-              ← Home
-            </Link>
-          ) : (
-            <button
-              onClick={goBack}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
-            >
-              ← Back
-            </button>
-          )}
-
-          <button
-            onClick={isLast ? generateBrief : goNext}
-            disabled={!canAdvance() || generationStatus === "generating"}
-            className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-sm font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-bg-3 disabled:text-txt-3 disabled:opacity-70"
-          >
-            {isLast ? "Generate brief →" : "Next →"}
-          </button>
-        </div>
       </main>
     </>
   );

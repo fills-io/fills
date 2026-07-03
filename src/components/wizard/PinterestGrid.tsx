@@ -46,6 +46,9 @@ type Props = {
   /** Curated category key (vibe, lighting, flooring, ceiling, materials,
    *  furniture). When it resolves to a non-empty set, we use curated mode. */
   categoryKey?: string;
+  /** Explicit curated set — wins over categoryKey (used for the per-industry
+   *  vibe set so the Vibe step reflects the project category). */
+  curatedPins?: CuratedPin[];
   /** Vibe-style adaptive reordering + style chips. */
   adaptive?: boolean;
   /** Offsets the curated slice so repeated grids (furniture sub-sections)
@@ -75,7 +78,9 @@ function thumb(url: string): string {
 }
 
 export default function PinterestGrid(props: Props) {
-  const curated = props.categoryKey ? CURATED_PINS[props.categoryKey] : undefined;
+  const curated =
+    props.curatedPins ??
+    (props.categoryKey ? CURATED_PINS[props.categoryKey] : undefined);
   if (curated && curated.length > 0) {
     return <CuratedPicker {...props} curated={curated} />;
   }

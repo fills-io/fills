@@ -14,6 +14,7 @@
 import { useSearchParams } from "next/navigation";
 import PinterestGrid from "@/components/wizard/PinterestGrid";
 import { getIndustry } from "@/lib/space-taxonomy";
+import { CURATED_PINS, CURATED_VIBE } from "@/data/reference-images";
 import type { WizardState } from "@/lib/wizard-state";
 
 type Props = {
@@ -43,10 +44,16 @@ export default function VibeStep({ state, setState }: Props) {
   const industry = state.industryId ? getIndustry(state.industryId) : null;
   const spaceLabel = industry?.spaces.find((s) => s.id === state.spaceId)?.label;
 
+  // Vibe references reflect the project category: a per-industry curated set
+  // (restaurant vibes for F&B, office vibes for workplace, …), falling back to
+  // the generic set for "Other" / unknown.
+  const vibeSet =
+    (state.industryId && CURATED_VIBE[state.industryId]) || CURATED_PINS.vibe;
+
   return (
     <PinterestGrid
       initialQuery={seededQuery}
-      categoryKey="vibe"
+      curatedPins={vibeSet}
       adaptive
       maxSelections={MAX_VIBE_PINS}
       minSelections={MIN_VIBE_PINS}
