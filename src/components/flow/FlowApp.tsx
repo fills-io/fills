@@ -16,6 +16,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
+import FillsLogo from "@/components/FillsLogo";
 import ProjectStage from "./ProjectStage";
 import VibeStage from "./VibeStage";
 import ColorStage from "./ColorStage";
@@ -105,18 +106,8 @@ export default function FlowApp() {
       {/* Header */}
       <header className="sticky top-0 z-50 flex h-[60px] items-center justify-between border-b border-bdr bg-[var(--nav-bg)] px-6 backdrop-blur-md">
         <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-3">
-            <svg width="22" height="22" viewBox="0 0 28 28" fill="none" aria-hidden>
-              <rect x="2" y="2" width="11" height="11" rx="1" fill="#C8512A" />
-              <rect x="15" y="2" width="11" height="5" rx="1" className="fill-txt" />
-              <rect x="15" y="9" width="11" height="4" rx="1" className="fill-txt-3" />
-              <rect x="2" y="15" width="5" height="11" rx="1" className="fill-txt-3" />
-              <rect x="9" y="15" width="4" height="11" rx="1" fill="#C8512A" opacity="0.4" />
-              <rect x="15" y="15" width="11" height="11" rx="1" className="fill-txt" />
-            </svg>
-            <span className="text-sm font-medium tracking-tight text-txt">
-              Fills<b className="font-medium text-acc">.io</b>
-            </span>
+          <Link href="/" className="flex items-center" aria-label="Fills.io home">
+            <FillsLogo size={22} />
           </Link>
           <span className="hidden border border-acc px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.12em] text-acc sm:inline-block">
             {PHASE_LABEL[phase]}

@@ -46,7 +46,7 @@ export default function Faq() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="border-b border-bdr bg-bg-2 px-8 py-[104px]">
+    <section id="faq" className="border-b border-bdr bg-bg-2 px-6 py-[104px] sm:px-8">
       <SectionHeader
         eyebrow="07 · Questions"
         headline="Things people ask."
@@ -77,7 +77,7 @@ export default function Faq() {
                 </span>
               </button>
               {isOpen && (
-                <div className="pb-6 pl-[80px] pr-10">
+                <div className="pb-6 pl-4 pr-4 sm:pl-[80px] sm:pr-10">
                   <p className="text-[13px] leading-[1.85] text-txt-2">
                     {item.a}
                   </p>

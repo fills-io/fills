@@ -30,6 +30,7 @@ export default function FlooringStep({ state, setState }: Props) {
       industryLabel={industry?.label}
       suggestionStep="flooring"
       category="flooring"
+      categoryKey="flooring"
       rememberedQuery={state.flooringQuery}
       selectedPins={state.flooringPins ?? []}
       maxSelections={MAX_PINS}

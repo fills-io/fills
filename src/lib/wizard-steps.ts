@@ -41,7 +41,7 @@ export const WIZARD_STEPS: readonly WizardStep[] = [
     id: "vibe",
     label: "Vibe",
     description:
-      "Pick three images that capture the feeling you want the space to have.",
+      "Pick 3 to 5 images that capture the feeling you want the space to have.",
   },
   {
     id: "colors",

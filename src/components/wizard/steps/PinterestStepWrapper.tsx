@@ -32,6 +32,8 @@ type Props = {
   onChange: (next: { pins: PinterestPin[]; query: string }) => void;
   /** One-line guidance shown under the search bar. */
   helperText: string;
+  /** Curated category key — the fixed reference set this step draws from. */
+  categoryKey?: string;
   /** Optional URL search-param key to also consult for the seed query. */
   urlSeedKey?: string;
   /**
@@ -54,6 +56,7 @@ export default function PinterestStepWrapper({
   maxSelections,
   onChange,
   helperText,
+  categoryKey,
   urlSeedKey,
   suggestionStep,
   industryLabel,
@@ -72,6 +75,7 @@ export default function PinterestStepWrapper({
   return (
     <PinterestGrid
       initialQuery={seededQuery}
+      categoryKey={categoryKey}
       maxSelections={maxSelections}
       selectedPins={selectedPins}
       onSelectionChange={(pins) =>

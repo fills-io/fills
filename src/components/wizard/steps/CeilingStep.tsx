@@ -30,6 +30,7 @@ export default function CeilingStep({ state, setState }: Props) {
       industryLabel={industry?.label}
       suggestionStep="ceiling"
       category="ceiling treatment"
+      categoryKey="ceiling"
       rememberedQuery={state.ceilingQuery}
       selectedPins={state.ceilingPins ?? []}
       maxSelections={MAX_PINS}

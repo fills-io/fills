@@ -29,7 +29,7 @@ export default function ConceptPageShell() {
   const mode: Mode = isMode(rawMode) ? rawMode : "quick";
 
   return (
-    <main className="mx-auto max-w-4xl px-8 py-20 sm:py-28">
+    <main className="mx-auto max-w-4xl px-6 py-20 sm:px-8 sm:py-28">
       {/* Header — mode chip + headline */}
       <div className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
         <span className="inline-block h-px w-6 bg-acc" />

@@ -98,11 +98,11 @@ export default function FurnitureStep({ state, setState }: Props) {
 
   if (status === "loading") {
     return (
-      <div className="border border-dark-3 bg-[rgba(34,30,24,0.4)] p-10 text-center">
+      <div className="border border-bdr-2 bg-bg-2 p-10 text-center">
         <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           Categorizing your {spaceLabel.toLowerCase()}…
         </div>
-        <p className="mx-auto mt-3 max-w-md text-[13px] text-hero-cream-2">
+        <p className="mx-auto mt-3 max-w-md text-[13px] text-txt-2">
           The AI is picking the 3 furniture categories that most define this
           room. One moment.
         </p>
@@ -116,7 +116,7 @@ export default function FurnitureStep({ state, setState }: Props) {
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-rose-300">
           Couldn&apos;t categorize furniture
         </p>
-        <p className="mt-2 text-[13px] text-hero-cream-2">{error}</p>
+        <p className="mt-2 text-[13px] text-txt-2">{error}</p>
         <button
           onClick={() => fetchSubSections()}
           className="mt-3 text-[12px] underline underline-offset-2 text-rose-200 hover:text-rose-100"
@@ -132,13 +132,13 @@ export default function FurnitureStep({ state, setState }: Props) {
   return (
     <div className="space-y-12">
       {/* Re-categorize action */}
-      <div className="flex items-center justify-between gap-4 border-b border-dark-3 pb-4">
-        <p className="text-[13px] text-hero-cream-2">
+      <div className="flex items-center justify-between gap-4 border-b border-bdr-2 pb-4">
+        <p className="text-[13px] text-txt-2">
           Pick up to {MAX_PINS_PER_SUBSECTION} pins per category.
         </p>
         <button
           onClick={() => fetchSubSections()}
-          className="font-mono text-[10px] uppercase tracking-[0.14em] text-hero-dim transition hover:text-acc"
+          className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
         >
           ↻ Re-categorize
         </button>
@@ -148,15 +148,17 @@ export default function FurnitureStep({ state, setState }: Props) {
       {existing.map((subSection, i) => (
         <section key={subSection.name + i}>
           <div className="mb-4 flex items-baseline justify-between">
-            <h3 className="font-serif text-[22px] text-hero-cream">
+            <h3 className="font-serif text-[22px] text-txt">
               {subSection.name}
             </h3>
-            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-hero-dim">
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
               {subSection.pins.length} of {MAX_PINS_PER_SUBSECTION} picked
             </span>
           </div>
           <PinterestGrid
             initialQuery={subSection.query}
+            categoryKey="furniture"
+            sliceSeed={i + 1}
             maxSelections={MAX_PINS_PER_SUBSECTION}
             selectedPins={subSection.pins}
             onSelectionChange={(pins) => updateSubSectionPins(i, pins)}

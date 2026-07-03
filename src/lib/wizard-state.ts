@@ -13,7 +13,12 @@ import type { ColorEntry, FurnitureSubSection, PinterestPin } from "@/db/schema"
 export type WizardState = {
   // ── Step 1: Space ────────────────────────────────────────────────────────
   industryId?: IndustryId;
+  /** Primary space (kept in sync with spaceIds[0] for back-compat). */
   spaceId?: string;
+  /** Up to 3 specific spaces the project covers (e.g. Bedroom + Living room). */
+  spaceIds?: string[];
+  /** Free-text project type when the industry is "Other". */
+  customIndustry?: string;
   /** Free-text "describe the space" notes. */
   spaceDescription?: string;
   /** Rough size bucket. */

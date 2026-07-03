@@ -1,36 +1,26 @@
 "use client";
 
 /**
- * Pinterest-driven pin picker — the reusable workhorse for every
- * Pinterest-backed wizard step (vibe, lighting, flooring, ceiling, materials).
+ * Reference-image picker for every image-backed wizard step (vibe, lighting,
+ * flooring, ceiling, materials, furniture).
  *
- * Lifecycle:
- *   1. The parent passes an `initialQuery` (often seeded from elsewhere — the
- *      homepage's vibe input, an AI suggestion, etc.) and how many pins the
- *      user is allowed to pick (`maxSelections`).
- *   2. We fetch /api/pinterest/search?q=... on mount and whenever the search
- *      input is submitted again. Results are cached server-side for 24h, so
- *      typing the same query twice is free.
- *   3. Selection state is owned by the parent (so wizard state survives
- *      step navigation). We only echo selection changes via `onSelectionChange`.
+ * Two modes:
+ *   1. CURATED (default for all wizard steps) — reads a fixed, pre-approved
+ *      image set per category from `src/data/reference-images.ts`. No live
+ *      scraping, so it loads instantly and never incurs per-session cost. The
+ *      same set is reused for every user/session. Vibe uses `adaptive` so that
+ *      after the first pick, similar-style references float to the top, and
+ *      style chips let the user steer the mood.
+ *   2. LIVE (fallback only) — the original Apify-backed search, used if a
+ *      category has no curated set. Kept so nothing breaks.
  *
- * Notes:
- *   - We use plain <img> tags rather than next/image to avoid configuring
- *     a remotePatterns entry for i.pinimg.com just yet. Easy to upgrade
- *     later if we want optimization.
- *   - Selection toggles: clicking a selected pin de-selects it. Clicking a
- *     new pin when we're already at the max is silently ignored (with a
- *     hint message visible to the user).
+ * Selection state is owned by the parent (wizard state) — we only echo changes.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PinterestPin } from "@/db/schema";
+import { CURATED_PINS, type CuratedPin } from "@/data/reference-images";
 
-/**
- * Context the parent passes so the AI suggestion endpoint can tailor
- * its proposals to the project. Optional — when absent, the suggestion
- * row simply doesn't appear (zero AI cost, zero UI clutter).
- */
 export type SuggestionContext = {
   step: string;
   industry?: string;
@@ -39,22 +29,244 @@ export type SuggestionContext = {
 };
 
 type Props = {
-  /** Pre-filled search text. */
-  initialQuery: string;
+  /** Pre-filled search text (live mode only). */
+  initialQuery?: string;
   /** Max pins the user can select. Picking past this is a no-op. */
   maxSelections: number;
+  /** Minimum picks needed for the step (shown as guidance). */
+  minSelections?: number;
   /** Currently-selected pins (owned by the wizard state). */
   selectedPins: PinterestPin[];
   /** Called whenever the selection changes (add or remove). */
   onSelectionChange: (pins: PinterestPin[]) => void;
-  /** Optional copy under the search input ("Pick three that capture…"). */
+  /** Optional copy under the header. */
   helperText?: string;
-  /** When provided, AI-suggested alternative searches appear below the bar. */
+  /** When provided (live mode), AI-suggested alternative searches appear. */
   suggestionContext?: SuggestionContext;
+  /** Curated category key (vibe, lighting, flooring, ceiling, materials,
+   *  furniture). When it resolves to a non-empty set, we use curated mode. */
+  categoryKey?: string;
+  /** Vibe-style adaptive reordering + style chips. */
+  adaptive?: boolean;
+  /** Offsets the curated slice so repeated grids (furniture sub-sections)
+   *  show different references. */
+  sliceSeed?: number;
 };
 
-export default function PinterestGrid({
-  initialQuery,
+/** Curated pin → the PinterestPin shape the wizard state stores. */
+function toPin(c: CuratedPin): PinterestPin {
+  return {
+    id: c.id,
+    url: "",
+    title: c.title,
+    description: "",
+    altText: c.title,
+    imageUrl: c.imageUrl,
+    imageThumbUrl: c.imageUrl,
+    dominantColor: c.dominantColor,
+    boardName: "",
+    boardUrl: "",
+  };
+}
+
+/** Slightly smaller variant for grid thumbnails — faster than the 736 original. */
+function thumb(url: string): string {
+  return url.replace("/736x/", "/474x/");
+}
+
+export default function PinterestGrid(props: Props) {
+  const curated = props.categoryKey ? CURATED_PINS[props.categoryKey] : undefined;
+  if (curated && curated.length > 0) {
+    return <CuratedPicker {...props} curated={curated} />;
+  }
+  return <LiveGrid {...props} />;
+}
+
+/* ─────────────────────────── Curated picker ──────────────────────────── */
+
+function CuratedPicker({
+  curated,
+  maxSelections,
+  minSelections,
+  selectedPins,
+  onSelectionChange,
+  helperText,
+  adaptive,
+  sliceSeed,
+}: Props & { curated: CuratedPin[] }) {
+  const [styleFilter, setStyleFilter] = useState<string | null>(null);
+
+  const styles = useMemo(
+    () => Array.from(new Set(curated.map((c) => c.style))),
+    [curated],
+  );
+  const showChips = !!adaptive && styles.length >= 3;
+
+  // Rotate the pool for repeated grids (furniture sub-sections) so each shows
+  // a different slice of the same curated set.
+  const pool = useMemo(() => {
+    if (!sliceSeed) return curated;
+    const n = curated.length;
+    const start = ((sliceSeed * 6) % n + n) % n;
+    return [...curated.slice(start), ...curated.slice(0, start)];
+  }, [curated, sliceSeed]);
+
+  const styleOf = useMemo(() => {
+    const m = new Map<string, string>();
+    curated.forEach((c) => m.set(c.id, c.style));
+    return m;
+  }, [curated]);
+
+  const selectedStyles = useMemo(
+    () =>
+      new Set(
+        selectedPins
+          .map((p) => styleOf.get(p.id))
+          .filter((s): s is string => !!s),
+      ),
+    [selectedPins, styleOf],
+  );
+
+  const visible = useMemo(() => {
+    let list = styleFilter ? pool.filter((c) => c.style === styleFilter) : pool;
+    // Adaptive: once something's picked, float same-style references up.
+    if (adaptive && selectedStyles.size > 0 && !styleFilter) {
+      list = [...list].sort(
+        (a, b) =>
+          (selectedStyles.has(a.style) ? 0 : 1) -
+          (selectedStyles.has(b.style) ? 0 : 1),
+      );
+    }
+    return list;
+  }, [pool, styleFilter, adaptive, selectedStyles]);
+
+  const atMax = selectedPins.length >= maxSelections;
+  const need = minSelections ?? 0;
+  const short = selectedPins.length < need;
+
+  const toggle = useCallback(
+    (c: CuratedPin) => {
+      const isSel = selectedPins.some((p) => p.id === c.id);
+      if (isSel) {
+        onSelectionChange(selectedPins.filter((p) => p.id !== c.id));
+        return;
+      }
+      if (selectedPins.length >= maxSelections) return;
+      onSelectionChange([...selectedPins, toPin(c)]);
+    },
+    [selectedPins, maxSelections, onSelectionChange],
+  );
+
+  return (
+    <div className="space-y-5">
+      {helperText && <p className="text-[13px] text-txt-2">{helperText}</p>}
+
+      {/* Style chips — steer the mood (vibe) */}
+      {showChips && (
+        <div className="flex flex-wrap gap-2">
+          <Chip active={styleFilter === null} onClick={() => setStyleFilter(null)}>
+            All styles
+          </Chip>
+          {styles.map((s) => (
+            <Chip
+              key={s}
+              active={styleFilter === s}
+              onClick={() => setStyleFilter((cur) => (cur === s ? null : s))}
+            >
+              {s}
+            </Chip>
+          ))}
+        </div>
+      )}
+
+      {/* Counter + guidance */}
+      <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.14em]">
+        <span className={short ? "text-txt-3" : "text-acc"}>
+          {selectedPins.length}
+          {need > 0 ? ` / ${need}–${maxSelections}` : ` of ${maxSelections}`} selected
+        </span>
+        {adaptive && selectedStyles.size > 0 && !styleFilter && (
+          <span className="normal-case tracking-normal text-txt-3">
+            Sorted to match your picks
+          </span>
+        )}
+        {atMax && (
+          <span className="normal-case tracking-normal text-txt-3">
+            Tap a pick to swap it
+          </span>
+        )}
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {visible.map((c) => {
+          const isSelected = selectedPins.some((p) => p.id === c.id);
+          const cannotSelect = !isSelected && atMax;
+          return (
+            <button
+              key={c.id}
+              onClick={() => toggle(c)}
+              disabled={cannotSelect}
+              className={`group relative aspect-[3/4] overflow-hidden border transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                isSelected
+                  ? "border-acc ring-2 ring-acc ring-offset-2 ring-offset-bg"
+                  : "border-bdr-2 hover:border-txt-2"
+              }`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={thumb(c.imageUrl)}
+                alt={c.title || "reference"}
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+              />
+              {isSelected && (
+                <span className="absolute inset-0 bg-acc/25" />
+              )}
+              {isSelected && (
+                <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center bg-acc text-white">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M2 7l3 3 7-7" strokeLinecap="round" />
+                  </svg>
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1 text-[11px] capitalize transition ${
+        active
+          ? "border-acc bg-acc text-white"
+          : "border-bdr-2 text-txt-2 hover:border-acc hover:text-acc"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/* ─────────────────────── Live (fallback) grid ────────────────────────── */
+
+function LiveGrid({
+  initialQuery = "",
   maxSelections,
   selectedPins,
   onSelectionChange,
@@ -67,16 +279,9 @@ export default function PinterestGrid({
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
-  // Suggestion state — only meaningful when suggestionContext is set.
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [suggestionsStatus, setSuggestionsStatus] = useState<
-    "idle" | "loading" | "error"
-  >("idle");
-
   const fetchPins = useCallback(async (q: string) => {
     setStatus("loading");
     setError(null);
-
     try {
       const response = await fetch(
         `/api/pinterest/search?q=${encodeURIComponent(q)}&limit=24`,
@@ -84,14 +289,8 @@ export default function PinterestGrid({
       const data = (await response.json()) as
         | { query: string; count: number; pins: PinterestPin[] }
         | { ok: false; error: string };
-
-      if ("ok" in data && data.ok === false) {
-        throw new Error(data.error);
-      }
-      if (!("pins" in data)) {
-        throw new Error("Unexpected response shape from Pinterest API");
-      }
-
+      if ("ok" in data && data.ok === false) throw new Error(data.error);
+      if (!("pins" in data)) throw new Error("Unexpected response shape");
       setPins(data.pins);
       setStatus("idle");
     } catch (e) {
@@ -100,61 +299,14 @@ export default function PinterestGrid({
     }
   }, []);
 
-  // Fire the first search on mount (and whenever submittedQuery changes).
   useEffect(() => {
-    if (submittedQuery.trim().length > 0) {
-      fetchPins(submittedQuery);
-    }
+    if (submittedQuery.trim().length > 0) fetchPins(submittedQuery);
   }, [submittedQuery, fetchPins]);
-
-  // Whenever a new query is submitted, also ask the AI for alternative
-  // search suggestions tailored to the wizard context. Fire-and-forget;
-  // failures hide the suggestion row silently rather than disrupting the
-  // user's actual search.
-  useEffect(() => {
-    if (!suggestionContext || submittedQuery.trim().length === 0) {
-      setSuggestions([]);
-      return;
-    }
-    let cancelled = false;
-    setSuggestionsStatus("loading");
-
-    fetch("/api/ai/suggest-search", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        currentQuery: submittedQuery,
-        step: suggestionContext.step,
-        industry: suggestionContext.industry,
-        space: suggestionContext.space,
-        priorContext: suggestionContext.priorContext,
-      }),
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = (await response.json()) as { suggestions?: string[] };
-        if (cancelled) return;
-        setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
-        setSuggestionsStatus("idle");
-      })
-      .catch(() => {
-        if (cancelled) return;
-        // Don't surface AI errors — suggestions are a bonus, not core flow.
-        setSuggestions([]);
-        setSuggestionsStatus("error");
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [submittedQuery, suggestionContext]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = query.trim();
-    if (trimmed.length > 0) {
-      setSubmittedQuery(trimmed);
-    }
+    if (trimmed.length > 0) setSubmittedQuery(trimmed);
   }
 
   function togglePin(pin: PinterestPin) {
@@ -163,10 +315,7 @@ export default function PinterestGrid({
       onSelectionChange(selectedPins.filter((p) => p.id !== pin.id));
       return;
     }
-    if (selectedPins.length >= maxSelections) {
-      // Hit the cap — ignore. The UI message tells the user what to do.
-      return;
-    }
+    if (selectedPins.length >= maxSelections) return;
     onSelectionChange([...selectedPins, pin]);
   }
 
@@ -174,12 +323,8 @@ export default function PinterestGrid({
 
   return (
     <div className="space-y-6">
-      {/* Search bar */}
       <form onSubmit={handleSubmit} className="space-y-2">
-        <label
-          htmlFor="pinterest-query"
-          className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc"
-        >
+        <label htmlFor="pinterest-query" className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           Search
         </label>
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -189,97 +334,44 @@ export default function PinterestGrid({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="warm minimalism…"
-            className="flex-1 border border-dark-3 bg-[rgba(34,30,24,0.6)] px-3 py-2.5 text-[14px] text-hero-cream placeholder:text-hero-dim focus:border-acc focus:outline-none"
+            className="flex-1 border border-bdr-2 bg-bg-2 px-3 py-2.5 text-[14px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
           />
           <button
             type="submit"
             disabled={status === "loading"}
-            className="border border-dark-3 px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-hero-cream transition hover:border-acc hover:text-acc disabled:opacity-50"
+            className="border border-bdr-2 px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-txt transition hover:border-acc hover:text-acc disabled:opacity-50"
           >
             {status === "loading" ? "Searching…" : "Search"}
           </button>
         </div>
-        {helperText && (
-          <p className="text-[12px] text-hero-dim">{helperText}</p>
-        )}
+        {helperText && <p className="text-[12px] text-txt-3">{helperText}</p>}
       </form>
 
-      {/* AI-suggested alternative searches */}
-      {suggestionContext && suggestions.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-acc">
-Try also
-          </span>
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => {
-                setQuery(s);
-                setSubmittedQuery(s);
-              }}
-              className="border border-dark-3 px-3 py-1 text-[11px] text-hero-cream-2 transition hover:border-acc hover:text-acc"
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-      {suggestionContext && suggestionsStatus === "loading" && (
-        <div className="font-mono text-[9px] uppercase tracking-[0.18em] text-hero-dim">
-Finding related searches…
-        </div>
-      )}
-
-      {/* Selection counter */}
       <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.14em]">
-        <span className={atMax ? "text-acc" : "text-hero-dim"}>
+        <span className={atMax ? "text-acc" : "text-txt-3"}>
           {selectedPins.length} of {maxSelections} selected
         </span>
-        {atMax && (
-          <span className="text-hero-dim">
-            Tap a selected pin to swap it
-          </span>
-        )}
+        {atMax && <span className="text-txt-3">Tap a selected pin to swap it</span>}
       </div>
 
-      {/* Error state */}
       {status === "error" && (
         <div className="border border-red-900/40 bg-red-950/30 p-4 text-[13px] text-red-200">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-red-300">
-            Search failed
-          </p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-red-300">Search failed</p>
           <p className="mt-2">{error}</p>
-          <button
-            onClick={() => fetchPins(submittedQuery)}
-            className="mt-3 text-[12px] underline underline-offset-2 hover:text-red-100"
-          >
+          <button onClick={() => fetchPins(submittedQuery)} className="mt-3 text-[12px] underline underline-offset-2 hover:text-red-100">
             Try again
           </button>
         </div>
       )}
 
-      {/* Loading skeleton */}
       {status === "loading" && pins.length === 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="aspect-[3/4] animate-pulse border border-dark-3 bg-dark-2"
-            />
+            <div key={i} className="aspect-[3/4] animate-pulse border border-bdr-2 bg-bg-2" />
           ))}
         </div>
       )}
 
-      {/* Empty state */}
-      {status === "idle" && pins.length === 0 && submittedQuery && (
-        <p className="border border-dark-3 bg-[rgba(34,30,24,0.4)] p-6 text-center text-[13px] text-hero-dim">
-          No pins came back for &ldquo;{submittedQuery}&rdquo;. Try a different
-          phrase. Short descriptive nouns work best.
-        </p>
-      )}
-
-      {/* Pin grid */}
       {pins.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {pins.map((pin) => {
@@ -291,40 +383,17 @@ Finding related searches…
                 onClick={() => togglePin(pin)}
                 disabled={cannotSelect}
                 className={`group relative aspect-[3/4] overflow-hidden border transition disabled:cursor-not-allowed disabled:opacity-40 ${
-                  isSelected
-                    ? "border-acc ring-2 ring-acc ring-offset-2 ring-offset-dark"
-                    : "border-dark-3 hover:border-hero-cream-2"
+                  isSelected ? "border-acc ring-2 ring-acc ring-offset-2 ring-offset-bg" : "border-bdr-2 hover:border-txt-2"
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={pin.imageUrl}
-                  alt={pin.altText || pin.title || "Pinterest pin"}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-                />
-                {/* Caption — only visible on hover */}
-                {pin.title && (
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 transition group-hover:opacity-100">
-                    <p className="line-clamp-2 text-[11px] text-hero-cream">
-                      {pin.title}
-                    </p>
-                  </div>
-                )}
-                {/* Selected badge */}
+                <img src={pin.imageUrl} alt={pin.altText || pin.title || "pin"} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
                 {isSelected && (
-                  <div className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center bg-acc text-white">
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 14 14"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
+                  <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center bg-acc text-white">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M2 7l3 3 7-7" strokeLinecap="round" />
                     </svg>
-                  </div>
+                  </span>
                 )}
               </button>
             );

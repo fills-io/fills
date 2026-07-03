@@ -95,10 +95,10 @@ export default function DesignCheckBanner({ state }: Props) {
   // Loading state — small thinking pill
   if (status === "loading") {
     return (
-      <div className="border border-dark-3 bg-[rgba(34,30,24,0.5)] p-4">
+      <div className="border border-bdr-2 bg-bg-2 p-4">
         <div className="flex items-center gap-3">
           <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-acc" />
-          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-hero-dim">
+          <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-txt-3">
             Reading your brief…
           </span>
         </div>
@@ -148,17 +148,17 @@ export default function DesignCheckBanner({ state }: Props) {
         <button
           type="button"
           onClick={runCheck}
-          className="font-mono text-[9px] uppercase tracking-[0.14em] text-hero-dim transition hover:text-acc"
+          className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
         >
           ↻ Re-check
         </button>
       </div>
 
-      <h3 className="mt-3 font-serif text-[18px] leading-tight text-hero-cream">
+      <h3 className="mt-3 font-serif text-[18px] leading-tight text-txt">
         {result.headline}
       </h3>
 
-      <p className="mt-3 text-[13px] leading-relaxed text-hero-cream-2">
+      <p className="mt-3 text-[13px] leading-relaxed text-txt-2">
         {result.observations}
       </p>
     </div>

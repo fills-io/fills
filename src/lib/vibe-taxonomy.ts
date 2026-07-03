@@ -11,7 +11,7 @@
 
 import type { IndustryId } from "./space-taxonomy";
 
-export const VIBES_BY_INDUSTRY: Record<IndustryId, string[]> = {
+export const VIBES_BY_INDUSTRY: Partial<Record<IndustryId, string[]>> = {
   residential: [
     "warm minimalism",
     "japandi",
@@ -55,7 +55,7 @@ export const VIBES_BY_INDUSTRY: Record<IndustryId, string[]> = {
     "creative studio",
     "members' club",
   ],
-  wellness: [
+  "fitness-wellness": [
     "japandi sanctuary",
     "scandi spa",
     "biophilic calm",
@@ -65,7 +65,7 @@ export const VIBES_BY_INDUSTRY: Record<IndustryId, string[]> = {
     "wabi-sabi spa",
     "alpine bathhouse",
   ],
-  "restaurant-bar": [
+  "food-beverage": [
     "editorial diner",
     "brutalist warmth",
     "mid-century cocktail",
@@ -78,8 +78,15 @@ export const VIBES_BY_INDUSTRY: Record<IndustryId, string[]> = {
   ],
 };
 
+const FALLBACK_VIBES = [
+  "warm minimalism",
+  "japandi",
+  "mid-century modern",
+  "organic modernism",
+];
+
 /** Get vibes for a given industry, falling back to residential if unknown. */
 export function getVibesForIndustry(industryId: IndustryId | null): string[] {
-  if (!industryId) return VIBES_BY_INDUSTRY.residential;
-  return VIBES_BY_INDUSTRY[industryId] ?? VIBES_BY_INDUSTRY.residential;
+  const base = industryId ? VIBES_BY_INDUSTRY[industryId] : undefined;
+  return base ?? VIBES_BY_INDUSTRY.residential ?? FALLBACK_VIBES;
 }

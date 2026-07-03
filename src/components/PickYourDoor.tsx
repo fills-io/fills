@@ -41,7 +41,7 @@ const DOORS = [
 
 export default function PickYourDoor() {
   return (
-    <section className="border-b border-[rgba(232,196,176,0.1)] bg-dark px-8 pb-[104px] pt-[88px]">
+    <section className="border-b border-[rgba(232,196,176,0.1)] bg-dark px-6 pb-[104px] pt-[88px] sm:px-8">
       <div className="mx-auto max-w-[1080px]">
         <div className="mb-9 text-center">
           <span className="inline-flex items-center gap-2.5 font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-hero-cream-2">

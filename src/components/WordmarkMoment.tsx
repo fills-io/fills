@@ -28,7 +28,7 @@ export default function WordmarkMoment() {
   }, []);
 
   return (
-    <section className="overflow-hidden border-b border-bdr bg-bg px-8 py-[96px]">
+    <section className="overflow-hidden border-b border-bdr bg-bg px-6 py-[96px] sm:px-8">
       <div className="mx-auto max-w-[1000px] text-center">
         <span className="inline-flex items-center gap-2.5 font-mono text-[9px] font-medium uppercase tracking-[0.18em] text-txt-3">
           <span className="inline-block h-px w-6 bg-acc" />

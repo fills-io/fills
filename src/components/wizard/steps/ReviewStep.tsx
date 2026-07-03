@@ -32,7 +32,7 @@ export default function ReviewStep({ state, goToStep }: Props) {
 
   return (
     <div className="space-y-8">
-      <p className="text-[14px] text-hero-cream-2">
+      <p className="text-[14px] text-txt-2">
         One last look. If anything is off, jump back to that step and adjust.
         Nothing is locked in until you generate the brief.
       </p>
@@ -47,13 +47,13 @@ export default function ReviewStep({ state, goToStep }: Props) {
         isEmpty={!industry || !spaceLabel}
       >
         {industry && spaceLabel ? (
-          <p className="text-[15px] text-hero-cream">
+          <p className="text-[15px] text-txt">
             <span className="text-acc">{spaceLabel}</span>
-            <span className="text-hero-dim"> · {industry.label}</span>
+            <span className="text-txt-3"> · {industry.label}</span>
             {state.spaceSize && (
               <>
-                <span className="text-hero-dim"> · </span>
-                <span className="text-hero-cream-2">
+                <span className="text-txt-3"> · </span>
+                <span className="text-txt-2">
                   {sizeLabel(state.spaceSize)}
                 </span>
               </>
@@ -61,7 +61,7 @@ export default function ReviewStep({ state, goToStep }: Props) {
           </p>
         ) : null}
         {state.spaceDescription && (
-          <p className="mt-3 text-[13px] leading-relaxed text-hero-cream-2">
+          <p className="mt-3 text-[13px] leading-relaxed text-txt-2">
             {state.spaceDescription}
           </p>
         )}
@@ -131,11 +131,11 @@ export default function ReviewStep({ state, goToStep }: Props) {
       </ReviewSection>
 
       {/* "Generate" disabled-note */}
-      <div className="border border-dark-3 bg-[rgba(34,30,24,0.6)] p-6 backdrop-blur-sm">
+      <div className="border border-bdr-2 bg-bg-2 p-6 backdrop-blur-sm">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           Next up
         </p>
-        <p className="mt-3 text-[14px] leading-relaxed text-hero-cream-2">
+        <p className="mt-3 text-[14px] leading-relaxed text-txt-2">
           When the AI integration lands, hitting{" "}
           <span className="text-acc">Generate brief →</span> here kicks off the
           Design DNA pipeline — compatibility check, color analysis,
@@ -161,20 +161,20 @@ function ReviewSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="border-t border-dark-3 pt-6">
+    <section className="border-t border-bdr-2 pt-6">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           {label}
         </h2>
         <button
           onClick={onEdit}
-          className="font-mono text-[10px] uppercase tracking-[0.14em] text-hero-cream-2 transition hover:text-acc"
+          className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
         >
           Edit →
         </button>
       </div>
       {isEmpty ? (
-        <p className="text-[13px] italic text-hero-dim">
+        <p className="text-[13px] italic text-txt-3">
           Not picked yet — go back and finish this step.
         </p>
       ) : (
@@ -191,7 +191,7 @@ function PinThumbStrip({ pins }: { pins: PinterestPin[] }) {
       {pins.map((pin) => (
         <div
           key={pin.id}
-          className="aspect-square overflow-hidden border border-dark-3"
+          className="aspect-square overflow-hidden border border-bdr-2"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -213,15 +213,15 @@ function ColorSwatchRow({ palette }: { palette: ColorEntry[] }) {
       {palette.map((c, i) => (
         <div key={i} className="flex flex-col">
           <div
-            className="h-16 w-full border border-dark-3"
+            className="h-16 w-full border border-bdr-2"
             style={{ backgroundColor: c.hex }}
           />
           <div className="mt-2 space-y-0.5">
-            <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-hero-cream">
+            <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-txt">
               {c.name || c.hex}
             </p>
             {c.material && (
-              <p className="text-[11px] text-hero-dim">{c.material}</p>
+              <p className="text-[11px] text-txt-3">{c.material}</p>
             )}
           </div>
         </div>

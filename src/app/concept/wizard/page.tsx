@@ -22,11 +22,11 @@ import WizardClient from "./WizardClient";
 
 export default function WizardPage() {
   return (
-    <div className="min-h-screen bg-dark text-hero-cream">
+    <div className="min-h-screen bg-bg text-txt">
       <Navbar />
       <Suspense
         fallback={
-          <div className="mx-auto max-w-4xl px-8 py-24 text-hero-dim">
+          <div className="mx-auto max-w-4xl px-6 py-24 sm:px-8 text-txt-3">
             Loading your wizard…
           </div>
         }
