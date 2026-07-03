@@ -15,6 +15,7 @@
 import { useState } from "react";
 import ColorPaletteBuilder, {
   PALETTE_SLOTS,
+  PalettePreview,
 } from "@/components/wizard/ColorPaletteBuilder";
 import type { ColorEntry } from "@/db/schema";
 import type { WizardState } from "@/lib/wizard-state";
@@ -141,16 +142,27 @@ export default function ColorsStep({ state, setState }: Props) {
         </div>
       )}
 
-      <ColorPaletteBuilder
-        palette={palette}
-        onChange={(next) => setState({ palette: next })}
-      />
+      <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
+        {/* Editor */}
+        <div className="space-y-6 lg:order-1">
+          <ColorPaletteBuilder
+            palette={palette}
+            onChange={(next) => setState({ palette: next })}
+          />
+          <p className="text-[11px] text-txt-3">
+            Tip: click any swatch to change its color freely, or type a hex code.
+            Leave a name blank while scouting — those slots get replaced when you
+            tap &ldquo;Suggest a palette.&rdquo; Name a slot to lock it.
+          </p>
+        </div>
 
-      <p className="text-[11px] text-txt-3">
-        Tip: leave a name blank if you&apos;re still scouting; those slots
-        get replaced when you tap &ldquo;Suggest a palette.&rdquo; Name a slot
-        to lock it before generating.
-      </p>
+        {/* Live preview — sticky on the right so it stays in view while editing */}
+        <div className="order-first lg:order-2">
+          <div className="lg:sticky lg:top-24">
+            <PalettePreview palette={palette} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

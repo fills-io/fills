@@ -157,6 +157,8 @@ export default function FurnitureStep({ state, setState }: Props) {
           </div>
           <PinterestGrid
             initialQuery={subSection.query}
+            categoryKey="furniture"
+            sliceSeed={i + 1}
             maxSelections={MAX_PINS_PER_SUBSECTION}
             selectedPins={subSection.pins}
             onSelectionChange={(pins) => updateSubSectionPins(i, pins)}

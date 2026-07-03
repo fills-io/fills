@@ -119,8 +119,8 @@ export default function WizardClient() {
         return (wizardState.spaceIds?.length ?? 0) > 0 || !!wizardState.spaceId;
       }
       case "vibe":
-        // Vibe step: at least one pin picked (max 3 enforced by the grid).
-        return (wizardState.vibePins?.length ?? 0) > 0;
+        // Vibe step: at least 3 pins picked (max 5 enforced by the grid).
+        return (wizardState.vibePins?.length ?? 0) >= 3;
       case "colors":
         // Colors step: any non-default-only palette is OK to advance.
         // (We don't require all 4 names filled — that's a stylistic choice.)

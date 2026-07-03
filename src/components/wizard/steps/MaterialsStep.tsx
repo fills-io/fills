@@ -30,6 +30,7 @@ export default function MaterialsStep({ state, setState }: Props) {
       industryLabel={industry?.label}
       suggestionStep="materials"
       category="materials texture"
+      categoryKey="materials"
       rememberedQuery={state.materialsQuery}
       selectedPins={state.materialsPins ?? []}
       maxSelections={MAX_PINS}

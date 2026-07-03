@@ -21,8 +21,9 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-/** Hard cap on vibe selections. Small for a reason — see file header. */
-const MAX_VIBE_PINS = 3;
+/** Vibe selection range: pick 3 (min, so the AI has a real signal) to 5 (max). */
+const MIN_VIBE_PINS = 3;
+const MAX_VIBE_PINS = 5;
 
 export default function VibeStep({ state, setState }: Props) {
   const params = useSearchParams();
@@ -45,7 +46,10 @@ export default function VibeStep({ state, setState }: Props) {
   return (
     <PinterestGrid
       initialQuery={seededQuery}
+      categoryKey="vibe"
+      adaptive
       maxSelections={MAX_VIBE_PINS}
+      minSelections={MIN_VIBE_PINS}
       selectedPins={selected}
       onSelectionChange={(pins) =>
         setState({
@@ -55,7 +59,7 @@ export default function VibeStep({ state, setState }: Props) {
           vibeQuery: seededQuery,
         })
       }
-      helperText="Pick three pins that capture the feeling you want. Sharp picks beat broad picks. The AI uses these as the emotional anchor for the whole brief."
+      helperText="Pick 3 to 5 that capture the feeling you want. Use the style chips to explore different moods — once you pick one, similar references float to the top. These are the emotional anchor for the whole brief."
       suggestionContext={{
         step: "vibe",
         industry: industry?.label,

@@ -31,6 +31,7 @@ export default function LightingStep({ state, setState }: Props) {
       industryLabel={industry?.label}
       suggestionStep="lighting"
       category="lighting"
+      categoryKey="lighting"
       rememberedQuery={state.lightingQuery}
       selectedPins={state.lightingPins ?? []}
       maxSelections={MAX_PINS}
