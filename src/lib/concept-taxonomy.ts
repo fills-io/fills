@@ -34,29 +34,29 @@ export const INDUSTRIES: ConceptIndustry[] = [
 ];
 
 export const SPEC_BY_IND: Record<string, string[]> = {
-  hospitality: ["boutique hotel suite", "co-working hotel lobby", "design hotel suite", "ryokan-style room", "all-day cafe lobby"],
-  fnb: ["specialty coffee bar", "natural wine bar", "neighborhood trattoria", "omakase counter", "cocktail lounge with vinyl listening room", "izakaya"],
-  retail: ["fragrance boutique", "minimalist menswear", "concept store", "showroom", "denim boutique"],
-  workplace: ["founder's office", "members club for creatives", "podcast studio cluster", "boutique law office", "creative agency floor"],
-  wellness: ["family dental practice", "longevity clinic", "med-spa", "sauna lounge", "sensory-friendly pediatric"],
-  cultural: ["white-cube gallery", "audiophile listening room", "neighborhood library", "domestic-feel gallery", "bookshop cafe"],
-  residential: ["pied-à-terre", "writer's flat", "studio for two", "loft conversion", "family villa"],
-  beauty: ["minimalist hair salon", "nail studio", "barbershop", "brow & lash studio", "skin clinic"],
-  fitness: ["pilates studio", "yoga studio", "boxing club", "cycling studio", "movement lab"],
-  other: ["custom retreat", "private workshop", "atelier", "experimental space"],
+  hospitality: ["boutique hotel suite", "co-working hotel lobby", "design hotel suite", "ryokan-style room", "all-day cafe lobby", "rooftop hotel bar", "resort spa villa", "serviced apartment", "hotel restaurant", "penthouse suite", "poolside cabana", "hostel social lounge"],
+  fnb: ["specialty coffee bar", "natural wine bar", "neighborhood trattoria", "omakase counter", "cocktail lounge with vinyl listening room", "izakaya", "fine-dining room", "all-day brasserie", "patisserie & dessert bar", "craft brewery taproom", "ramen counter", "rooftop restaurant"],
+  retail: ["fragrance boutique", "minimalist menswear", "concept store", "showroom", "denim boutique", "jewelry salon", "flagship store", "eyewear boutique", "homeware store", "sneaker boutique", "pop-up shop", "bookstore"],
+  workplace: ["founder's office", "members club for creatives", "podcast studio cluster", "boutique law office", "creative agency floor", "tech startup HQ", "coworking hub", "executive boardroom", "design studio", "reception lounge", "focus-pod library", "town-hall space"],
+  wellness: ["family dental practice", "longevity clinic", "med-spa", "sauna lounge", "sensory-friendly pediatric", "IV drip lounge", "physiotherapy clinic", "dermatology suite", "fertility clinic", "meditation room", "recovery spa", "wellness retreat"],
+  cultural: ["white-cube gallery", "audiophile listening room", "neighborhood library", "domestic-feel gallery", "bookshop cafe", "private museum", "artist studio", "performance space", "archive reading room", "screening room", "sculpture court", "project space"],
+  residential: ["pied-à-terre", "writer's flat", "studio for two", "loft conversion", "family villa", "penthouse", "coastal house", "mountain cabin", "garden apartment", "townhouse", "kids' bedroom", "home cinema"],
+  beauty: ["minimalist hair salon", "nail studio", "barbershop", "brow & lash studio", "skin clinic", "blow-dry bar", "makeup studio", "spa treatment room", "tattoo studio", "waxing suite", "perfumery", "lash lounge"],
+  fitness: ["pilates studio", "yoga studio", "boxing club", "cycling studio", "movement lab", "CrossFit box", "dance studio", "climbing gym", "recovery lounge", "personal-training suite", "martial-arts dojo", "stretch studio"],
+  other: ["custom retreat", "private workshop", "atelier", "experimental space", "event venue", "maker space", "showroom flat", "pop-up installation"],
 };
 
 export const VIBE_BY_IND: Record<string, string[]> = {
-  hospitality: ["1920s glam", "Japandi calm", "warm minimalism", "old Shanghai", "Mediterranean", "moody intimate"],
-  fnb: ["natural wine cellar", "izakaya warmth", "deep velvet", "sunlit communal", "Wong Kar-wai", "kissaten quiet"],
-  retail: ["museum minimal", "warm brutalism", "kunsthalle", "Italian futurist", "atelier-feel"],
-  workplace: ["library calm", "modernist atelier", "industrial warmth", "members-club lounge", "writer's room"],
-  wellness: ["calm clinical", "soft sage modernist", "Scandinavian warm", "biophilic light", "spa-like minimal"],
-  cultural: ["wabi-sabi", "neoclassical library", "deep dim listening", "Marcel Breuer", "monastic"],
-  residential: ["Belgian wabi", "California modern", "Tokyo minimalism", "warm maximalist", "plaster & rose"],
-  beauty: ["warm Japandi", "soft brutalist", "rose plaster", "Italian salon", "minimalist clinical"],
-  fitness: ["Pilates gallery", "warm concrete", "gym-as-temple", "monochrome studio", "soft & breathing"],
-  other: ["warm minimalism", "Japandi", "editorial noir", "Mediterranean"],
+  hospitality: ["1920s glam", "Japandi calm", "warm minimalism", "old Shanghai", "Mediterranean", "moody intimate", "tropical modern", "art deco revival", "desert luxe"],
+  fnb: ["natural wine cellar", "izakaya warmth", "deep velvet", "sunlit communal", "Wong Kar-wai", "kissaten quiet", "Parisian bistro", "industrial warmth", "terracotta trattoria"],
+  retail: ["museum minimal", "warm brutalism", "kunsthalle", "Italian futurist", "atelier-feel", "gallery white", "soft pastel", "monochrome luxe"],
+  workplace: ["library calm", "modernist atelier", "industrial warmth", "members-club lounge", "writer's room", "biophilic open", "Scandinavian bright", "warm corporate"],
+  wellness: ["calm clinical", "soft sage modernist", "Scandinavian warm", "biophilic light", "spa-like minimal", "blush serene", "coastal calm", "zen minimal"],
+  cultural: ["wabi-sabi", "neoclassical library", "deep dim listening", "Marcel Breuer", "monastic", "brutalist concrete", "warm oak archive", "gallery neutral"],
+  residential: ["Belgian wabi", "California modern", "Tokyo minimalism", "warm maximalist", "plaster & rose", "Mediterranean villa", "mid-century warm", "Scandi hygge", "cottagecore"],
+  beauty: ["warm Japandi", "soft brutalist", "rose plaster", "Italian salon", "minimalist clinical", "blush boudoir", "terrazzo chic", "monochrome sleek"],
+  fitness: ["Pilates gallery", "warm concrete", "gym-as-temple", "monochrome studio", "soft & breathing", "industrial raw", "biophilic movement", "neon energy"],
+  other: ["warm minimalism", "Japandi", "editorial noir", "Mediterranean", "biophilic", "brutalist", "maximalist color"],
 };
 
 export const VIBE_BY_SPEC: Record<string, string[]> = {
@@ -112,10 +112,10 @@ export function getIndustry(id: string | null): ConceptIndustry | undefined {
   return INDUSTRIES.find((i) => i.id === id);
 }
 
-/** Specifically-suggestions for the chosen industry (max 5). */
+/** Specifically-suggestions for the chosen industry (max 8). */
 export function getSpecSuggestions(industryId: string | null): string[] {
   if (!industryId) return [];
-  return (SPEC_BY_IND[industryId] ?? []).slice(0, 5);
+  return (SPEC_BY_IND[industryId] ?? []).slice(0, 8);
 }
 
 /** Vibe suggestions resolved from current spec → substring → industry. */
@@ -124,12 +124,18 @@ export function getVibeSuggestions(
   spec: string,
 ): string[] {
   const s = spec.trim().toLowerCase();
-  if (!s) return industryId ? (VIBE_BY_IND[industryId] ?? []).slice(0, 5) : [];
-  if (VIBE_BY_SPEC[s]) return VIBE_BY_SPEC[s].slice(0, 5);
+  const indVibes = industryId ? (VIBE_BY_IND[industryId] ?? []) : [];
+  // Spec-specific vibes first, then top up with industry vibes (deduped) so
+  // there's always a rich set of up to 8 moods to pick from.
+  const merge = (specVibes: string[]) =>
+    Array.from(new Set([...specVibes, ...indVibes])).slice(0, 8);
+
+  if (!s) return indVibes.slice(0, 8);
+  if (VIBE_BY_SPEC[s]) return merge(VIBE_BY_SPEC[s]);
   for (const key of Object.keys(VIBE_BY_SPEC)) {
-    if (s.includes(key) || key.includes(s)) return VIBE_BY_SPEC[key].slice(0, 5);
+    if (s.includes(key) || key.includes(s)) return merge(VIBE_BY_SPEC[key]);
   }
-  return industryId ? (VIBE_BY_IND[industryId] ?? []).slice(0, 5) : [];
+  return indVibes.slice(0, 8);
 }
 
 /** Vibe panel only opens once spec has real substance (3+ chars). */
