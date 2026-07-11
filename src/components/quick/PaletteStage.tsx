@@ -42,7 +42,7 @@ export default function PaletteStage({ state, patch }: Props) {
   const [busy, setBusy] = useState<"idle" | "extracting" | "suggesting">("idle");
   const [error, setError] = useState<string | null>(null);
   const [supportsEyedropper, setSupportsEyedropper] = useState(false);
-  const started = useRef(false);
+  const lastPickKey = useRef<string | null>(null);
 
   const urls = useMemo(
     () => state.picks.map((p) => p.imageUrl).filter(Boolean),
@@ -81,7 +81,11 @@ export default function PaletteStage({ state, patch }: Props) {
       patch({
         palette,
         paletteWeights: weights,
-        locks: state.locks.length ? state.locks : Array(QUICK_PALETTE_SIZE).fill(false),
+        // Keep locks only when refreshing in place; a fresh extract resets them.
+        locks:
+          keepLocked && state.locks.length
+            ? state.locks
+            : Array(QUICK_PALETTE_SIZE).fill(false),
       });
     } catch {
       setError("Couldn't read colours from the images — edit them by hand below.");
@@ -90,36 +94,33 @@ export default function PaletteStage({ state, patch }: Props) {
     }
   }
 
-  // Auto-extract on first arrival.
+  // Re-derive the palette whenever the picked set changes (and on first
+  // arrival) — so it never lags behind the images the user has selected.
+  const pickKey = state.picks.map((p) => p.id).join("|");
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    if (state.palette.length === 0 && urls.length > 0) {
+    if (lastPickKey.current === pickKey) return;
+    lastPickKey.current = pickKey;
+    if (state.picks.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       extractInto(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pickKey]);
 
-  /** Colormind harmonised set for the unlocked slots; locked ones stay. */
+  /** A fresh harmonised set (Colormind) for the unlocked slots; locked stay.
+   *  The route returns one colour per slot, mapped 1:1 so nothing duplicates. */
   async function suggestUnlocked() {
     setBusy("suggesting");
     setError(null);
     try {
-      const seed = state.palette
-        .filter((_, i) => state.locks[i])
-        .map((c) => c.hex);
-      const base = seed.length ? seed : state.palette.slice(0, 2).map((c) => c.hex);
-      const q = base.length ? `?locked=${encodeURIComponent(base.join(","))}` : "";
-      const res = await fetch(`/api/colors/generate${q}`);
+      const res = await fetch(`/api/colors/generate`);
       const data = (await res.json()) as
         | { palette: string[] }
         | { ok: false; error: string };
       if ("ok" in data && data.ok === false) throw new Error(data.error);
       const sug = "palette" in data ? data.palette : [];
-      let si = 0;
       const palette = state.palette.map((c, i) =>
-        state.locks[i] ? c : toEntry(sug[si++ % Math.max(sug.length, 1)] ?? c.hex),
+        state.locks[i] ? c : toEntry(sug[i] ?? c.hex),
       );
       patch({ palette });
     } catch (e) {

@@ -9,7 +9,7 @@
  *   brief.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { INDUSTRIES, getIndustry } from "@/lib/concept-taxonomy";
 import { EMPTY_QUICK, type QuickState } from "@/lib/quick-state";
@@ -23,11 +23,19 @@ import LiveBrief, { type PrimaryAction } from "./LiveBrief";
 import GenerationOverlay from "@/components/wizard/GenerationOverlay";
 import BriefDisplay from "@/components/wizard/BriefDisplay";
 
-/** Map a homepage industry LABEL (?industry=) back to a concept id. */
+/** Map a homepage industry LABEL or id (?industry=) back to a concept id.
+ *  Forgiving: exact label, exact id, or a sensible prefix (so "Healthcare"
+ *  resolves to "Healthcare & Wellness"). */
 function idFromLabel(label: string | null): string | null {
   if (!label) return null;
+  const p = label.trim().toLowerCase();
+  if (!p) return null;
   const hit = INDUSTRIES.find(
-    (i) => i.label.toLowerCase() === label.trim().toLowerCase(),
+    (i) =>
+      i.label.toLowerCase() === p ||
+      i.id === p ||
+      i.label.toLowerCase().startsWith(p) ||
+      p.startsWith(i.id),
   );
   return hit?.id ?? null;
 }
@@ -58,6 +66,17 @@ export default function QuickCanvas() {
   const paletteRef = useRef<HTMLDivElement>(null);
 
   const vibeOpen = !!state.industryId && state.spec.trim().length >= 2;
+
+  // If the vibe stage collapses (spec cleared / industry changed), the palette
+  // stage must close too — otherwise it'd float with no vibe above it and let
+  // a stale palette through to Generate.
+  useEffect(() => {
+    if (!vibeOpen && paletteOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPaletteOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vibeOpen]);
 
   function revealPalette() {
     setPaletteOpen(true);
@@ -108,7 +127,14 @@ export default function QuickCanvas() {
       <main className="mx-auto max-w-4xl px-6 py-12 sm:px-8 sm:py-16">
         <BriefDisplay
           brief={brief}
-          pins={{ vibe: state.picks as unknown as PinterestPin[] }}
+          pins={{
+            // Curated pins carry no source URL; point the link at the image so
+            // the brief's reference thumbnails are still clickable.
+            vibe: state.picks.map((p) => ({
+              ...p,
+              url: p.imageUrl,
+            })) as unknown as PinterestPin[],
+          }}
           onRegenerate={generate}
           onStartOver={startOver}
         />

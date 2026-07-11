@@ -89,7 +89,17 @@ export default function SetupStage({ state, patch }: Props) {
                   key={i.id}
                   type="button"
                   onClick={() => {
-                    patch({ industryId: i.id, spec: "" });
+                    // Changing industry invalidates everything downstream —
+                    // reset picks + palette so the old industry can't leak in.
+                    patch({
+                      industryId: i.id,
+                      spec: "",
+                      picks: [],
+                      vibeQuery: "",
+                      palette: [],
+                      paletteWeights: [],
+                      locks: [],
+                    });
                     setSpecInput("");
                     setDdOpen(false);
                   }}
