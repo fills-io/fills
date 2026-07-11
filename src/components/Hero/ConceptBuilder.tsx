@@ -38,21 +38,21 @@ function sample<T>(arr: readonly T[]): T {
 // industry slot). Once an industry is chosen, the industry-specific
 // suggestions take over.
 const GENERIC_SPECS = [
-  "boutique hotel suite",
-  "cocktail bar",
-  "yoga studio",
-  "loft apartment",
-  "specialty café",
-  "fragrance boutique",
-  "founder's office",
+  "restaurant",
+  "boutique",
+  "cafe",
+  "office",
+  "hotel suite",
+  "hair salon",
+  "apartment",
 ];
 const GENERIC_VIBES = [
-  "warm minimalism",
-  "japandi calm",
-  "1920s glam",
-  "moody intimate",
-  "Mediterranean",
-  "Belgian wabi",
+  "modern",
+  "minimalist",
+  "industrial",
+  "scandinavian",
+  "bohemian",
+  "mid-century modern",
 ];
 
 export default function ConceptBuilder() {
