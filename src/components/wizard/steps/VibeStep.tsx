@@ -50,11 +50,16 @@ export default function VibeStep({ state, setState }: Props) {
   const vibeSet =
     (state.industryId && CURATED_VIBE[state.industryId]) || CURATED_PINS.vibe;
 
+  // The style picked on the homepage ("feels like ___") pre-selects its chip.
+  const styleFromHome = (state.vibeQuery ?? params.get("vibe") ?? "")
+    .trim()
+    .toLowerCase();
+
   return (
     <PinterestGrid
       initialQuery={seededQuery}
       curatedPins={vibeSet}
-      adaptive
+      initialStyle={styleFromHome}
       maxSelections={MAX_VIBE_PINS}
       minSelections={MIN_VIBE_PINS}
       selectedPins={selected}
@@ -66,7 +71,7 @@ export default function VibeStep({ state, setState }: Props) {
           vibeQuery: seededQuery,
         })
       }
-      helperText="Pick 3 to 5 that capture the feeling you want. Use the style chips to explore different moods. Once you pick one, similar images float to the top. These set the mood for the whole plan."
+      helperText="Pick 3 to 5 that capture the feeling you want. Use the style chips above to switch styles. These set the mood for the whole plan."
       suggestionContext={{
         step: "vibe",
         industry: industry?.label,

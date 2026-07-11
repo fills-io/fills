@@ -47,12 +47,12 @@ const GENERIC_SPECS = [
   "apartment",
 ];
 const GENERIC_VIBES = [
+  "contemporary",
   "modern",
   "minimalist",
-  "industrial",
   "scandinavian",
-  "bohemian",
-  "mid-century modern",
+  "industrial",
+  "mid-century",
 ];
 
 export default function ConceptBuilder() {

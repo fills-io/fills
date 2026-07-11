@@ -49,8 +49,10 @@ type Props = {
   /** Explicit curated set — wins over categoryKey (used for the per-industry
    *  vibe set so the Vibe step reflects the project category). */
   curatedPins?: CuratedPin[];
-  /** Vibe-style adaptive reordering + style chips. */
+  /** @deprecated no longer reorders; kept for call-site compatibility. */
   adaptive?: boolean;
+  /** Pre-selected style chip (e.g. the style picked on the homepage). */
+  initialStyle?: string;
   /** Offsets the curated slice so repeated grids (furniture sub-sections)
    *  show different references. */
   sliceSeed?: number;
@@ -96,16 +98,18 @@ function CuratedPicker({
   selectedPins,
   onSelectionChange,
   helperText,
-  adaptive,
   sliceSeed,
+  initialStyle,
 }: Props & { curated: CuratedPin[] }) {
-  const [styleFilter, setStyleFilter] = useState<string | null>(null);
-
   const styles = useMemo(
     () => Array.from(new Set(curated.map((c) => c.style))),
     [curated],
   );
-  const showChips = !!adaptive && styles.length >= 3;
+  // Open on the style picked upstream (e.g. the homepage vibe), if present.
+  const [styleFilter, setStyleFilter] = useState<string | null>(() =>
+    initialStyle && styles.includes(initialStyle) ? initialStyle : null,
+  );
+  const showChips = styles.length >= 2;
 
   // Rotate the pool for repeated grids (furniture sub-sections) so each shows
   // a different slice of the same curated set.
@@ -116,34 +120,11 @@ function CuratedPicker({
     return [...curated.slice(start), ...curated.slice(0, start)];
   }, [curated, sliceSeed]);
 
-  const styleOf = useMemo(() => {
-    const m = new Map<string, string>();
-    curated.forEach((c) => m.set(c.id, c.style));
-    return m;
-  }, [curated]);
-
-  const selectedStyles = useMemo(
-    () =>
-      new Set(
-        selectedPins
-          .map((p) => styleOf.get(p.id))
-          .filter((s): s is string => !!s),
-      ),
-    [selectedPins, styleOf],
+  // Filter to the chosen style. Selecting an image never reorders the grid.
+  const visible = useMemo(
+    () => (styleFilter ? pool.filter((c) => c.style === styleFilter) : pool),
+    [pool, styleFilter],
   );
-
-  const visible = useMemo(() => {
-    let list = styleFilter ? pool.filter((c) => c.style === styleFilter) : pool;
-    // Adaptive: once something's picked, float same-style references up.
-    if (adaptive && selectedStyles.size > 0 && !styleFilter) {
-      list = [...list].sort(
-        (a, b) =>
-          (selectedStyles.has(a.style) ? 0 : 1) -
-          (selectedStyles.has(b.style) ? 0 : 1),
-      );
-    }
-    return list;
-  }, [pool, styleFilter, adaptive, selectedStyles]);
 
   const atMax = selectedPins.length >= maxSelections;
   const need = minSelections ?? 0;
@@ -190,11 +171,6 @@ function CuratedPicker({
           {selectedPins.length}
           {need > 0 ? ` / ${need}–${maxSelections}` : ` of ${maxSelections}`} selected
         </span>
-        {adaptive && selectedStyles.size > 0 && !styleFilter && (
-          <span className="normal-case tracking-normal text-txt-3">
-            Sorted to match your picks
-          </span>
-        )}
         {atMax && (
           <span className="normal-case tracking-normal text-txt-3">
             Tap a pick to swap it

@@ -46,18 +46,20 @@ export const SPEC_BY_IND: Record<string, string[]> = {
   other: ["event venue", "workshop", "studio", "showroom", "pop-up", "maker space", "coworking", "retreat"],
 };
 
-// Mainstream interior-design styles — the words people search for.
+// Mainstream interior-design styles — the words people search for. These match
+// the wizard's vibe style chips exactly, so a style picked here pre-selects the
+// matching chip on the Vibe step.
 export const VIBE_BY_IND: Record<string, string[]> = {
-  hospitality: ["modern", "minimalist", "luxury", "art deco", "coastal", "mediterranean", "bohemian", "contemporary", "tropical", "mid-century modern"],
-  fnb: ["industrial", "rustic", "modern", "minimalist", "vintage", "bohemian", "mediterranean", "contemporary", "farmhouse", "art deco"],
-  retail: ["modern", "minimalist", "industrial", "luxury", "contemporary", "scandinavian", "vintage", "bohemian", "art deco", "eclectic"],
-  workplace: ["modern", "minimalist", "industrial", "scandinavian", "contemporary", "mid-century modern", "rustic", "traditional", "luxury", "eclectic"],
-  wellness: ["minimalist", "scandinavian", "modern", "zen", "coastal", "contemporary", "japandi", "luxury", "traditional", "mediterranean"],
-  cultural: ["minimalist", "modern", "contemporary", "industrial", "traditional", "scandinavian", "rustic", "art deco", "eclectic", "vintage"],
-  residential: ["modern", "minimalist", "scandinavian", "mid-century modern", "bohemian", "farmhouse", "industrial", "coastal", "traditional", "contemporary", "rustic", "japandi"],
-  beauty: ["modern", "minimalist", "luxury", "scandinavian", "bohemian", "vintage", "contemporary", "art deco", "industrial", "eclectic"],
-  fitness: ["industrial", "modern", "minimalist", "contemporary", "scandinavian", "rustic", "luxury", "zen", "vintage", "eclectic"],
-  other: ["modern", "minimalist", "scandinavian", "industrial", "bohemian", "contemporary", "rustic", "luxury"],
+  hospitality: ["contemporary", "modern", "minimalist", "luxe", "coastal", "industrial", "mid-century", "scandinavian"],
+  fnb: ["industrial", "rustic", "modern", "minimalist", "contemporary", "mid-century", "scandinavian", "luxe"],
+  retail: ["modern", "minimalist", "contemporary", "industrial", "luxe", "scandinavian", "mid-century", "japandi"],
+  workplace: ["modern", "minimalist", "contemporary", "industrial", "scandinavian", "mid-century", "rustic", "luxe"],
+  wellness: ["minimalist", "modern", "contemporary", "scandinavian", "japandi", "coastal", "luxe", "rustic"],
+  cultural: ["minimalist", "modern", "contemporary", "industrial", "scandinavian", "rustic", "mid-century", "japandi"],
+  residential: ["modern", "minimalist", "scandinavian", "mid-century", "contemporary", "industrial", "coastal", "japandi", "rustic", "luxe"],
+  beauty: ["modern", "minimalist", "luxe", "scandinavian", "contemporary", "industrial", "japandi", "coastal"],
+  fitness: ["industrial", "modern", "minimalist", "contemporary", "scandinavian", "rustic", "luxe", "mid-century"],
+  other: ["modern", "minimalist", "scandinavian", "industrial", "contemporary", "rustic", "luxe", "coastal"],
 };
 
 export function getIndustry(id: string | null): ConceptIndustry | undefined {

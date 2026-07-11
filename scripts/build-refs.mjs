@@ -17,7 +17,7 @@ import { dirname } from "node:path";
 
 const BASE = "https://www.fills.io/api/pinterest/search";
 const LIMIT = 12;
-const CONCURRENCY = 8;
+const CONCURRENCY = 10;
 
 // Per-step sets. Each key's queries give genuine variety (distinct moods), not
 // near-duplicates. The object key becomes the pin's `style` tag.
@@ -82,15 +82,22 @@ const VIBE_NOUN = {
 };
 
 // Style moods layered over each industry noun (become the vibe style chips).
+// These names must match the homepage vibe vocabulary (concept-taxonomy) so a
+// style picked on the homepage pre-selects the matching chip in the wizard.
 const VIBE_STYLES = {
-  "warm minimalism": "warm minimalist",
-  japandi: "japandi",
-  "mid-century": "mid century modern",
+  contemporary: "contemporary",
+  modern: "modern",
+  minimalist: "minimalist",
+  scandinavian: "scandinavian",
   industrial: "industrial",
+  "mid-century": "mid century modern",
+  japandi: "japandi",
   luxe: "luxury elegant",
+  coastal: "coastal",
+  rustic: "rustic",
 };
 
-const CAP = { vibeIndustry: 45, category: 24 };
+const CAP = { vibeIndustry: 120, category: 24 };
 
 async function fetchQuery(style, q) {
   try {

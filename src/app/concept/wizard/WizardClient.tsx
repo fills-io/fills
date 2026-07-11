@@ -83,6 +83,11 @@ export default function WizardClient() {
         ...(specParam ? { spaceDescription: specParam } : {}),
         ...(vibeParam ? { vibeQuery: vibeParam } : {}),
       }));
+      // Came off the homepage sentence with everything answered? The Space step
+      // just re-asks project type + space, so skip it and open on Vibe.
+      if (matched && specParam?.trim() && vibeParam?.trim()) {
+        setCurrent("vibe");
+      }
     }
     hydrated.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
