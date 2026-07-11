@@ -140,22 +140,6 @@ export default function ColorPaletteBuilder({
               onChange={(e) => updateSlot(i, { hex: e.target.value.trim() })}
               className="w-full border border-bdr-2 bg-transparent px-2 py-1 text-center font-mono text-[11px] uppercase text-txt focus:border-acc focus:outline-none"
             />
-
-            {/* Name + where it lives (stacked) */}
-            <input
-              type="text"
-              value={entry.name}
-              onChange={(e) => updateSlot(i, { name: e.target.value })}
-              placeholder="Name, e.g. Travertine"
-              className="w-full border-b border-bdr-2 bg-transparent px-1 py-1 text-[12px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
-            />
-            <input
-              type="text"
-              value={entry.material}
-              onChange={(e) => updateSlot(i, { material: e.target.value })}
-              placeholder="Where, e.g. Wall plaster"
-              className="w-full border-b border-bdr-2 bg-transparent px-1 py-1 text-[12px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
-            />
           </div>
         );
       })}

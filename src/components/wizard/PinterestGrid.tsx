@@ -122,9 +122,8 @@ function CuratedPicker({
   }, [curated, sliceSeed]);
 
   // A typed query wins over the chips; otherwise the active chip filters.
-  // Selecting an image never reorders the grid. A query with no matches falls
-  // back to the full pool (so typing is never a dead end).
-  const { visible, noMatch } = useMemo(() => {
+  // A query with no matches falls back to the full pool (never a dead end).
+  const { matches, noMatch } = useMemo(() => {
     const qq = query.trim().toLowerCase();
     if (qq) {
       const toks = qq.split(/\s+/);
@@ -132,13 +131,37 @@ function CuratedPicker({
         const hay = (c.style + " " + (c.title || "")).toLowerCase();
         return toks.some((t) => hay.includes(t));
       });
-      return { visible: m.length ? m : pool, noMatch: m.length === 0 };
+      return { matches: m, noMatch: m.length === 0 };
     }
     return {
-      visible: styleFilter ? pool.filter((c) => c.style === styleFilter) : pool,
+      matches: styleFilter ? pool.filter((c) => c.style === styleFilter) : pool,
       noMatch: false,
     };
   }, [pool, styleFilter, query]);
+
+  // Matches first, then the rest of the industry pool (deduped) — so the chosen
+  // style leads but there are always more images to scroll to.
+  const ordered = useMemo(() => {
+    if (!matches.length || matches === pool) return pool;
+    const ids = new Set(matches.map((c) => c.id));
+    return [...matches, ...pool.filter((c) => !ids.has(c.id))];
+  }, [pool, matches]);
+
+  // Paginate in full rows (multiples of 12 sit evenly on 2 / 3 / 4 columns).
+  // Reset the page size whenever the filter changes — adjusted during render
+  // (React's recommended alternative to a setState-in-effect), so a new filter
+  // never shows a stale "Load more" count for a frame.
+  const [shown, setShown] = useState(24);
+  const filterKey = `${styleFilter ?? ""}|${query}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setShown(24);
+  }
+  const capped =
+    ordered.length >= 12 ? Math.floor(ordered.length / 12) * 12 : ordered.length;
+  const display = ordered.slice(0, Math.min(shown, capped));
+  const canLoadMore = display.length < capped;
 
   const atMax = selectedPins.length >= maxSelections;
   const need = minSelections ?? 0;
@@ -233,7 +256,7 @@ function CuratedPicker({
 
       {/* Grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {visible.map((c) => {
+        {display.map((c) => {
           const isSelected = selectedPins.some((p) => p.id === c.id);
           const cannotSelect = !isSelected && atMax;
           return (
@@ -269,6 +292,18 @@ function CuratedPicker({
           );
         })}
       </div>
+
+      {canLoadMore && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShown((s) => s + 24)}
+            className="border border-bdr-2 px-6 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-txt-2 transition hover:border-acc hover:text-acc"
+          >
+            Load more
+          </button>
+        </div>
+      )}
     </div>
   );
 }

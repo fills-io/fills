@@ -3,16 +3,15 @@
 /**
  * Step 3 — Colors & Palette.
  *
- * Three compact bands so it reads without endless scrolling:
- *   A) "From your vibe pins" — the images you picked, each with its dominant
- *      colour as a clickable swatch (drops into the focused/first-empty slot).
- *   B) A compact 4-across palette editor (Primary/Secondary/Accent/Supporting).
- *   C) A live proportional preview + a "Rooms with these colours" strip, whose
- *      images are matched to the palette by colour and refresh on every change
- *      (including after "Suggest a palette").
+ * The palette is built FROM the vibe images you picked: on arrival we auto-fill
+ * it from those images' colours. Three compact bands:
+ *   A) "From your vibe pins" — your images + the colour each one carries.
+ *   B) A simple colour bar (tap a swatch to change it). No naming fields.
+ *   C) A small live preview + "Rooms with these colours" (matched by colour).
+ * "Suggest a palette" builds a harmonised set seeded from your images.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ColorPaletteBuilder, {
   PALETTE_SLOTS,
   PalettePreview,
@@ -26,10 +25,18 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-/** Default starting palette — pulled from the warm-cream/terracotta theme. */
 function defaultPalette(): ColorEntry[] {
   return PALETTE_SLOTS.map((slot) => ({
     hex: slot.defaultHex,
+    name: "",
+    material: "",
+  }));
+}
+
+/** Build a palette from a list of hexes, padding with the theme defaults. */
+function paletteFrom(hexes: string[]): ColorEntry[] {
+  return PALETTE_SLOTS.map((slot, i) => ({
+    hex: hexes[i] ?? slot.defaultHex,
     name: "",
     material: "",
   }));
@@ -55,40 +62,41 @@ export default function ColorsStep({ state, setState }: Props) {
   );
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [focusedSlot, setFocusedSlot] = useState<number | null>(null);
 
   const vibePins = (state.vibePins ?? []).filter((p) => p.imageUrl);
-  const vibeColors = vibePins
-    .map((p) => p.dominantColor?.trim())
-    .filter((c): c is string => !!c && /^#[0-9a-f]{6}$/i.test(c));
+  const vibeColors = useMemo(
+    () =>
+      vibePins
+        .map((p) => p.dominantColor?.trim())
+        .filter((c): c is string => !!c && /^#[0-9a-f]{6}$/i.test(c)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [state.vibePins],
+  );
 
-  /** Drop a colour into the focused slot, else the first unnamed slot. */
-  function assignColor(hex: string) {
-    const empty = palette.findIndex((s) => !s.name.trim());
-    const target = focusedSlot ?? (empty >= 0 ? empty : 0);
-    setState({
-      palette: palette.map((s, i) => (i === target ? { ...s, hex } : s)),
-    });
-  }
+  // Auto-fill the palette from the picked vibe images once, if untouched.
+  const autoFilled = useRef(false);
+  useEffect(() => {
+    if (autoFilled.current) return;
+    if (!state.palette && vibeColors.length > 0) {
+      autoFilled.current = true;
+      setState({ palette: paletteFrom(vibeColors) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  /** Fill every unnamed slot from the vibe pins' dominant colours. */
+  /** Rebuild the palette from the vibe images' colours. */
   function pullFromVibe() {
     if (vibeColors.length === 0) return;
-    setState({
-      palette: palette.map((slot, i) =>
-        slot.name.trim() ? slot : vibeColors[i] ? { ...slot, hex: vibeColors[i] } : slot,
-      ),
-    });
+    setState({ palette: paletteFrom(vibeColors) });
   }
 
+  /** Colormind palette, seeded from a couple of your image colours. */
   async function suggestPalette() {
     setStatus("loading");
     setErrorMessage(null);
     try {
-      const locked = palette
-        .map((c) => (c.name.trim() ? c.hex : null))
-        .filter((v): v is string => v !== null);
-      const q = locked.length > 0 ? `?locked=${locked.join(",")}` : "";
+      const seed = vibeColors.slice(0, 2);
+      const q = seed.length ? `?locked=${encodeURIComponent(seed.join(","))}` : "";
       const response = await fetch(`/api/colors/generate${q}`);
       const data = (await response.json()) as
         | { palette: string[] }
@@ -97,11 +105,7 @@ export default function ColorsStep({ state, setState }: Props) {
       if (!("palette" in data)) {
         throw new Error("Unexpected response from /api/colors/generate");
       }
-      setState({
-        palette: palette.map((slot, i) =>
-          slot.name.trim() ? slot : { ...slot, hex: data.palette[i] ?? slot.hex },
-        ),
-      });
+      setState({ palette: paletteFrom(data.palette) });
       setStatus("idle");
     } catch (e) {
       setStatus("error");
@@ -141,8 +145,8 @@ export default function ColorsStep({ state, setState }: Props) {
   return (
     <div className="space-y-5">
       <p className="text-[14px] text-txt-2">
-        Build your colours in four roles. What you write here feeds into the
-        final design plan.
+        Your colours, pulled from the images you picked. Tap any swatch to change
+        it, or generate a harmonised set.
       </p>
 
       {status === "error" && (
@@ -151,7 +155,7 @@ export default function ColorsStep({ state, setState }: Props) {
         </div>
       )}
 
-      {/* Band A — from your vibe pins */}
+      {/* Band A — from your vibe pins (shows the images + their colours) */}
       <div className="border border-bdr-2 bg-bg-2 p-3">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
@@ -163,7 +167,7 @@ export default function ColorsStep({ state, setState }: Props) {
                 onClick={pullFromVibe}
                 className="border border-bdr-2 px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-txt-2 transition hover:border-acc hover:text-acc"
               >
-                Auto-fill all
+                Rebuild from images
               </button>
             )}
             <button
@@ -193,16 +197,14 @@ export default function ColorsStep({ state, setState }: Props) {
                     className="aspect-[3/4] w-full border border-bdr-2 object-cover"
                   />
                   {dc ? (
-                    <button
-                      onClick={() => assignColor(dc)}
-                      title={`Use ${dc}. Focus a colour slot first to choose where it goes.`}
-                      className="mt-1 flex h-5 w-full items-center justify-center border border-bdr-2 transition hover:ring-2 hover:ring-inset hover:ring-acc"
+                    <div
+                      className="mt-1 flex h-5 w-full items-center justify-center border border-bdr-2"
                       style={{ backgroundColor: dc }}
                     >
                       <span className="font-mono text-[8px] text-white mix-blend-difference">
                         {dc.toUpperCase()}
                       </span>
-                    </button>
+                    </div>
                   ) : (
                     <div className="mt-1 h-5 w-full border border-dashed border-bdr-2" />
                   )}
@@ -217,16 +219,14 @@ export default function ColorsStep({ state, setState }: Props) {
         )}
       </div>
 
-      {/* Band B — compact editor */}
+      {/* Band B — the colour bar */}
       <div>
         <ColorPaletteBuilder
           palette={palette}
           onChange={(next) => setState({ palette: next })}
-          onFocusSlot={setFocusedSlot}
         />
         <p className="mt-2 text-[11px] text-txt-3">
-          Click a swatch to pick a colour, or tap a vibe swatch above to drop it
-          into the focused slot. Naming a slot locks it from &ldquo;Suggest.&rdquo;
+          Tap a swatch to change a colour, or type a hex code.
         </p>
       </div>
 
