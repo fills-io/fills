@@ -63,30 +63,38 @@ export default function WizardClient() {
   const params = useSearchParams();
 
   // ── Hydrate on mount ───────────────────────────────────────────────────
-  // Priority order:
-  //   1. Saved localStorage draft (if any) — restores in-progress work
-  //   2. URL ?industry= seed from the homepage Quick form
-  //   3. Empty state
+  // Priority: fresh homepage inputs (start a new brief, skip Space) > saved
+  // draft (resume) > partial URL seed > empty.
   useEffect(() => {
-    const saved = loadDraft();
-    if (saved) {
-      setWizardState(saved.state);
-      setResumedAt(saved.savedAt);
+    const industryParam = params.get("industry");
+    const specParam = params.get("spec")?.trim();
+    const vibeParam = params.get("vibe")?.trim();
+    const matched = industryParam ? findIndustryByLabel(industryParam) : null;
+    const quickStart = !!(matched && specParam && vibeParam);
+
+    if (quickStart) {
+      // Arrived from the homepage "Build my brief" with everything answered.
+      // Start THIS brief (replacing any old draft) and skip the Space step,
+      // since project type + space were already picked on the homepage.
+      clearDraft();
+      setWizardState({
+        industryId: matched.id,
+        spaceDescription: specParam,
+        vibeQuery: vibeParam,
+      });
+      setCurrent("vibe");
     } else {
-      const industryParam = params.get("industry");
-      const specParam = params.get("spec");
-      const vibeParam = params.get("vibe");
-      const matched = industryParam ? findIndustryByLabel(industryParam) : null;
-      setWizardState((prev) => ({
-        ...prev,
-        ...(matched ? { industryId: matched.id } : {}),
-        ...(specParam ? { spaceDescription: specParam } : {}),
-        ...(vibeParam ? { vibeQuery: vibeParam } : {}),
-      }));
-      // Came off the homepage sentence with everything answered? The Space step
-      // just re-asks project type + space, so skip it and open on Vibe.
-      if (matched && specParam?.trim() && vibeParam?.trim()) {
-        setCurrent("vibe");
+      const saved = loadDraft();
+      if (saved) {
+        setWizardState(saved.state);
+        setResumedAt(saved.savedAt);
+      } else if (matched || specParam || vibeParam) {
+        setWizardState((prev) => ({
+          ...prev,
+          ...(matched ? { industryId: matched.id } : {}),
+          ...(specParam ? { spaceDescription: specParam } : {}),
+          ...(vibeParam ? { vibeQuery: vibeParam } : {}),
+        }));
       }
     }
     hydrated.current = true;
@@ -247,6 +255,7 @@ export default function WizardClient() {
     setGeneratedBrief(null);
     setGenerationStatus("idle");
     setGenerationError(null);
+    setResumedAt(null);
     setCurrent("space");
   }
 
@@ -309,6 +318,12 @@ export default function WizardClient() {
               {formatRelative(resumedAt)}. Your work is saved automatically as
               you go.
             </p>
+            <button
+              onClick={startOver}
+              className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-acc underline underline-offset-2 transition hover:text-acc-h"
+            >
+              Start fresh
+            </button>
           </div>
         )}
 
@@ -329,21 +344,36 @@ export default function WizardClient() {
         {/* Step navigation — placed above the content so you can go Back / Next
             without scrolling past a long grid of images. */}
         <div className="mt-8 flex items-center justify-between gap-4 border-b border-bdr-2 pb-6">
-          {isFirst ? (
-            <Link
-              href="/"
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
-            >
-              ← Home
-            </Link>
-          ) : (
-            <button
-              onClick={goBack}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
-            >
-              ← Back
-            </button>
-          )}
+          <div className="flex items-center gap-5">
+            {isFirst ? (
+              <Link
+                href="/"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
+              >
+                ← Home
+              </Link>
+            ) : (
+              <button
+                onClick={goBack}
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
+              >
+                ← Back
+              </button>
+            )}
+            {(!isFirst || wizardState.industryId) && (
+              <button
+                onClick={() => {
+                  if (
+                    window.confirm("Start over? This clears your current brief.")
+                  )
+                    startOver();
+                }}
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
+              >
+                Start over
+              </button>
+            )}
+          </div>
 
           <button
             onClick={isLast ? generateBrief : goNext}
