@@ -11,6 +11,11 @@ import type { IndustryId } from "./space-taxonomy";
 import type { ColorEntry, FurnitureSubSection, PinterestPin } from "@/db/schema";
 
 export type WizardState = {
+  /** Which flow the user is in. "quick" auto-fills everything after Vibe (the
+   *  AI writes furniture/lighting/etc. into the brief); "full" walks every
+   *  category with its own image picker. Absent ≡ "full". */
+  mode?: "quick" | "full";
+
   // ── Step 1: Space ────────────────────────────────────────────────────────
   industryId?: IndustryId;
   /** Primary space (kept in sync with spaceIds[0] for back-compat). */

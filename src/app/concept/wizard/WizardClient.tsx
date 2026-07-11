@@ -16,13 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import {
-  WIZARD_STEPS,
-  type WizardStepId,
-  stepNumber,
-  nextStep,
-  prevStep,
-} from "@/lib/wizard-steps";
+import { WIZARD_STEPS, type WizardStepId } from "@/lib/wizard-steps";
 import { findIndustryByLabel, getIndustry } from "@/lib/space-taxonomy";
 import {
   type WizardState,
@@ -42,6 +36,9 @@ import MaterialsStep from "@/components/wizard/steps/MaterialsStep";
 import ReviewStep from "@/components/wizard/steps/ReviewStep";
 import BriefDisplay from "@/components/wizard/BriefDisplay";
 import GenerationOverlay from "@/components/wizard/GenerationOverlay";
+
+/** The only steps Quick mode walks — everything else is auto-designed. */
+const QUICK_STEP_IDS = ["vibe", "colors", "review"] as const;
 
 export default function WizardClient() {
   const [current, setCurrent] = useState<WizardStepId>("space");
@@ -72,12 +69,17 @@ export default function WizardClient() {
     const matched = industryParam ? findIndustryByLabel(industryParam) : null;
     const quickStart = !!(matched && specParam && vibeParam);
 
+    // Seeding state once from the URL / saved draft on mount is a legitimate
+    // hydration effect (external -> React), which the set-state-in-effect rule
+    // over-eagerly flags.
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (quickStart) {
       // Arrived from the homepage "Build my brief" with everything answered.
       // Start THIS brief (replacing any old draft) and skip the Space step,
       // since project type + space were already picked on the homepage.
       clearDraft();
       setWizardState({
+        mode: "quick",
         industryId: matched.id,
         spaceDescription: specParam,
         vibeQuery: vibeParam,
@@ -97,6 +99,7 @@ export default function WizardClient() {
         }));
       }
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
     hydrated.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -109,11 +112,21 @@ export default function WizardClient() {
     saveDraft(wizardState);
   }, [wizardState]);
 
+  // Quick mode auto-fills everything after Vibe, so it only walks
+  // Vibe → Colours → Review. Full mode walks all nine steps.
+  const visibleSteps =
+    wizardState.mode === "quick"
+      ? WIZARD_STEPS.filter((s) =>
+          QUICK_STEP_IDS.includes(s.id as (typeof QUICK_STEP_IDS)[number]),
+        )
+      : WIZARD_STEPS;
+
   const step = WIZARD_STEPS.find((s) => s.id === current)!;
-  const idx = stepNumber(current);
-  const total = WIZARD_STEPS.length;
-  const isFirst = idx === 1;
-  const isLast = idx === total;
+  const visIdx = visibleSteps.findIndex((s) => s.id === current);
+  const idx = visIdx + 1; // 1-based position within the visible flow
+  const total = visibleSteps.length;
+  const isFirst = visIdx <= 0;
+  const isLast = visIdx === total - 1;
 
   /** Merge a partial update into the wizard state. */
   function patchState(patch: Partial<WizardState>) {
@@ -162,14 +175,14 @@ export default function WizardClient() {
   }
 
   function goBack() {
-    const prev = prevStep(current);
-    if (prev) setCurrent(prev);
+    if (visIdx > 0) setCurrent(visibleSteps[visIdx - 1].id);
   }
 
   function goNext() {
     if (!canAdvance()) return;
-    const next = nextStep(current);
-    if (next) setCurrent(next);
+    if (visIdx >= 0 && visIdx < visibleSteps.length - 1) {
+      setCurrent(visibleSteps[visIdx + 1].id);
+    }
   }
 
   // ── Generation flow ────────────────────────────────────────────────────
@@ -210,7 +223,7 @@ export default function WizardClient() {
       vibeQuery: wizardState.vibeQuery,
       vibePinTitles: titleList(wizardState.vibePins),
       palette: wizardState.palette
-        ?.filter((c) => c.name || c.material)
+        ?.filter((c) => /^#[0-9a-f]{6}$/i.test(c.hex))
         .map((c) => ({
           hex: c.hex,
           name: c.name || undefined,
@@ -285,7 +298,11 @@ export default function WizardClient() {
 
   return (
     <>
-      <WizardProgress current={current} onJump={setCurrent} />
+      <WizardProgress
+        current={current}
+        onJump={setCurrent}
+        steps={visibleSteps}
+      />
 
       {/* Full-screen overlay during generation */}
       {generationStatus === "generating" && <GenerationOverlay />}
@@ -434,24 +451,4 @@ function formatRelative(date: Date): string {
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
   return date.toLocaleDateString();
-}
-
-function PlaceholderStep({
-  stepId,
-  stepLabel,
-}: {
-  stepId: string;
-  stepLabel: string;
-}) {
-  return (
-    <div className="border border-bdr-2 bg-bg-2 p-10 text-center backdrop-blur-sm">
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-txt-3">
-        {stepId} step · placeholder
-      </p>
-      <p className="mx-auto mt-3 max-w-md text-[14px] leading-relaxed text-txt-2">
-        The real {stepLabel.toLowerCase()} controls (Pinterest grids, AI
-        suggestions, color builder, etc.) plug in here in an upcoming PR.
-      </p>
-    </div>
-  );
 }

@@ -1,22 +1,20 @@
 "use client";
 
 /**
- * Step 3 — Colors & Palette.
+ * Step 3 — Colours.
  *
- * The palette is built FROM the vibe images you picked: on arrival we auto-fill
- * it from those images' colours. Three compact bands:
- *   A) "From your vibe pins" — your images + the colour each one carries.
- *   B) A simple colour bar (tap a swatch to change it). No naming fields.
- *   C) A small live preview + "Rooms with these colours" (matched by colour).
- * "Suggest a palette" builds a harmonised set seeded from your images.
+ * The palette is pulled straight from the images you picked: on arrival we read
+ * the real colours out of those pins' pixels and lay them into one connected,
+ * blended bar. Tap a colour to change it, use the eyedropper to grab one from
+ * anywhere on screen, or "Suggest a palette" for a harmonised set.
+ *
+ * No naming fields, no proportional preview, no room matcher — just the colours,
+ * simply. (Those were removed per direct product feedback.)
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import ColorPaletteBuilder, {
-  PALETTE_SLOTS,
-  PalettePreview,
-} from "@/components/wizard/ColorPaletteBuilder";
-import { CURATED_PINS, CURATED_VIBE, type CuratedPin } from "@/data/reference-images";
+import BlendedPaletteBar from "@/components/wizard/BlendedPaletteBar";
+import { extractPalette } from "@/lib/extract-colors";
 import type { ColorEntry } from "@/db/schema";
 import type { WizardState } from "@/lib/wizard-state";
 
@@ -25,238 +23,196 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-function defaultPalette(): ColorEntry[] {
-  return PALETTE_SLOTS.map((slot) => ({
-    hex: slot.defaultHex,
-    name: "",
-    material: "",
-  }));
+const PALETTE_SIZE = 6;
+const DEFAULT_HEXES = [
+  "#c8c3bb",
+  "#b9a797",
+  "#8c987d",
+  "#b79d85",
+  "#a48d6e",
+  "#5e6b4f",
+];
+
+function toEntries(hexes: string[]): ColorEntry[] {
+  const out: ColorEntry[] = [];
+  for (let i = 0; i < PALETTE_SIZE; i++) {
+    out.push({ hex: hexes[i] ?? DEFAULT_HEXES[i], name: "", material: "" });
+  }
+  return out;
 }
 
-/** Build a palette from a list of hexes, padding with the theme defaults. */
-function paletteFrom(hexes: string[]): ColorEntry[] {
-  return PALETTE_SLOTS.map((slot, i) => ({
-    hex: hexes[i] ?? slot.defaultHex,
-    name: "",
-    material: "",
-  }));
+function hexesOf(palette?: ColorEntry[]): string[] {
+  const hx = (palette ?? []).map((c) => c.hex);
+  for (let i = hx.length; i < PALETTE_SIZE; i++) hx.push(DEFAULT_HEXES[i]);
+  return hx.slice(0, PALETTE_SIZE);
 }
 
-function hexToRgb(hex: string): [number, number, number] | null {
+/** Lighten (t>0) / darken (t<0) a hex by fraction t. */
+function shadeHex(hex: string, t: number): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return null;
+  if (!m) return hex;
   const n = parseInt(m[1], 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+    const nv = t >= 0 ? v + (255 - v) * t : v * (1 + t);
+    return Math.max(0, Math.min(255, Math.round(nv)));
+  });
+  return "#" + ch.map((v) => v.toString(16).padStart(2, "0")).join("");
 }
-function dist(a: number[], b: number[]): number {
-  const dr = a[0] - b[0];
-  const dg = a[1] - b[1];
-  const db = a[2] - b[2];
-  return dr * dr + dg * dg + db * db;
+
+/** Pad a short list of hexes up to a full palette with light/dark variants. */
+function padTo6(hexes: string[]): string[] {
+  const out = [...hexes];
+  const deltas = [0.2, -0.2, 0.35, -0.35];
+  let d = 0;
+  while (out.length < PALETTE_SIZE && hexes.length > 0) {
+    out.push(shadeHex(hexes[out.length % hexes.length], deltas[d % deltas.length]));
+    d++;
+  }
+  for (let i = out.length; i < PALETTE_SIZE; i++) out.push(DEFAULT_HEXES[i]);
+  return out.slice(0, PALETTE_SIZE);
 }
 
 export default function ColorsStep({ state, setState }: Props) {
-  const palette = useMemo(
-    () => state.palette ?? defaultPalette(),
-    [state.palette],
+  const vibePins = useMemo(
+    () => (state.vibePins ?? []).filter((p) => p.imageUrl),
+    [state.vibePins],
   );
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const vibePins = (state.vibePins ?? []).filter((p) => p.imageUrl);
-  const vibeColors = useMemo(
+  const dominantFallback = useMemo(
     () =>
       vibePins
         .map((p) => p.dominantColor?.trim())
         .filter((c): c is string => !!c && /^#[0-9a-f]{6}$/i.test(c)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [state.vibePins],
+    [vibePins],
   );
 
-  // Auto-fill the palette from the picked vibe images once, if untouched.
-  const autoFilled = useRef(false);
-  useEffect(() => {
-    if (autoFilled.current) return;
-    if (!state.palette && vibeColors.length > 0) {
-      autoFilled.current = true;
-      setState({ palette: paletteFrom(vibeColors) });
+  const colors = hexesOf(state.palette);
+  const [busy, setBusy] = useState<"idle" | "extracting" | "suggesting">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const started = useRef(false);
+
+  async function runExtract() {
+    setBusy("extracting");
+    setError(null);
+    try {
+      const hexes = await extractPalette(
+        vibePins.map((p) => p.imageUrl),
+        PALETTE_SIZE,
+        dominantFallback,
+      );
+      setState({ palette: toEntries(hexes) });
+    } catch {
+      setError(
+        "Couldn't read colours from the images — you can still pick them by hand below.",
+      );
+      if (!state.palette) {
+        setState({
+          palette: toEntries(
+            dominantFallback.length ? padTo6(dominantFallback) : DEFAULT_HEXES,
+          ),
+        });
+      }
+    } finally {
+      setBusy("idle");
     }
+  }
+
+  // Auto-fill from the picked images the first time we land here, if untouched.
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    if (state.palette && state.palette.length > 0) return;
+    // One-time seed from the picked images (kicks off async extraction).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (vibePins.length > 0) runExtract();
+    else setState({ palette: toEntries(DEFAULT_HEXES) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Rebuild the palette from the vibe images' colours. */
-  function pullFromVibe() {
-    if (vibeColors.length === 0) return;
-    setState({ palette: paletteFrom(vibeColors) });
-  }
-
-  /** Colormind palette, seeded from a couple of your image colours. */
-  async function suggestPalette() {
-    setStatus("loading");
-    setErrorMessage(null);
+  /** Colormind palette, seeded from a couple of the current colours. */
+  async function suggest() {
+    setBusy("suggesting");
+    setError(null);
     try {
-      const seed = vibeColors.slice(0, 2);
-      const q = seed.length ? `?locked=${encodeURIComponent(seed.join(","))}` : "";
-      const response = await fetch(`/api/colors/generate${q}`);
-      const data = (await response.json()) as
+      const seed = colors.slice(0, 2);
+      const q = seed.length
+        ? `?locked=${encodeURIComponent(seed.join(","))}`
+        : "";
+      const res = await fetch(`/api/colors/generate${q}`);
+      const data = (await res.json()) as
         | { palette: string[] }
         | { ok: false; error: string };
       if ("ok" in data && data.ok === false) throw new Error(data.error);
-      if (!("palette" in data)) {
-        throw new Error("Unexpected response from /api/colors/generate");
-      }
-      setState({ palette: paletteFrom(data.palette) });
-      setStatus("idle");
+      if (!("palette" in data)) throw new Error("Unexpected response.");
+      setState({ palette: toEntries(padTo6(data.palette)) });
     } catch (e) {
-      setStatus("error");
-      setErrorMessage(e instanceof Error ? e.message : String(e));
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy("idle");
     }
   }
-
-  // Rooms whose dominant colour is nearest one of the palette colours.
-  const roomSet =
-    (state.industryId && CURATED_VIBE[state.industryId]) || CURATED_PINS.vibe;
-  const matchedRooms = useMemo(() => {
-    const paletteRgb = palette
-      .map((c) => hexToRgb(c.hex))
-      .filter((v): v is [number, number, number] => !!v);
-    if (!paletteRgb.length) return [];
-    const scored = roomSet
-      .map((p) => {
-        const rgb = p.dominantColor ? hexToRgb(p.dominantColor) : null;
-        return rgb
-          ? { p, best: Math.min(...paletteRgb.map((pr) => dist(pr, rgb))) }
-          : null;
-      })
-      .filter((s): s is { p: CuratedPin; best: number } => s !== null)
-      .sort((a, b) => a.best - b.best);
-    const seen = new Set<string>();
-    const out: CuratedPin[] = [];
-    for (const s of scored) {
-      if (!seen.has(s.p.imageUrl)) {
-        seen.add(s.p.imageUrl);
-        out.push(s.p);
-        if (out.length >= 6) break;
-      }
-    }
-    return out;
-  }, [roomSet, palette]);
 
   return (
     <div className="space-y-5">
       <p className="text-[14px] text-txt-2">
-        Your colours, pulled from the images you picked. Tap any swatch to change
-        it, or generate a harmonised set.
+        Your palette, pulled from the images you picked. Tap a colour to change
+        it, use the eyedropper, or generate a harmonised set.
       </p>
 
-      {status === "error" && (
-        <div className="border border-red-900/40 bg-red-950/30 p-3 text-[12px] text-red-200">
-          Suggestion failed: {errorMessage}
+      {error && (
+        <div className="border border-amber-800/40 bg-amber-950/20 p-3 text-[12px] text-amber-200">
+          {error}
         </div>
       )}
 
-      {/* Band A — from your vibe pins (shows the images + their colours) */}
-      <div className="border border-bdr-2 bg-bg-2 p-3">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
-            From your vibe pins
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {vibeColors.length > 0 && (
-              <button
-                onClick={pullFromVibe}
-                className="border border-bdr-2 px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-txt-2 transition hover:border-acc hover:text-acc"
-              >
-                Rebuild from images
-              </button>
-            )}
-            <button
-              onClick={suggestPalette}
-              disabled={status === "loading"}
-              className="border border-acc px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-acc transition hover:bg-acc hover:text-white disabled:opacity-50"
+      {/* Provenance + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          {vibePins.slice(0, 6).map((p, i) => (
+            <div
+              key={p.id || i}
+              className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-bdr-2"
             >
-              {status === "loading" ? "Generating…" : "Suggest a palette →"}
-            </button>
-          </div>
-        </div>
-
-        {vibePins.length > 0 ? (
-          <div className="flex gap-2 overflow-x-auto pb-1 lg:grid lg:grid-cols-6 lg:overflow-visible">
-            {vibePins.map((p, i) => {
-              const dc =
-                p.dominantColor && hexToRgb(p.dominantColor)
-                  ? p.dominantColor
-                  : null;
-              return (
-                <div key={p.id || i} className="w-24 shrink-0 lg:w-auto">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={p.imageUrl.replace("/736x/", "/474x/")}
-                    alt=""
-                    loading="lazy"
-                    className="aspect-[3/4] w-full border border-bdr-2 object-cover"
-                  />
-                  {dc ? (
-                    <div
-                      className="mt-1 flex h-5 w-full items-center justify-center border border-bdr-2"
-                      style={{ backgroundColor: dc }}
-                    >
-                      <span className="font-mono text-[8px] text-white mix-blend-difference">
-                        {dc.toUpperCase()}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="mt-1 h-5 w-full border border-dashed border-bdr-2" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <p className="text-[12px] text-txt-3">
-            No vibe pins picked yet. Tap &ldquo;Suggest a palette&rdquo; to start.
-          </p>
-        )}
-      </div>
-
-      {/* Band B — the colour bar */}
-      <div>
-        <ColorPaletteBuilder
-          palette={palette}
-          onChange={(next) => setState({ palette: next })}
-        />
-        <p className="mt-2 text-[11px] text-txt-3">
-          Tap a swatch to change a colour, or type a hex code.
-        </p>
-      </div>
-
-      {/* Band C — preview + rooms with these colours */}
-      <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
-        <PalettePreview palette={palette} />
-        <div className="border border-bdr-2 bg-bg-2 p-3">
-          <h3 className="mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
-            Rooms with these colours
-          </h3>
-          {matchedRooms.length > 0 ? (
-            <div className="grid grid-cols-3 gap-2">
-              {matchedRooms.map((p, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={p.id || i}
-                  src={p.imageUrl.replace("/736x/", "/474x/")}
-                  alt=""
-                  loading="lazy"
-                  className="aspect-[4/3] w-full border border-bdr-2 object-cover"
-                />
-              ))}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.imageUrl.replace("/736x/", "/236x/")}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
             </div>
-          ) : (
-            <p className="text-[12px] text-txt-3">
-              Set a palette to see rooms in these colours.
-            </p>
+          ))}
+          {vibePins.length > 0 && (
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3">
+              {busy === "extracting" ? "Reading colours…" : "From your images"}
+            </span>
           )}
         </div>
+
+        <div className="flex flex-wrap gap-2">
+          {vibePins.length > 0 && (
+            <button
+              onClick={runExtract}
+              disabled={busy !== "idle"}
+              className="border border-bdr-2 px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-txt-2 transition hover:border-acc hover:text-acc disabled:opacity-50"
+            >
+              {busy === "extracting" ? "Reading…" : "Rebuild from images"}
+            </button>
+          )}
+          <button
+            onClick={suggest}
+            disabled={busy !== "idle"}
+            className="border border-acc px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-acc transition hover:bg-acc hover:text-white disabled:opacity-50"
+          >
+            {busy === "suggesting" ? "Generating…" : "Suggest a palette →"}
+          </button>
+        </div>
       </div>
+
+      {/* The one connected, blended bar */}
+      <BlendedPaletteBar
+        colors={colors}
+        onChange={(hexes) => setState({ palette: toEntries(hexes) })}
+      />
     </div>
   );
 }
