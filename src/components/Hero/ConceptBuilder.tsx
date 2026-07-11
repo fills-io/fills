@@ -91,14 +91,13 @@ export default function ConceptBuilder() {
 
   function build() {
     if (tab === "quick") {
-      // → new QuickFlow, prefilled from the madlib.
+      // → the Quick canvas flow, prefilled from the madlib.
       const qs = new URLSearchParams({
-        path: "quick",
         industry: industry?.label ?? "",
         spec: spec.trim(),
         vibe: vibe.trim(),
       });
-      router.push(`/concept/wizard?${qs.toString()}`);
+      router.push(`/concept/quick?${qs.toString()}`);
     } else if (tab === "upload") {
       // → new QuickFlow upload path.
       router.push("/concept/wizard");
