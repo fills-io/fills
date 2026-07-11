@@ -6,8 +6,10 @@
  * pixels (for colour extraction) WITHOUT tainting the canvas — a cross-origin
  * image would otherwise block getImageData().
  *
- * Security: we only proxy images from Pinterest's CDN (*.pinimg.com) so this
- * can't be used as an open proxy / SSRF vector.
+ * Security: we only proxy https images from Pinterest's CDN (*.pinimg.com),
+ * we refuse to follow redirects (so an allowed host can't 3xx us onto an
+ * internal address), and we only pass through image/* responses. That keeps
+ * this from being usable as an open proxy / SSRF vector.
  *
  * Response:
  *   200 OK   — the image bytes, cached for a day
@@ -46,13 +48,22 @@ export async function GET(request: NextRequest) {
     const upstream = await fetch(target.toString(), {
       // A UA header keeps some CDNs from 403-ing an "unknown" client.
       headers: { "User-Agent": "Mozilla/5.0 (compatible; FillsBot/1.0)" },
+      // Never follow redirects: a 3xx from an allowed host could otherwise
+      // bounce us onto an internal address (SSRF). We reject them instead.
+      redirect: "manual",
+      signal: AbortSignal.timeout(8000),
       cache: "force-cache",
     });
+    if (upstream.status >= 300 && upstream.status < 400) {
+      return new Response("Refusing to follow redirect", { status: 502 });
+    }
     if (!upstream.ok || !upstream.body) {
       return new Response("Upstream fetch failed", { status: 502 });
     }
-    const contentType =
-      upstream.headers.get("content-type") ?? "image/jpeg";
+    const contentType = upstream.headers.get("content-type") ?? "";
+    if (!contentType.startsWith("image/")) {
+      return new Response("Not an image", { status: 502 });
+    }
     return new Response(upstream.body, {
       status: 200,
       headers: {

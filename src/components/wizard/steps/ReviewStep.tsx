@@ -29,6 +29,10 @@ export default function ReviewStep({ state, goToStep }: Props) {
   const industry = state.industryId ? getIndustry(state.industryId) : null;
   const spaceLabel =
     industry?.spaces.find((s) => s.id === state.spaceId)?.label ?? null;
+  // The headline name for the space: a picked space, else the typed "Other"
+  // project type, else the free-text description.
+  const primary =
+    spaceLabel ?? state.customIndustry?.trim() ?? state.spaceDescription ?? null;
   // In Quick mode everything after Colours is designed for the user by the AI,
   // so we don't show empty "pick this" category sections here.
   const isQuick = state.mode === "quick";
@@ -51,10 +55,10 @@ export default function ReviewStep({ state, goToStep }: Props) {
       >
         {industry ? (
           <p className="text-[15px] text-txt">
-            <span className="text-acc">
-              {spaceLabel ?? state.spaceDescription ?? industry.label}
-            </span>
-            {(spaceLabel || state.spaceDescription) && (
+            <span className="text-acc">{primary ?? industry.label}</span>
+            {/* Show the industry label alongside a distinct space name, but not
+                for freeform "Other" (whose label IS the typed project type). */}
+            {primary && !industry.freeform && (
               <span className="text-txt-3"> · {industry.label}</span>
             )}
             {state.spaceSize && (
@@ -67,7 +71,7 @@ export default function ReviewStep({ state, goToStep }: Props) {
             )}
           </p>
         ) : null}
-        {spaceLabel && state.spaceDescription && (
+        {state.spaceDescription && state.spaceDescription !== primary && (
           <p className="mt-3 text-[13px] leading-relaxed text-txt-2">
             {state.spaceDescription}
           </p>

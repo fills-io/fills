@@ -66,6 +66,7 @@ export default function WizardClient() {
     const industryParam = params.get("industry");
     const specParam = params.get("spec")?.trim();
     const vibeParam = params.get("vibe")?.trim();
+    const pathParam = params.get("path");
     const matched = industryParam ? findIndustryByLabel(industryParam) : null;
     const quickStart = !!(matched && specParam && vibeParam);
 
@@ -88,11 +89,18 @@ export default function WizardClient() {
     } else {
       const saved = loadDraft();
       if (saved) {
-        setWizardState(saved.state);
+        // An explicit "Full Studio" entry (?path=full) overrides a stale
+        // "quick" mode saved in the draft, so it opens the full 9-step flow.
+        setWizardState(
+          pathParam === "full"
+            ? { ...saved.state, mode: "full" }
+            : saved.state,
+        );
         setResumedAt(saved.savedAt);
       } else if (matched || specParam || vibeParam) {
         setWizardState((prev) => ({
           ...prev,
+          ...(pathParam === "full" ? { mode: "full" } : {}),
           ...(matched ? { industryId: matched.id } : {}),
           ...(specParam ? { spaceDescription: specParam } : {}),
           ...(vibeParam ? { vibeQuery: vibeParam } : {}),
@@ -120,6 +128,18 @@ export default function WizardClient() {
           QUICK_STEP_IDS.includes(s.id as (typeof QUICK_STEP_IDS)[number]),
         )
       : WIZARD_STEPS;
+
+  // Never strand `current` outside the visible flow. This happens when a quick
+  // draft is resumed (its saved step was "Space", which quick mode hides) — we
+  // snap forward to the first visible step so the user is never trapped.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    if (!visibleSteps.some((s) => s.id === current)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrent(visibleSteps[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wizardState.mode, current]);
 
   const step = WIZARD_STEPS.find((s) => s.id === current)!;
   const visIdx = visibleSteps.findIndex((s) => s.id === current);

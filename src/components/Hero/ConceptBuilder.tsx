@@ -103,8 +103,9 @@ export default function ConceptBuilder() {
       // → new QuickFlow upload path.
       router.push("/concept/wizard");
     } else {
-      // Full Studio keeps the existing detailed wizard.
-      router.push("/concept/wizard");
+      // Full Studio keeps the detailed 9-step wizard. The explicit ?path=full
+      // makes it open the full flow even if a "quick" draft is saved.
+      router.push("/concept/wizard?path=full");
     }
   }
 
