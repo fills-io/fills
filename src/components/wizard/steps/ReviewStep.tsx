@@ -34,7 +34,7 @@ export default function ReviewStep({ state, goToStep }: Props) {
     <div className="space-y-8">
       <p className="text-[14px] text-txt-2">
         One last look. If anything is off, jump back to that step and adjust.
-        Nothing is locked in until you generate the brief.
+        Nothing is locked in until you generate the plan.
       </p>
 
       {/* AI design check — coherence reading across all picks */}
@@ -136,11 +136,10 @@ export default function ReviewStep({ state, goToStep }: Props) {
           Next up
         </p>
         <p className="mt-3 text-[14px] leading-relaxed text-txt-2">
-          When the AI integration lands, hitting{" "}
-          <span className="text-acc">Generate brief →</span> here kicks off the
-          Design DNA pipeline — compatibility check, color analysis,
-          psychological + marketing narrative, and the AI-generated mood board
-          imagery. Today the button is wired but disabled.
+          Hitting <span className="text-acc">Generate brief →</span> builds the
+          full plan: a check that your picks work together, colour analysis, the
+          story of how the space should feel, and the mood board images. About
+          15 to 20 seconds.
         </p>
       </div>
     </div>

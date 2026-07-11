@@ -66,7 +66,7 @@ export default function BriefDisplay({
       <header className="border-b border-bdr-2 pb-10">
         <div className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           <span className="inline-block h-px w-6 bg-acc" />
-          Design DNA · brief generated
+          Your design plan · ready
         </div>
         <h1 className="font-serif text-[clamp(28px,4vw,44px)] font-normal leading-[1.15] tracking-tight text-txt">
           {brief.conceptLine}
@@ -87,7 +87,7 @@ export default function BriefDisplay({
       {pinSections.length > 0 && (
         <section>
           <h2 className="mb-6 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
-            Reference imagery
+            Reference images
           </h2>
           <div className="space-y-6">
             {pinSections.map(({ key, label }) => {
@@ -236,14 +236,14 @@ export default function BriefDisplay({
           onClick={onStartOver}
           className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
         >
-          ← Start a new brief
+          ← Start a new plan
         </button>
         <button
           type="button"
           onClick={onRegenerate}
           className="inline-flex items-center gap-2 border border-acc px-6 py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-acc transition hover:bg-acc hover:text-white"
         >
-          ↻ Regenerate brief
+          ↻ Regenerate plan
         </button>
       </footer>
     </article>

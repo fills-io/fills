@@ -14,10 +14,10 @@ import { useEffect, useState } from "react";
 
 const PHASES = [
   "Reading your picks…",
-  "Naming the color system…",
+  "Naming your colours…",
   "Finding the through-line…",
-  "Composing the cinematic description…",
-  "Polishing the brief…",
+  "Describing how the space would look…",
+  "Polishing the plan…",
 ];
 
 export default function GenerationOverlay() {
@@ -35,7 +35,7 @@ export default function GenerationOverlay() {
       <div className="max-w-md px-8 text-center">
         <div className="mb-6 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-acc" />
-          Generating your brief
+          Generating your design plan
         </div>
         <h2 className="font-serif text-[clamp(28px,4vw,40px)] font-normal leading-[1.15] tracking-tight text-txt">
           {PHASES[phase]}

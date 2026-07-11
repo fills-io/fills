@@ -57,7 +57,7 @@ export default function SampleBoards() {
               05 · Sample boards
             </span>
             <h2 className="mt-4 font-serif text-[clamp(34px,4.6vw,56px)] font-medium leading-[1.05] tracking-tight text-txt">
-              Real briefs, real projects.
+              Real design plans, real projects.
             </h2>
           </div>
           <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-txt-3">
@@ -184,7 +184,7 @@ export default function SampleBoards() {
                 href="/concept/wizard"
                 className="mt-2 inline-flex w-fit items-center gap-2 bg-acc px-5 py-3 text-[12px] font-medium uppercase tracking-[0.08em] text-white transition hover:gap-3 hover:bg-acc-h"
               >
-                Build a brief like this →
+                Build a plan like this →
               </Link>
             </div>
           </div>

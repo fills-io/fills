@@ -53,8 +53,8 @@ export default function WordmarkMoment() {
         </h2>
 
         <p className="mx-auto mt-6 max-w-[440px] text-[14px] leading-relaxed text-txt-2">
-          You bring the taste. We fill in the eight design dimensions a studio
-          would. Palette, materials, lighting, furniture, and the rest.
+          You bring the taste. We fill in the eight parts of the design a studio
+          would. Colours, materials, lighting, furniture, and the rest.
         </p>
       </div>
 

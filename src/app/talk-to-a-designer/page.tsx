@@ -49,9 +49,9 @@ export default async function TalkToDesignerPage({
             Get a working architect on your project.
           </h1>
           <p className="mt-4 max-w-xl text-[15px] leading-[1.8] font-light text-txt-2">
-            Fills builds the brief in minutes. When you want a human eye, a
+            Fills builds your design plan in minutes. When you want a human eye, a
             working interior architect can take it further: a second opinion, a
-            full design package, or help getting a retail fit-out through a
+            full design service, or help getting a retail build-out through a
             mall&apos;s guidelines. Tell us about the project and we&apos;ll
             reply by email.
           </p>

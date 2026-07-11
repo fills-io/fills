@@ -4,11 +4,11 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
   {
     title: "Platform",
     links: [
-      { label: "Design brief", href: "/#output" },
-      { label: "Mood & palette", href: "/#output" },
+      { label: "Design plan (brief)", href: "/#output" },
+      { label: "Mood board & colours", href: "/#output" },
       { label: "Examples", href: "/#samples" },
       { label: "Free brief template", href: "/interior-design-brief-template" },
-      { label: "Start a brief", href: "/concept/wizard" },
+      { label: "Start a plan", href: "/concept/wizard" },
     ],
   },
   {
@@ -42,14 +42,14 @@ export default function Footer() {
             <FillsLogo size={24} />
           </div>
           <p className="mt-5 max-w-xs text-[13px] leading-[1.7] text-txt-2">
-            Where interior design and architecture meet a faster way to brief. Build your concept brief in minutes.
+            Where interior design and architecture meet a faster way to plan a space. Build your design plan in minutes.
           </p>
           <div className="mt-6">
             <div className="font-mono text-[9px] uppercase tracking-[0.16em] text-txt-3">
               On the roadmap
             </div>
             <p className="mt-1.5 text-[12px] text-txt-2">
-              Layout · Visualization · Design package · BOQ
+              Layout · Visualization · Full design service · Budget &amp; shopping list (BOQ)
             </p>
           </div>
         </div>

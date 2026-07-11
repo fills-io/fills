@@ -64,19 +64,19 @@ export function getIndustry(id: string | null): ConceptIndustry | undefined {
   return INDUSTRIES.find((i) => i.id === id);
 }
 
-/** Specifically-suggestions for the chosen industry (max 8). */
+/** Specifically-suggestions for the chosen industry (all of them). */
 export function getSpecSuggestions(industryId: string | null): string[] {
   if (!industryId) return [];
-  return (SPEC_BY_IND[industryId] ?? []).slice(0, 8);
+  return SPEC_BY_IND[industryId] ?? [];
 }
 
-/** Common style suggestions for the chosen industry (max 8). */
+/** Common style suggestions for the chosen industry (all of them). */
 export function getVibeSuggestions(
   industryId: string | null,
   spec: string,
 ): string[] {
   void spec; // kept for call-site compatibility; vibes are industry-common now
-  return industryId ? (VIBE_BY_IND[industryId] ?? []).slice(0, 8) : [];
+  return industryId ? (VIBE_BY_IND[industryId] ?? []) : [];
 }
 
 /** Vibe panel only opens once spec has real substance (3+ chars). */

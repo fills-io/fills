@@ -76,9 +76,9 @@ export default function TemplatePage() {
             </h2>
             <p className="mt-3 max-w-xl text-[15px] leading-[1.8] font-light text-txt-2">
               The template is the manual way. Fills is the fast one. Describe your
-              project in a line or two and it returns a complete editorial mood
-              board: palette, materials, lighting, and furniture, ready to refine
-              and share in five minutes.
+              project in a line or two and it returns a complete mood board (one
+              page with your colours, materials, lighting and furniture), ready
+              to refine and share in five minutes.
             </p>
             <Link
               href="/concept/wizard"

@@ -278,14 +278,14 @@ export default function BriefPDF({
 
   return (
     <Document
-      title="Design DNA brief"
+      title="Design plan (brief)"
       author="Fills"
       subject={brief.conceptLine}
     >
       {/* Cover */}
       <Page size="A4" orientation={orientation} style={styles.page}>
         <View style={styles.coverHeader}>
-          <Text style={styles.wordmark}>FILLS · DESIGN DNA</Text>
+          <Text style={styles.wordmark}>FILLS · DESIGN PLAN</Text>
           {logoDataUrl ? (
             // eslint-disable-next-line jsx-a11y/alt-text
             <Image src={logoDataUrl} style={styles.logo} />
@@ -377,7 +377,7 @@ export default function BriefPDF({
       {/* Reference imagery (only if any pins) */}
       {hasAnyPins && (
         <Page size="A4" orientation={orientation} style={styles.page}>
-          <Text style={styles.h2}>REFERENCE IMAGERY</Text>
+          <Text style={styles.h2}>REFERENCE IMAGES</Text>
           {PIN_SECTIONS.map(([key, label]) => {
             const list = pins?.[key] ?? [];
             if (list.length === 0) return null;

@@ -29,13 +29,13 @@ const PERSONAS = [
     label: "05 / The Interior Designer",
     code: "Project · 211D",
     quote: "My mood boards keep losing the client between vibe and execution.",
-    outcome: "A brief that holds vibe and spec together, exportable in your studio's colors.",
+    outcome: "A brief that holds the vibe and the details together, exportable in your studio's colors.",
   },
   {
     label: "06 / The Studio Lead",
     code: "Project · 332K",
     quote: "We're pitching a hospitality concept on Friday.",
-    outcome: "A complete pitch deck of palette, materials, lighting, and references, end of day.",
+    outcome: "A complete pitch deck of colors, materials, lighting, and reference images, end of day.",
   },
 ];
 
@@ -61,14 +61,14 @@ export default function MadeFor() {
             06 · Made for
           </span>
           <h2 className="mt-5 font-serif text-[clamp(28px,3.4vw,40px)] font-normal leading-[1.12] tracking-tight text-hero-cream">
-            Made for the brief you actually have.
+            Made for the project you actually have.
           </h2>
           <p className="mt-3 font-serif text-[clamp(18px,2vw,22px)] italic text-hero-cream-2">
             Six projects.{" "}
-            <span className="text-acc">Six clear briefs</span>.
+            <span className="text-acc">Six clear plans</span>.
           </p>
           <p className="mt-5 max-w-md text-[13px] leading-[1.85] font-light text-hero-cream-2">
-            Same studio process behind every one. Different starting points, the same shape of output. Whatever you&apos;re working on, the brief comes out shaped to fit the project.
+            Same studio process behind every one. Different starting points, the same shape of output. Whatever you&apos;re working on, your design plan (a brief) comes out shaped to fit the project.
           </p>
         </div>
       </div>

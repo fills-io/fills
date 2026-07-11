@@ -769,9 +769,9 @@ function StudioPanel() {
         Shape the whole <em className="italic text-acc">vision</em>.
       </div>
       <p className="mt-2.5 max-w-[470px] text-[13.5px] leading-relaxed text-txt-2">
-        Nine guided steps, about ten minutes, and you walk away with a complete,
-        client-ready brief: palette, materials, lighting, furniture, and more,
-        ready to export as a PDF.
+        Nine guided steps, about ten minutes, and you walk away with a
+        complete design plan (a brief): colours, materials, lighting,
+        furniture, and more, ready to export as a PDF.
       </p>
 
       {/* Step chips — auto-advance, hover to explore (which drives the preview). */}
@@ -844,10 +844,10 @@ function UploadPanel() {
         Drop <em className="italic text-acc">3 to 5 reference images</em>
       </span>
       <span className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-txt-3">
-        Aggregated extraction: palette · materials · lighting · vibe
+        We read them all for: colours · materials · lighting · vibe
       </span>
       <span className="font-sans text-[11px] text-txt-3">
-        PNG · JPG · HEIC, screenshots or moodboard exports, up to 10 MB each
+        PNG · JPG · HEIC, screenshots or saved images, up to 10 MB each
       </span>
       <input type="file" accept="image/*" multiple className="hidden" />
     </label>

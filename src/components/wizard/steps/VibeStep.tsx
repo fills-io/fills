@@ -66,7 +66,7 @@ export default function VibeStep({ state, setState }: Props) {
           vibeQuery: seededQuery,
         })
       }
-      helperText="Pick 3 to 5 that capture the feeling you want. Use the style chips to explore different moods — once you pick one, similar references float to the top. These are the emotional anchor for the whole brief."
+      helperText="Pick 3 to 5 that capture the feeling you want. Use the style chips to explore different moods. Once you pick one, similar images float to the top. These set the mood for the whole plan."
       suggestionContext={{
         step: "vibe",
         industry: industry?.label,

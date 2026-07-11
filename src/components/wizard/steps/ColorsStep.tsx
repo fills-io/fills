@@ -94,9 +94,9 @@ export default function ColorsStep({ state, setState }: Props) {
   return (
     <div className="space-y-6">
       <p className="text-[14px] text-txt-2">
-        Build the palette in four roles. The names and materials you write here
-        feed straight into the final Design DNA brief, so think of them as
-        designer-to-designer notes, not generic labels.
+        Build your colours in four roles. The names and materials you write here
+        feed straight into the final design plan, so think of them as
+        real notes, not generic labels.
       </p>
 
       {/* Generation buttons */}

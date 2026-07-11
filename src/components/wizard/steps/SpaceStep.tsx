@@ -116,7 +116,7 @@ export default function SpaceStep({ state, setState }: Props) {
             02 · Your project
           </h2>
           <p className="text-[14px] text-txt-2">
-            Tell us what you&apos;re designing so we can shape the brief around it.
+            Tell us what you&apos;re designing so we can shape the plan around it.
           </p>
           <input
             type="text"

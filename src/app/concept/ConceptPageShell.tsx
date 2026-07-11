@@ -120,7 +120,7 @@ function QuickIntro() {
         We received your starting direction. When the wizard goes live, this is
         where you&apos;ll see Pinterest-driven boards for vibe, color, materials,
         lighting, and furniture, auto-built around the three things above, then
-        analyzed into a complete Design DNA brief.
+        turned into a complete design plan (a brief).
       </p>
 
       {/* Debug echo of the raw query params — useful while we wire things up */}
@@ -142,8 +142,8 @@ function StudioIntro() {
   return (
     <>
       <p className="text-[15px] leading-relaxed text-hero-cream-2">
-        Full Studio walks you through nine design dimensions: vibe and style,
-        colors and palette, furniture, lighting, flooring, ceiling, materials
+        Full Studio walks you through nine parts of the design: vibe and style,
+        colors, furniture, lighting, flooring, ceiling, materials
         and textures, plus space details and a review.
       </p>
       <p className="mt-4 text-[15px] leading-relaxed text-hero-cream-2">
@@ -153,9 +153,9 @@ function StudioIntro() {
       </p>
       <ul className="mt-6 grid grid-cols-1 gap-2 text-[12px] text-hero-dim sm:grid-cols-3">
         {[
-          "9 design dimensions",
-          "Multi-zone authoring",
-          "Designer handoff",
+          "9 parts of the design",
+          "Multiple rooms at once",
+          "Hand it to your designer",
         ].map((item) => (
           <li
             key={item}

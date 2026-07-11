@@ -300,7 +300,7 @@ export default function WizardClient() {
               Resumed
             </span>
             <p className="flex-1 text-txt-2">
-              Picked up your in-progress brief from{" "}
+              Picked up your in-progress plan from{" "}
               {formatRelative(resumedAt)}. Your work is saved automatically as
               you go.
             </p>

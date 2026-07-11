@@ -169,7 +169,7 @@ export default function BriefTemplate() {
               Don&apos;t want to fill this in by hand?
             </p>
             <p style={{ fontSize: "12px", color: "#F2D2C2", margin: 0 }}>
-              Fills turns these answers into a finished brief: palette, materials, lighting, furniture.
+              Fills turns these answers into a finished plan: colours, materials, lighting, furniture.
             </p>
           </div>
           <a

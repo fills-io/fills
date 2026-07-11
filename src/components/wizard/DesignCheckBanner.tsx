@@ -99,7 +99,7 @@ export default function DesignCheckBanner({ state }: Props) {
         <div className="flex items-center gap-3">
           <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-acc" />
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-txt-3">
-            Reading your brief…
+            Reading your plan…
           </span>
         </div>
       </div>
@@ -113,7 +113,7 @@ export default function DesignCheckBanner({ state }: Props) {
 
   const VERDICT_STYLES = {
     strong: {
-      label: "Strong brief",
+      label: "Strong plan",
       ring: "border-emerald-700/50 bg-emerald-950/20",
       chip: "text-emerald-300",
       dot: "bg-emerald-400",
