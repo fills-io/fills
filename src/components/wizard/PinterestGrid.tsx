@@ -109,6 +109,7 @@ function CuratedPicker({
   const [styleFilter, setStyleFilter] = useState<string | null>(() =>
     initialStyle && styles.includes(initialStyle) ? initialStyle : null,
   );
+  const [query, setQuery] = useState("");
   const showChips = styles.length >= 2;
 
   // Rotate the pool for repeated grids (furniture sub-sections) so each shows
@@ -120,11 +121,24 @@ function CuratedPicker({
     return [...curated.slice(start), ...curated.slice(0, start)];
   }, [curated, sliceSeed]);
 
-  // Filter to the chosen style. Selecting an image never reorders the grid.
-  const visible = useMemo(
-    () => (styleFilter ? pool.filter((c) => c.style === styleFilter) : pool),
-    [pool, styleFilter],
-  );
+  // A typed query wins over the chips; otherwise the active chip filters.
+  // Selecting an image never reorders the grid. A query with no matches falls
+  // back to the full pool (so typing is never a dead end).
+  const { visible, noMatch } = useMemo(() => {
+    const qq = query.trim().toLowerCase();
+    if (qq) {
+      const toks = qq.split(/\s+/);
+      const m = pool.filter((c) => {
+        const hay = (c.style + " " + (c.title || "")).toLowerCase();
+        return toks.some((t) => hay.includes(t));
+      });
+      return { visible: m.length ? m : pool, noMatch: m.length === 0 };
+    }
+    return {
+      visible: styleFilter ? pool.filter((c) => c.style === styleFilter) : pool,
+      noMatch: false,
+    };
+  }, [pool, styleFilter, query]);
 
   const atMax = selectedPins.length >= maxSelections;
   const need = minSelections ?? 0;
@@ -147,22 +161,61 @@ function CuratedPicker({
     <div className="space-y-5">
       {helperText && <p className="text-[13px] text-txt-2">{helperText}</p>}
 
-      {/* Style chips — steer the mood (vibe) */}
+      {/* Type your own style */}
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (e.target.value) setStyleFilter(null);
+          }}
+          placeholder="Type a style… e.g. moody industrial, warm coastal"
+          className="w-full border border-bdr-2 bg-bg-2 px-3 py-2.5 pr-9 text-[14px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear"
+            className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center text-txt-3 transition hover:text-acc"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Style chips — click to filter (clears any typed style) */}
       {showChips && (
         <div className="flex flex-wrap gap-2">
-          <Chip active={styleFilter === null} onClick={() => setStyleFilter(null)}>
+          <Chip
+            active={!query && styleFilter === null}
+            onClick={() => {
+              setQuery("");
+              setStyleFilter(null);
+            }}
+          >
             All styles
           </Chip>
           {styles.map((s) => (
             <Chip
               key={s}
-              active={styleFilter === s}
-              onClick={() => setStyleFilter((cur) => (cur === s ? null : s))}
+              active={!query && styleFilter === s}
+              onClick={() => {
+                setQuery("");
+                setStyleFilter((cur) => (cur === s ? null : s));
+              }}
             >
               {s}
             </Chip>
           ))}
         </div>
+      )}
+
+      {noMatch && (
+        <p className="text-[12px] text-txt-3">
+          No matches for &ldquo;{query.trim()}&rdquo;. Showing all styles.
+        </p>
       )}
 
       {/* Counter + guidance */}

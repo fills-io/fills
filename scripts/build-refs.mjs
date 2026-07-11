@@ -16,7 +16,7 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
 const BASE = "https://www.fills.io/api/pinterest/search";
-const LIMIT = 12;
+const LIMIT = 24;
 const CONCURRENCY = 10;
 
 // Per-step sets. Each key's queries give genuine variety (distinct moods), not
@@ -95,9 +95,13 @@ const VIBE_STYLES = {
   luxe: "luxury elegant",
   coastal: "coastal",
   rustic: "rustic",
+  bohemian: "bohemian",
+  farmhouse: "farmhouse",
+  "art deco": "art deco",
+  mediterranean: "mediterranean",
 };
 
-const CAP = { vibeIndustry: 120, category: 24 };
+const CAP = { vibeIndustry: 320, category: 30 };
 
 async function fetchQuery(style, q) {
   try {

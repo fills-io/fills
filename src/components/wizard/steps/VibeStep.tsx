@@ -22,9 +22,9 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-/** Vibe selection range: pick 3 (min, so the AI has a real signal) to 5 (max). */
+/** Vibe selection range: pick 3 (min, so the AI has a real signal) to 6 (max). */
 const MIN_VIBE_PINS = 3;
-const MAX_VIBE_PINS = 5;
+const MAX_VIBE_PINS = 6;
 
 export default function VibeStep({ state, setState }: Props) {
   const params = useSearchParams();
@@ -71,7 +71,7 @@ export default function VibeStep({ state, setState }: Props) {
           vibeQuery: seededQuery,
         })
       }
-      helperText="Pick 3 to 5 that capture the feeling you want. Use the style chips above to switch styles. These set the mood for the whole plan."
+      helperText="Pick 3 to 6 that capture the feeling you want. Type a style or use the chips to switch. These set the mood for the whole plan."
       suggestionContext={{
         step: "vibe",
         industry: industry?.label,

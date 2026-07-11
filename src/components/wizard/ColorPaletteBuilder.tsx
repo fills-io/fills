@@ -60,6 +60,8 @@ export const PALETTE_SLOTS: readonly PaletteSlot[] = [
 type Props = {
   palette: ColorEntry[];
   onChange: (palette: ColorEntry[]) => void;
+  /** Called when a slot gains focus (for click-to-assign from the vibe strip). */
+  onFocusSlot?: (i: number) => void;
 };
 
 /** Fill/pad to exactly PALETTE_SLOTS.length entries. */
@@ -79,7 +81,11 @@ const EyedropperIcon = (
   </svg>
 );
 
-export default function ColorPaletteBuilder({ palette, onChange }: Props) {
+export default function ColorPaletteBuilder({
+  palette,
+  onChange,
+  onFocusSlot,
+}: Props) {
   const slots = normalize(palette);
 
   function updateSlot(i: number, patch: Partial<ColorEntry>) {
@@ -87,82 +93,69 @@ export default function ColorPaletteBuilder({ palette, onChange }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {PALETTE_SLOTS.map((slot, i) => {
         const entry = slots[i];
         return (
           <div
             key={slot.role}
-            className="flex flex-col gap-4 border border-bdr-2 bg-bg-2 p-4 sm:flex-row sm:items-stretch"
+            onFocus={() => onFocusSlot?.(i)}
+            className="flex flex-col gap-2 border border-bdr-2 bg-bg-2 p-3"
           >
-            {/* Swatch (click to pick) + hex input */}
-            <div className="flex flex-row gap-3 sm:flex-col sm:items-stretch">
-              <label
-                className="group relative block h-20 w-20 cursor-pointer overflow-hidden border border-bdr-2 transition hover:border-acc sm:h-24 sm:w-24"
-                style={{ backgroundColor: entry.hex }}
-                aria-label={`${slot.label} color picker — click to change`}
-              >
-                <input
-                  type="color"
-                  value={entry.hex}
-                  onChange={(e) => updateSlot(i, { hex: e.target.value })}
-                  className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-                />
-                {/* Visible eyedropper affordance so it reads as editable */}
-                <span className="pointer-events-none absolute bottom-1 right-1 grid h-6 w-6 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm transition group-hover:scale-110">
-                  {EyedropperIcon}
-                </span>
-                <span className="pointer-events-none absolute left-1 top-1 rounded bg-black/40 px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-wide text-white opacity-0 transition group-hover:opacity-100">
-                  Pick
-                </span>
-              </label>
+            {/* Swatch — click anywhere to pick */}
+            <label
+              className="group relative block h-16 w-full cursor-pointer overflow-hidden border border-bdr-2 transition hover:border-acc"
+              style={{ backgroundColor: entry.hex }}
+              title={slot.blurb}
+              aria-label={`${slot.label} color picker, click to change`}
+            >
               <input
-                type="text"
+                type="color"
                 value={entry.hex}
-                onChange={(e) => updateSlot(i, { hex: e.target.value.trim() })}
-                className="w-20 border border-bdr-2 bg-transparent px-2 py-1.5 text-center font-mono text-[11px] uppercase text-txt focus:border-acc focus:outline-none sm:w-24"
+                onChange={(e) => updateSlot(i, { hex: e.target.value })}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
               />
+              <span className="pointer-events-none absolute bottom-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm transition group-hover:scale-110">
+                {EyedropperIcon}
+              </span>
+            </label>
+
+            {/* Role + share */}
+            <div className="flex items-baseline justify-between">
+              <h3
+                title={slot.blurb}
+                className="font-mono text-[9px] uppercase tracking-[0.16em] text-acc"
+              >
+                {slot.label}
+              </h3>
+              <span className="font-mono text-[9px] text-txt-3">
+                ≈{Math.round(slot.weight * 100)}%
+              </span>
             </div>
 
-            {/* Role label + blurb + name + material */}
-            <div className="flex-1 space-y-2">
-              <div className="flex items-baseline justify-between">
-                <h3 className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
-                  {slot.label}
-                </h3>
-                <span className="font-mono text-[9px] uppercase tracking-[0.12em] text-txt-3">
-                  ≈ {Math.round(slot.weight * 100)}%
-                </span>
-              </div>
-              <p className="text-[12px] text-txt-3">{slot.blurb}</p>
+            {/* Hex */}
+            <input
+              type="text"
+              value={entry.hex}
+              onChange={(e) => updateSlot(i, { hex: e.target.value.trim() })}
+              className="w-full border border-bdr-2 bg-transparent px-2 py-1 text-center font-mono text-[11px] uppercase text-txt focus:border-acc focus:outline-none"
+            />
 
-              <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <div>
-                  <label className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
-                    Color name
-                  </label>
-                  <input
-                    type="text"
-                    value={entry.name}
-                    onChange={(e) => updateSlot(i, { name: e.target.value })}
-                    placeholder="e.g. Travertine"
-                    className="mt-1 block w-full border-b border-bdr-2 bg-transparent px-1 py-1.5 text-[13px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
-                    Where it lives
-                  </label>
-                  <input
-                    type="text"
-                    value={entry.material}
-                    onChange={(e) => updateSlot(i, { material: e.target.value })}
-                    placeholder="e.g. Wall plaster"
-                    className="mt-1 block w-full border-b border-bdr-2 bg-transparent px-1 py-1.5 text-[13px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
-                  />
-                </div>
-              </div>
-            </div>
+            {/* Name + where it lives (stacked) */}
+            <input
+              type="text"
+              value={entry.name}
+              onChange={(e) => updateSlot(i, { name: e.target.value })}
+              placeholder="Name, e.g. Travertine"
+              className="w-full border-b border-bdr-2 bg-transparent px-1 py-1 text-[12px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
+            />
+            <input
+              type="text"
+              value={entry.material}
+              onChange={(e) => updateSlot(i, { material: e.target.value })}
+              placeholder="Where, e.g. Wall plaster"
+              className="w-full border-b border-bdr-2 bg-transparent px-1 py-1 text-[12px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
+            />
           </div>
         );
       })}
@@ -189,7 +182,7 @@ export function PalettePreview({ palette }: { palette: ColorEntry[] }) {
       </div>
 
       {/* Proportional stacked bar */}
-      <div className="flex h-64 w-full overflow-hidden border border-bdr-2 sm:h-80">
+      <div className="flex h-28 w-full overflow-hidden border border-bdr-2 lg:h-32">
         {PALETTE_SLOTS.map((slot, i) => {
           const entry = slots[i];
           return (
