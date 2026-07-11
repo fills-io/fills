@@ -93,7 +93,10 @@ export default function ReviewStep({ state, goToStep }: Props) {
         onEdit={() => goToStep("colors")}
         isEmpty={!state.palette || state.palette.length === 0}
       >
-        <ColorSwatchRow palette={state.palette ?? []} />
+        <ColorSwatchRow
+          palette={state.palette ?? []}
+          weights={state.paletteWeights}
+        />
       </ReviewSection>
 
       {isQuick ? (
@@ -245,7 +248,13 @@ function PinThumbStrip({ pins }: { pins: PinterestPin[] }) {
   );
 }
 
-function ColorSwatchRow({ palette }: { palette: ColorEntry[] }) {
+function ColorSwatchRow({
+  palette,
+  weights,
+}: {
+  palette: ColorEntry[];
+  weights?: number[];
+}) {
   if (palette.length === 0) return null;
   const textOn = (hex: string) => {
     const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -257,13 +266,17 @@ function ColorSwatchRow({ palette }: { palette: ColorEntry[] }) {
       0.114 * (n & 255);
     return lum > 150 ? "#2a2a28" : "#f4f2ec";
   };
+  const grow = (i: number) =>
+    weights && weights.length === palette.length
+      ? Math.max(weights[i] ?? 0, 0.08)
+      : 1;
   return (
     <div className="flex h-16 w-full overflow-hidden rounded-lg border border-bdr-2">
       {palette.map((c, i) => (
         <div
           key={i}
-          className="relative flex-1"
-          style={{ backgroundColor: c.hex }}
+          className="relative min-w-0"
+          style={{ flexGrow: grow(i), flexBasis: 0, backgroundColor: c.hex }}
         >
           <span
             className="absolute inset-x-0 bottom-1 text-center font-mono text-[9px] uppercase"

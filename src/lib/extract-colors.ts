@@ -150,15 +150,19 @@ function toHex([r, g, b]: RGB): string {
   );
 }
 
-function luminance([r, g, b]: RGB): number {
-  return 0.299 * r + 0.587 * g + 0.114 * b;
-}
-
 export function parseHex(hex: string): RGB | null {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return null;
   const n = parseInt(m[1], 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** Squared RGB distance — for nearest-colour assignment. */
+function dist2(a: RGB, b: RGB): number {
+  const dr = a[0] - b[0];
+  const dg = a[1] - b[1];
+  const db = a[2] - b[2];
+  return dr * dr + dg * dg + db * db;
 }
 
 /** Nudge a colour lighter (t>0) or darker (t<0) by fraction t in [-1,1]. */
@@ -181,16 +185,21 @@ function padTo(colors: RGB[], count: number): RGB[] {
   return out.slice(0, count);
 }
 
+/** A palette colour plus how dominant it is (0..1 share of the image pixels). */
+export type PaletteColor = { hex: string; weight: number };
+
 /**
- * Extract `count` colours from the given image URLs. Falls back to the provided
- * `fallback` hexes (e.g. each pin's precomputed dominant colour) if the images
- * can't be read. Always returns exactly `count` hex strings, sorted light→dark.
+ * Extract `count` colours from the given image URLs, each with a `weight` = the
+ * share of the image's pixels closest to it (so the bar can size each colour by
+ * how dominant it actually is). Falls back to the provided `fallback` hexes if
+ * the images can't be read. Always returns exactly `count` colours, most
+ * dominant first.
  */
 export async function extractPalette(
   urls: string[],
   count = 6,
   fallback: string[] = [],
-): Promise<string[]> {
+): Promise<PaletteColor[]> {
   const pool: RGB[] = [];
   const results = await Promise.all(urls.slice(0, 8).map(loadPixels));
   for (const data of results) {
@@ -216,6 +225,32 @@ export async function extractPalette(
     ];
   }
 
-  colors = padTo(colors, count).sort((a, b) => luminance(b) - luminance(a));
-  return colors.map(toHex);
+  colors = padTo(colors, count);
+
+  // Dominance: assign every sampled pixel to its nearest palette colour, then
+  // the count per colour is its share of the image.
+  let weights: number[];
+  if (pool.length > 0) {
+    const counts = new Array<number>(colors.length).fill(0);
+    for (const px of pool) {
+      let best = 0;
+      let bestD = Infinity;
+      for (let i = 0; i < colors.length; i++) {
+        const d = dist2(px, colors[i]);
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      }
+      counts[best]++;
+    }
+    weights = counts.map((c) => c / pool.length);
+  } else {
+    weights = colors.map(() => 1 / colors.length);
+  }
+
+  // Most dominant colour first.
+  return colors
+    .map((rgb, i) => ({ hex: toHex(rgb), weight: weights[i] }))
+    .sort((a, b) => b.weight - a.weight);
 }

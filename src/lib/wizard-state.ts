@@ -36,8 +36,11 @@ export type WizardState = {
   vibePins?: PinterestPin[];
 
   // ── Step 3: Colors ───────────────────────────────────────────────────────
-  /** Four-slot palette: Primary / Secondary / Accent / Supporting. */
+  /** Palette pulled from the vibe images — 6 connected colours. */
   palette?: ColorEntry[];
+  /** How dominant each palette colour is (0..1), aligned with `palette`, used
+   *  to size the bar's blocks. Absent ≡ show them equal width. */
+  paletteWeights?: number[];
 
   // ── Step 4: Furniture ────────────────────────────────────────────────────
   /** Three AI-generated sub-sections (e.g. Bed / Nightstands / Wardrobe),

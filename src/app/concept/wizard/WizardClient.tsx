@@ -37,8 +37,9 @@ import ReviewStep from "@/components/wizard/steps/ReviewStep";
 import BriefDisplay from "@/components/wizard/BriefDisplay";
 import GenerationOverlay from "@/components/wizard/GenerationOverlay";
 
-/** The only steps Quick mode walks — everything else is auto-designed. */
-const QUICK_STEP_IDS = ["vibe", "colors", "review"] as const;
+/** The only steps Quick mode walks — everything else is auto-designed, and it
+ *  generates straight from Colours (no separate Review step). */
+const QUICK_STEP_IDS = ["vibe", "colors"] as const;
 
 export default function WizardClient() {
   const [current, setCurrent] = useState<WizardStepId>("space");

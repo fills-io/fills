@@ -1,25 +1,27 @@
 "use client";
 
 /**
- * BlendedPaletteBar — one connected bar of colours.
+ * PaletteBar — one connected bar of colours, sized by dominance.
  *
- * A hybrid of "crisp blocks" and "soft blend": each colour is a solid block
- * with its hex code sitting on it (so it's readable and editable), but the
- * seams between neighbours melt together with a soft gradient so the whole
- * thing reads as one flowing palette.
+ * Each colour is a solid block with a clear, hard edge to its neighbour (no
+ * blending) and its hex code sitting on it. Block WIDTH is proportional to how
+ * dominant the colour is in the source images, so the main colour reads as the
+ * biggest.
  *
  * Editing a colour:
  *   - Tap a block  → the OS colour picker (type a hex, drag the wheel).
  *   - Eyedropper   → sample any colour on screen (where the browser supports it).
  *
- * The palette lives in the parent, so the wizard state stays the single source
- * of truth. Colours are plain hex strings.
+ * The palette + weights live in the parent, so the wizard state stays the
+ * single source of truth.
  */
 
 import { useEffect, useState } from "react";
 
 type Props = {
   colors: string[];
+  /** Dominance per colour (0..1), aligned with `colors`. Absent ≡ equal width. */
+  weights?: number[];
   onChange: (colors: string[]) => void;
 };
 
@@ -61,7 +63,7 @@ const EyedropperIcon = (
   </svg>
 );
 
-export default function BlendedPaletteBar({ colors, onChange }: Props) {
+export default function PaletteBar({ colors, weights, onChange }: Props) {
   const [supportsEyedropper, setSupportsEyedropper] = useState(false);
   useEffect(() => {
     // Feature-detect after mount so server and first client render agree (no
@@ -72,7 +74,11 @@ export default function BlendedPaletteBar({ colors, onChange }: Props) {
     );
   }, []);
 
-  const n = colors.length;
+  // Block width ∝ dominance. Floor each so even a small colour stays readable.
+  const grow = (i: number): number => {
+    if (!weights || weights.length !== colors.length) return 1;
+    return Math.max(weights[i] ?? 0, 0.08);
+  };
 
   function update(i: number, hex: string) {
     onChange(colors.map((c, idx) => (idx === i ? hex : c)));
@@ -92,14 +98,15 @@ export default function BlendedPaletteBar({ colors, onChange }: Props) {
 
   return (
     <div>
-      <div className="relative flex h-24 w-full overflow-hidden rounded-xl border border-bdr-2 lg:h-28">
+      <div className="flex h-24 w-full overflow-hidden rounded-xl border border-bdr-2 lg:h-28">
         {colors.map((hex, i) => {
           const text = readableText(hex);
+          const pct = weights ? Math.round((weights[i] ?? 0) * 100) : null;
           return (
             <div
               key={i}
-              className="group relative flex-1"
-              style={{ backgroundColor: hex }}
+              className="group relative min-w-0 border-r border-bg-2 last:border-r-0"
+              style={{ flexGrow: grow(i), flexBasis: 0, backgroundColor: hex }}
             >
               {/* Tap anywhere on the block → OS colour picker */}
               <input
@@ -126,35 +133,27 @@ export default function BlendedPaletteBar({ colors, onChange }: Props) {
                 </button>
               )}
 
-              {/* Hex code, sitting on the colour */}
+              {/* Hex code + dominance %, sitting on the colour */}
               <span
-                className="pointer-events-none absolute inset-x-0 bottom-2 z-10 text-center font-mono text-[10px] uppercase tracking-wide lg:text-[11px]"
+                className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex flex-col items-center gap-0.5 px-1 text-center font-mono uppercase"
                 style={{ color: text }}
               >
-                {hex.toUpperCase()}
+                <span className="truncate text-[10px] tracking-wide lg:text-[11px]">
+                  {hex.toUpperCase()}
+                </span>
+                {pct !== null && (
+                  <span className="text-[8px] opacity-70 lg:text-[9px]">
+                    {pct}%
+                  </span>
+                )}
               </span>
             </div>
           );
         })}
-
-        {/* Soft seams — thin gradient strips that melt neighbours together */}
-        {colors.slice(0, -1).map((hex, i) => (
-          <span
-            key={`seam-${i}`}
-            aria-hidden
-            className="pointer-events-none absolute top-0 h-full"
-            style={{
-              left: `${((i + 1) / n) * 100}%`,
-              width: "clamp(16px, 6%, 36px)",
-              transform: "translateX(-50%)",
-              background: `linear-gradient(90deg, ${hex}, ${colors[i + 1]})`,
-            }}
-          />
-        ))}
       </div>
 
       <p className="mt-2 text-[11px] text-txt-3">
-        Tap a colour to change it
+        Widths show how dominant each colour is. Tap a colour to change it
         {supportsEyedropper
           ? ", or use the eyedropper to grab a colour from anywhere on screen."
           : "."}

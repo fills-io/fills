@@ -4,16 +4,16 @@
  * Step 3 — Colours.
  *
  * The palette is pulled straight from the images you picked: on arrival we read
- * the real colours out of those pins' pixels and lay them into one connected,
- * blended bar. Tap a colour to change it, use the eyedropper to grab one from
- * anywhere on screen, or "Suggest a palette" for a harmonised set.
+ * the real colours out of those pins' pixels and lay them into one connected
+ * bar, each block sized by how dominant that colour is. Tap a colour to change
+ * it, use the eyedropper, or "Suggest a palette" for a harmonised set.
  *
  * No naming fields, no proportional preview, no room matcher — just the colours,
  * simply. (Those were removed per direct product feedback.)
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import BlendedPaletteBar from "@/components/wizard/BlendedPaletteBar";
+import PaletteBar from "@/components/wizard/PaletteBar";
 import { extractPalette } from "@/lib/extract-colors";
 import type { ColorEntry } from "@/db/schema";
 import type { WizardState } from "@/lib/wizard-state";
@@ -94,12 +94,15 @@ export default function ColorsStep({ state, setState }: Props) {
     setBusy("extracting");
     setError(null);
     try {
-      const hexes = await extractPalette(
+      const result = await extractPalette(
         vibePins.map((p) => p.imageUrl),
         PALETTE_SIZE,
         dominantFallback,
       );
-      setState({ palette: toEntries(hexes) });
+      setState({
+        palette: toEntries(result.map((c) => c.hex)),
+        paletteWeights: result.map((c) => c.weight),
+      });
     } catch {
       setError(
         "Couldn't read colours from the images — you can still pick them by hand below.",
@@ -109,6 +112,7 @@ export default function ColorsStep({ state, setState }: Props) {
           palette: toEntries(
             dominantFallback.length ? padTo6(dominantFallback) : DEFAULT_HEXES,
           ),
+          paletteWeights: undefined,
         });
       }
     } finally {
@@ -124,7 +128,7 @@ export default function ColorsStep({ state, setState }: Props) {
     // One-time seed from the picked images (kicks off async extraction).
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (vibePins.length > 0) runExtract();
-    else setState({ palette: toEntries(DEFAULT_HEXES) });
+    else setState({ palette: toEntries(DEFAULT_HEXES), paletteWeights: undefined });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -143,7 +147,11 @@ export default function ColorsStep({ state, setState }: Props) {
         | { ok: false; error: string };
       if ("ok" in data && data.ok === false) throw new Error(data.error);
       if (!("palette" in data)) throw new Error("Unexpected response.");
-      setState({ palette: toEntries(padTo6(data.palette)) });
+      // A harmonised suggestion has no per-colour dominance, so show it evenly.
+      setState({
+        palette: toEntries(padTo6(data.palette)),
+        paletteWeights: undefined,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -208,9 +216,10 @@ export default function ColorsStep({ state, setState }: Props) {
         </div>
       </div>
 
-      {/* The one connected, blended bar */}
-      <BlendedPaletteBar
+      {/* The one connected bar — blocks sized by dominance, clear divisions */}
+      <PaletteBar
         colors={colors}
+        weights={state.paletteWeights}
         onChange={(hexes) => setState({ palette: toEntries(hexes) })}
       />
     </div>
