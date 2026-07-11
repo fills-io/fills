@@ -151,7 +151,7 @@ export default function ColorsStep({ state, setState }: Props) {
           />
           <p className="text-[11px] text-txt-3">
             Tip: click any swatch to change its color freely, or type a hex code.
-            Leave a name blank while scouting — those slots get replaced when you
+            Leave a name blank while scouting, and those slots get replaced when you
             tap &ldquo;Suggest a palette.&rdquo; Name a slot to lock it.
           </p>
         </div>

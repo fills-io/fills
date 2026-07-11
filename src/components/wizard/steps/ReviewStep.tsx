@@ -174,7 +174,7 @@ function ReviewSection({
       </div>
       {isEmpty ? (
         <p className="text-[13px] italic text-txt-3">
-          Not picked yet — go back and finish this step.
+          Not picked yet. Go back and finish this step.
         </p>
       ) : (
         children
