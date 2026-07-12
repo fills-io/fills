@@ -131,26 +131,24 @@ export default function VibeStage({ state, patch }: Props) {
             →
           </button>
         </div>
-        <div className="flex items-center gap-2 border border-bdr bg-bg-2 px-4 font-mono text-[10.5px] uppercase tracking-[0.14em] text-txt-2">
+        {/* Prominent counter = images SELECTED (updates as you pick). */}
+        <div className="flex items-center gap-2 whitespace-nowrap border border-bdr bg-bg-2 px-4 font-mono text-[10.5px] uppercase tracking-[0.14em] text-txt-2">
           <span
             className={`h-1.5 w-1.5 rounded-full ${
-              searchLocked
-                ? "bg-txt-3"
-                : searchCount >= MAX_SEARCHES - 2
-                  ? "bg-acc"
-                  : "bg-green-500"
+              picks.length >= 3 ? "bg-green-500" : "bg-acc"
             }`}
           />
-          {searchLocked ? (
-            "Limit reached"
-          ) : (
-            <>
-              <b className="font-medium text-acc">{searchCount}</b> /{" "}
-              {MAX_SEARCHES} searches
-            </>
-          )}
+          <b className="font-medium text-acc">{picks.length}</b> / {MAX_PICKS}{" "}
+          selected
         </div>
       </div>
+
+      {/* Search budget — small, secondary. */}
+      <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
+        {searchLocked
+          ? "Search limit reached — pick from what you found."
+          : `${MAX_SEARCHES - searchCount} of ${MAX_SEARCHES} free searches left`}
+      </p>
 
       {/* Keyword suggestions */}
       {!searchLocked && keywords.length > 0 && (
