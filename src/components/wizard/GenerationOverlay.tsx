@@ -18,8 +18,7 @@ const ROWS: { label: string; dur: number }[] = [
   { label: "Sourcing furniture direction", dur: 1900 },
   { label: "Setting lighting strategy", dur: 1500 },
   { label: "Writing spatial notes", dur: 1300 },
-  { label: "Assembling brief", dur: 2600 },
-  { label: "Rendering your spaces", dur: 3000 },
+  { label: "Assembling brief", dur: 1500 },
 ];
 
 const TIPS: { eyebrow: string; text: string }[] = [

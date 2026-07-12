@@ -22,9 +22,6 @@ import type {
   TextProvider,
   TextGenerateOptions,
   TextGenerateResult,
-  ImageProvider,
-  ImageGenerateOptions,
-  ImageGenerateResult,
 } from "./types";
 
 /** Lazy SDK init — missing key fails individual requests, not the build. */
@@ -100,34 +97,6 @@ export const openaiProvider: TextProvider = {
     return {
       text,
       model,
-      provider: "openai",
-      latencyMs: Date.now() - startedAt,
-    };
-  },
-};
-
-/** OpenAI image adapter — GPT Image (gpt-image-1). Returns a data URL. */
-const IMAGE_MODEL = "gpt-image-1";
-
-export const openaiImageProvider: ImageProvider = {
-  name: "openai",
-
-  async generate(opts: ImageGenerateOptions): Promise<ImageGenerateResult> {
-    const startedAt = Date.now();
-    const response = await getClient().images.generate({
-      model: IMAGE_MODEL,
-      prompt: opts.prompt,
-      size: opts.size ?? "1024x1024",
-      quality: opts.quality ?? "medium",
-      n: 1,
-    });
-
-    const b64 = response.data?.[0]?.b64_json;
-    if (!b64) throw new Error("Image provider returned no image data.");
-
-    return {
-      dataUrl: `data:image/png;base64,${b64}`,
-      model: IMAGE_MODEL,
       provider: "openai",
       latencyMs: Date.now() - startedAt,
     };

@@ -38,18 +38,3 @@ export async function generateBrief(
   }
   return (await res.json()) as GenerateBriefResponse;
 }
-
-/** Generate a single image (data URL) from a prompt. */
-export async function generateImage(prompt: string): Promise<string> {
-  const res = await fetch("/api/ai/generate-image", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error || `HTTP ${res.status}`);
-  }
-  const data = (await res.json()) as { image: string };
-  return data.image;
-}

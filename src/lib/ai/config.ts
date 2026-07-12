@@ -13,17 +13,13 @@
  * register here.
  */
 
-import type { ImageProvider, TextProvider } from "./providers/types";
-import { openaiImageProvider, openaiProvider } from "./providers/openai";
+import type { TextProvider } from "./providers/types";
+import { openaiProvider } from "./providers/openai";
 
 const PROVIDERS: Record<string, TextProvider> = {
   openai: openaiProvider,
   // anthropic: anthropicProvider,   // future
   // gemini: geminiProvider,         // future
-};
-
-const IMAGE_PROVIDERS: Record<string, ImageProvider> = {
-  openai: openaiImageProvider,
 };
 
 /**
@@ -36,18 +32,6 @@ export function getTextProvider(): TextProvider {
   if (!provider) {
     throw new Error(
       `Unknown TEXT_PROVIDER "${name}". Valid options: ${Object.keys(PROVIDERS).join(", ")}.`,
-    );
-  }
-  return provider;
-}
-
-/** Resolve the current image provider (IMAGE_PROVIDER env, default openai). */
-export function getImageProvider(): ImageProvider {
-  const name = (process.env.IMAGE_PROVIDER ?? "openai").toLowerCase();
-  const provider = IMAGE_PROVIDERS[name];
-  if (!provider) {
-    throw new Error(
-      `Unknown IMAGE_PROVIDER "${name}". Valid options: ${Object.keys(IMAGE_PROVIDERS).join(", ")}.`,
     );
   }
   return provider;

@@ -66,30 +66,3 @@ export type TextProvider = {
   name: string;
   generate(options: TextGenerateOptions): Promise<TextGenerateResult>;
 };
-
-/* ─── Image generation ─────────────────────────────────────────────────── */
-
-export type ImageGenerateOptions = {
-  /** The image prompt. */
-  prompt: string;
-  /** Square size. Defaults to "1024x1024". */
-  size?: "1024x1024" | "1536x1024" | "1024x1536";
-  /** Quality/cost tradeoff. Defaults to "medium". */
-  quality?: "low" | "medium" | "high";
-};
-
-export type ImageGenerateResult = {
-  /** A ready-to-use data URL (`data:image/png;base64,…`). */
-  dataUrl: string;
-  /** Concrete model used (e.g. "gpt-image-1"). */
-  model: string;
-  provider: string;
-  latencyMs: number;
-};
-
-/** Every image provider adapter implements this. Callers go through
- *  `aiImage()` in src/lib/ai/index.ts. */
-export type ImageProvider = {
-  name: string;
-  generate(options: ImageGenerateOptions): Promise<ImageGenerateResult>;
-};

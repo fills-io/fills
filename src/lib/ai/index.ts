@@ -15,13 +15,8 @@
  */
 
 export { type ModelTier, type TextGenerateOptions, type TextGenerateResult } from "./providers/types";
-import type {
-  TextGenerateOptions,
-  TextGenerateResult,
-  ImageGenerateOptions,
-  ImageGenerateResult,
-} from "./providers/types";
-import { getImageProvider, getTextProvider } from "./config";
+import type { TextGenerateOptions, TextGenerateResult } from "./providers/types";
+import { getTextProvider } from "./config";
 
 /**
  * Run a text generation call against whichever provider is currently
@@ -32,13 +27,5 @@ export async function aiText(
   options: TextGenerateOptions,
 ): Promise<TextGenerateResult> {
   const provider = getTextProvider();
-  return provider.generate(options);
-}
-
-/** Generate a single image (data URL) via the configured image provider. */
-export async function aiImage(
-  options: ImageGenerateOptions,
-): Promise<ImageGenerateResult> {
-  const provider = getImageProvider();
   return provider.generate(options);
 }

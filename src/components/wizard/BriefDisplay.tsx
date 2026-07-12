@@ -25,14 +25,9 @@ export type BriefPins = {
   materials?: PinterestPin[];
 };
 
-/** AI-generated room renders, one per category (Quick flow). */
-export type GeneratedVisual = { key: string; label: string; dataUrl: string };
-
 type Props = {
   brief: GenerateBriefResponse;
   pins?: BriefPins;
-  /** AI-generated visuals per category (Quick flow auto-generates these). */
-  generated?: GeneratedVisual[];
   onRegenerate: () => void;
   onStartOver: () => void;
 };
@@ -59,7 +54,6 @@ const ROLE_LABEL: Record<
 export default function BriefDisplay({
   brief,
   pins,
-  generated,
   onRegenerate,
   onStartOver,
 }: Props) {
@@ -88,43 +82,6 @@ export default function BriefDisplay({
           ))}
         </div>
       </header>
-
-      {/* AI-generated visuals — one render per category (Quick flow). */}
-      {generated && generated.length > 0 && (
-        <section>
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
-              Generated visuals
-            </h2>
-            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
-              AI-rendered from your brief
-            </span>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {generated.map((g) => (
-              <figure
-                key={g.key}
-                className={g.key === "cover" ? "sm:col-span-2" : ""}
-              >
-                <div className="overflow-hidden border border-bdr-2 bg-bg-2">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={g.dataUrl}
-                    alt={g.label}
-                    loading="lazy"
-                    className={`w-full object-cover ${
-                      g.key === "cover" ? "aspect-[16/9]" : "aspect-[4/3]"
-                    }`}
-                  />
-                </div>
-                <figcaption className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
-                  {g.label}
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Reference imagery — the pins the user picked across the wizard. */}
       {pinSections.length > 0 && (
