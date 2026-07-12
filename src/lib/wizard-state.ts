@@ -11,6 +11,11 @@ import type { IndustryId } from "./space-taxonomy";
 import type { ColorEntry, FurnitureSubSection, PinterestPin } from "@/db/schema";
 
 export type WizardState = {
+  /** Which flow the user is in. "quick" auto-fills everything after Vibe (the
+   *  AI writes furniture/lighting/etc. into the brief); "full" walks every
+   *  category with its own image picker. Absent ≡ "full". */
+  mode?: "quick" | "full";
+
   // ── Step 1: Space ────────────────────────────────────────────────────────
   industryId?: IndustryId;
   /** Primary space (kept in sync with spaceIds[0] for back-compat). */
@@ -31,8 +36,11 @@ export type WizardState = {
   vibePins?: PinterestPin[];
 
   // ── Step 3: Colors ───────────────────────────────────────────────────────
-  /** Four-slot palette: Primary / Secondary / Accent / Supporting. */
+  /** Palette pulled from the vibe images — 6 connected colours. */
   palette?: ColorEntry[];
+  /** How dominant each palette colour is (0..1), aligned with `palette`, used
+   *  to size the bar's blocks. Absent ≡ show them equal width. */
+  paletteWeights?: number[];
 
   // ── Step 4: Furniture ────────────────────────────────────────────────────
   /** Three AI-generated sub-sections (e.g. Bed / Nightstands / Wardrobe),

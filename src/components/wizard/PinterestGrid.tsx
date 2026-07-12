@@ -46,8 +46,13 @@ type Props = {
   /** Curated category key (vibe, lighting, flooring, ceiling, materials,
    *  furniture). When it resolves to a non-empty set, we use curated mode. */
   categoryKey?: string;
-  /** Vibe-style adaptive reordering + style chips. */
+  /** Explicit curated set — wins over categoryKey (used for the per-industry
+   *  vibe set so the Vibe step reflects the project category). */
+  curatedPins?: CuratedPin[];
+  /** @deprecated no longer reorders; kept for call-site compatibility. */
   adaptive?: boolean;
+  /** Pre-selected style chip (e.g. the style picked on the homepage). */
+  initialStyle?: string;
   /** Offsets the curated slice so repeated grids (furniture sub-sections)
    *  show different references. */
   sliceSeed?: number;
@@ -75,7 +80,9 @@ function thumb(url: string): string {
 }
 
 export default function PinterestGrid(props: Props) {
-  const curated = props.categoryKey ? CURATED_PINS[props.categoryKey] : undefined;
+  const curated =
+    props.curatedPins ??
+    (props.categoryKey ? CURATED_PINS[props.categoryKey] : undefined);
   if (curated && curated.length > 0) {
     return <CuratedPicker {...props} curated={curated} />;
   }
@@ -91,16 +98,19 @@ function CuratedPicker({
   selectedPins,
   onSelectionChange,
   helperText,
-  adaptive,
   sliceSeed,
+  initialStyle,
 }: Props & { curated: CuratedPin[] }) {
-  const [styleFilter, setStyleFilter] = useState<string | null>(null);
-
   const styles = useMemo(
     () => Array.from(new Set(curated.map((c) => c.style))),
     [curated],
   );
-  const showChips = !!adaptive && styles.length >= 3;
+  // Open on the style picked upstream (e.g. the homepage vibe), if present.
+  const [styleFilter, setStyleFilter] = useState<string | null>(() =>
+    initialStyle && styles.includes(initialStyle) ? initialStyle : null,
+  );
+  const [query, setQuery] = useState("");
+  const showChips = styles.length >= 2;
 
   // Rotate the pool for repeated grids (furniture sub-sections) so each shows
   // a different slice of the same curated set.
@@ -111,34 +121,47 @@ function CuratedPicker({
     return [...curated.slice(start), ...curated.slice(0, start)];
   }, [curated, sliceSeed]);
 
-  const styleOf = useMemo(() => {
-    const m = new Map<string, string>();
-    curated.forEach((c) => m.set(c.id, c.style));
-    return m;
-  }, [curated]);
-
-  const selectedStyles = useMemo(
-    () =>
-      new Set(
-        selectedPins
-          .map((p) => styleOf.get(p.id))
-          .filter((s): s is string => !!s),
-      ),
-    [selectedPins, styleOf],
-  );
-
-  const visible = useMemo(() => {
-    let list = styleFilter ? pool.filter((c) => c.style === styleFilter) : pool;
-    // Adaptive: once something's picked, float same-style references up.
-    if (adaptive && selectedStyles.size > 0 && !styleFilter) {
-      list = [...list].sort(
-        (a, b) =>
-          (selectedStyles.has(a.style) ? 0 : 1) -
-          (selectedStyles.has(b.style) ? 0 : 1),
-      );
+  // A typed query wins over the chips; otherwise the active chip filters.
+  // A query with no matches falls back to the full pool (never a dead end).
+  const { matches, noMatch } = useMemo(() => {
+    const qq = query.trim().toLowerCase();
+    if (qq) {
+      const toks = qq.split(/\s+/);
+      const m = pool.filter((c) => {
+        const hay = (c.style + " " + (c.title || "")).toLowerCase();
+        return toks.some((t) => hay.includes(t));
+      });
+      return { matches: m, noMatch: m.length === 0 };
     }
-    return list;
-  }, [pool, styleFilter, adaptive, selectedStyles]);
+    return {
+      matches: styleFilter ? pool.filter((c) => c.style === styleFilter) : pool,
+      noMatch: false,
+    };
+  }, [pool, styleFilter, query]);
+
+  // Matches first, then the rest of the industry pool (deduped) — so the chosen
+  // style leads but there are always more images to scroll to.
+  const ordered = useMemo(() => {
+    if (!matches.length || matches === pool) return pool;
+    const ids = new Set(matches.map((c) => c.id));
+    return [...matches, ...pool.filter((c) => !ids.has(c.id))];
+  }, [pool, matches]);
+
+  // Paginate in full rows (multiples of 12 sit evenly on 2 / 3 / 4 columns).
+  // Reset the page size whenever the filter changes — adjusted during render
+  // (React's recommended alternative to a setState-in-effect), so a new filter
+  // never shows a stale "Load more" count for a frame.
+  const [shown, setShown] = useState(24);
+  const filterKey = `${styleFilter ?? ""}|${query}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
+    setShown(24);
+  }
+  const capped =
+    ordered.length >= 12 ? Math.floor(ordered.length / 12) * 12 : ordered.length;
+  const display = ordered.slice(0, Math.min(shown, capped));
+  const canLoadMore = display.length < capped;
 
   const atMax = selectedPins.length >= maxSelections;
   const need = minSelections ?? 0;
@@ -161,22 +184,61 @@ function CuratedPicker({
     <div className="space-y-5">
       {helperText && <p className="text-[13px] text-txt-2">{helperText}</p>}
 
-      {/* Style chips — steer the mood (vibe) */}
+      {/* Type your own style */}
+      <div className="relative">
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (e.target.value) setStyleFilter(null);
+          }}
+          placeholder="Type a style… e.g. moody industrial, warm coastal"
+          className="w-full border border-bdr-2 bg-bg-2 px-3 py-2.5 pr-9 text-[14px] text-txt placeholder:text-txt-3 focus:border-acc focus:outline-none"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label="Clear"
+            className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center text-txt-3 transition hover:text-acc"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
+      {/* Style chips — click to filter (clears any typed style) */}
       {showChips && (
         <div className="flex flex-wrap gap-2">
-          <Chip active={styleFilter === null} onClick={() => setStyleFilter(null)}>
+          <Chip
+            active={!query && styleFilter === null}
+            onClick={() => {
+              setQuery("");
+              setStyleFilter(null);
+            }}
+          >
             All styles
           </Chip>
           {styles.map((s) => (
             <Chip
               key={s}
-              active={styleFilter === s}
-              onClick={() => setStyleFilter((cur) => (cur === s ? null : s))}
+              active={!query && styleFilter === s}
+              onClick={() => {
+                setQuery("");
+                setStyleFilter((cur) => (cur === s ? null : s));
+              }}
             >
               {s}
             </Chip>
           ))}
         </div>
+      )}
+
+      {noMatch && (
+        <p className="text-[12px] text-txt-3">
+          No matches for &ldquo;{query.trim()}&rdquo;. Showing all styles.
+        </p>
       )}
 
       {/* Counter + guidance */}
@@ -185,11 +247,6 @@ function CuratedPicker({
           {selectedPins.length}
           {need > 0 ? ` / ${need}–${maxSelections}` : ` of ${maxSelections}`} selected
         </span>
-        {adaptive && selectedStyles.size > 0 && !styleFilter && (
-          <span className="normal-case tracking-normal text-txt-3">
-            Sorted to match your picks
-          </span>
-        )}
         {atMax && (
           <span className="normal-case tracking-normal text-txt-3">
             Tap a pick to swap it
@@ -199,7 +256,7 @@ function CuratedPicker({
 
       {/* Grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {visible.map((c) => {
+        {display.map((c) => {
           const isSelected = selectedPins.some((p) => p.id === c.id);
           const cannotSelect = !isSelected && atMax;
           return (
@@ -235,6 +292,18 @@ function CuratedPicker({
           );
         })}
       </div>
+
+      {canLoadMore && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShown((s) => s + 24)}
+            className="border border-bdr-2 px-6 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-txt-2 transition hover:border-acc hover:text-acc"
+          >
+            Load more
+          </button>
+        </div>
+      )}
     </div>
   );
 }

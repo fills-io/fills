@@ -18,7 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/interior-design-brief-template`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/blog`, changeFrequency: "weekly", priority: 0.7 },
     ...postEntries,
-    { url: `${base}/create`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${base}/concept/quick`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${base}/concept`, changeFrequency: "monthly", priority: 0.5 },
   ];
 }

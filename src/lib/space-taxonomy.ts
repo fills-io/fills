@@ -201,10 +201,18 @@ export const INDUSTRIES: Industry[] = [
   },
 ];
 
+/** Homepage (concept-taxonomy) labels that don't match a space-taxonomy label. */
+const CONCEPT_LABEL_ALIASES: Record<string, IndustryId> = {
+  "healthcare & wellness": "healthcare",
+  "fitness & studio": "fitness-wellness",
+};
+
 /** Match a free-text industry label (from URL params) to an IndustryId, or null. */
 export function findIndustryByLabel(label: string | null): Industry | null {
   if (!label) return null;
   const needle = label.trim().toLowerCase();
+  const aliased = CONCEPT_LABEL_ALIASES[needle];
+  if (aliased) return getIndustry(aliased) ?? null;
   return (
     INDUSTRIES.find(
       (i) =>

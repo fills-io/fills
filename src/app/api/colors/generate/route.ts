@@ -54,7 +54,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const fullPalette = await fetchColormindPalette(input);
-    return NextResponse.json({ palette: fullPalette.slice(0, 4) });
+    // Colormind returns 5 colours — return all of them (callers slice/pad).
+    return NextResponse.json({ palette: fullPalette.slice(0, 5) });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("[/api/colors/generate] failed:", error);

@@ -16,13 +16,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import {
-  WIZARD_STEPS,
-  type WizardStepId,
-  stepNumber,
-  nextStep,
-  prevStep,
-} from "@/lib/wizard-steps";
+import { WIZARD_STEPS, type WizardStepId } from "@/lib/wizard-steps";
 import { findIndustryByLabel, getIndustry } from "@/lib/space-taxonomy";
 import {
   type WizardState,
@@ -42,6 +36,10 @@ import MaterialsStep from "@/components/wizard/steps/MaterialsStep";
 import ReviewStep from "@/components/wizard/steps/ReviewStep";
 import BriefDisplay from "@/components/wizard/BriefDisplay";
 import GenerationOverlay from "@/components/wizard/GenerationOverlay";
+
+/** The only steps Quick mode walks — everything else is auto-designed, and it
+ *  generates straight from Colours (no separate Review step). */
+const QUICK_STEP_IDS = ["vibe", "colors"] as const;
 
 export default function WizardClient() {
   const [current, setCurrent] = useState<WizardStepId>("space");
@@ -63,27 +61,54 @@ export default function WizardClient() {
   const params = useSearchParams();
 
   // ── Hydrate on mount ───────────────────────────────────────────────────
-  // Priority order:
-  //   1. Saved localStorage draft (if any) — restores in-progress work
-  //   2. URL ?industry= seed from the homepage Quick form
-  //   3. Empty state
+  // Priority: fresh homepage inputs (start a new brief, skip Space) > saved
+  // draft (resume) > partial URL seed > empty.
   useEffect(() => {
-    const saved = loadDraft();
-    if (saved) {
-      setWizardState(saved.state);
-      setResumedAt(saved.savedAt);
+    const industryParam = params.get("industry");
+    const specParam = params.get("spec")?.trim();
+    const vibeParam = params.get("vibe")?.trim();
+    const pathParam = params.get("path");
+    const matched = industryParam ? findIndustryByLabel(industryParam) : null;
+    const quickStart = !!(matched && specParam && vibeParam);
+
+    // Seeding state once from the URL / saved draft on mount is a legitimate
+    // hydration effect (external -> React), which the set-state-in-effect rule
+    // over-eagerly flags.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (quickStart) {
+      // Arrived from the homepage "Build my brief" with everything answered.
+      // Start THIS brief (replacing any old draft) and skip the Space step,
+      // since project type + space were already picked on the homepage.
+      clearDraft();
+      setWizardState({
+        mode: "quick",
+        industryId: matched.id,
+        spaceDescription: specParam,
+        vibeQuery: vibeParam,
+      });
+      setCurrent("vibe");
     } else {
-      const industryParam = params.get("industry");
-      const specParam = params.get("spec");
-      const vibeParam = params.get("vibe");
-      const matched = industryParam ? findIndustryByLabel(industryParam) : null;
-      setWizardState((prev) => ({
-        ...prev,
-        ...(matched ? { industryId: matched.id } : {}),
-        ...(specParam ? { spaceDescription: specParam } : {}),
-        ...(vibeParam ? { vibeQuery: vibeParam } : {}),
-      }));
+      const saved = loadDraft();
+      if (saved) {
+        // An explicit "Full Studio" entry (?path=full) overrides a stale
+        // "quick" mode saved in the draft, so it opens the full 9-step flow.
+        setWizardState(
+          pathParam === "full"
+            ? { ...saved.state, mode: "full" }
+            : saved.state,
+        );
+        setResumedAt(saved.savedAt);
+      } else if (matched || specParam || vibeParam) {
+        setWizardState((prev) => ({
+          ...prev,
+          ...(pathParam === "full" ? { mode: "full" } : {}),
+          ...(matched ? { industryId: matched.id } : {}),
+          ...(specParam ? { spaceDescription: specParam } : {}),
+          ...(vibeParam ? { vibeQuery: vibeParam } : {}),
+        }));
+      }
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
     hydrated.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -96,11 +121,33 @@ export default function WizardClient() {
     saveDraft(wizardState);
   }, [wizardState]);
 
+  // Quick mode auto-fills everything after Vibe, so it only walks
+  // Vibe → Colours → Review. Full mode walks all nine steps.
+  const visibleSteps =
+    wizardState.mode === "quick"
+      ? WIZARD_STEPS.filter((s) =>
+          QUICK_STEP_IDS.includes(s.id as (typeof QUICK_STEP_IDS)[number]),
+        )
+      : WIZARD_STEPS;
+
+  // Never strand `current` outside the visible flow. This happens when a quick
+  // draft is resumed (its saved step was "Space", which quick mode hides) — we
+  // snap forward to the first visible step so the user is never trapped.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    if (!visibleSteps.some((s) => s.id === current)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrent(visibleSteps[0].id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wizardState.mode, current]);
+
   const step = WIZARD_STEPS.find((s) => s.id === current)!;
-  const idx = stepNumber(current);
-  const total = WIZARD_STEPS.length;
-  const isFirst = idx === 1;
-  const isLast = idx === total;
+  const visIdx = visibleSteps.findIndex((s) => s.id === current);
+  const idx = visIdx + 1; // 1-based position within the visible flow
+  const total = visibleSteps.length;
+  const isFirst = visIdx <= 0;
+  const isLast = visIdx === total - 1;
 
   /** Merge a partial update into the wizard state. */
   function patchState(patch: Partial<WizardState>) {
@@ -149,14 +196,14 @@ export default function WizardClient() {
   }
 
   function goBack() {
-    const prev = prevStep(current);
-    if (prev) setCurrent(prev);
+    if (visIdx > 0) setCurrent(visibleSteps[visIdx - 1].id);
   }
 
   function goNext() {
     if (!canAdvance()) return;
-    const next = nextStep(current);
-    if (next) setCurrent(next);
+    if (visIdx >= 0 && visIdx < visibleSteps.length - 1) {
+      setCurrent(visibleSteps[visIdx + 1].id);
+    }
   }
 
   // ── Generation flow ────────────────────────────────────────────────────
@@ -197,7 +244,7 @@ export default function WizardClient() {
       vibeQuery: wizardState.vibeQuery,
       vibePinTitles: titleList(wizardState.vibePins),
       palette: wizardState.palette
-        ?.filter((c) => c.name || c.material)
+        ?.filter((c) => /^#[0-9a-f]{6}$/i.test(c.hex))
         .map((c) => ({
           hex: c.hex,
           name: c.name || undefined,
@@ -242,6 +289,7 @@ export default function WizardClient() {
     setGeneratedBrief(null);
     setGenerationStatus("idle");
     setGenerationError(null);
+    setResumedAt(null);
     setCurrent("space");
   }
 
@@ -271,7 +319,11 @@ export default function WizardClient() {
 
   return (
     <>
-      <WizardProgress current={current} onJump={setCurrent} />
+      <WizardProgress
+        current={current}
+        onJump={setCurrent}
+        steps={visibleSteps}
+      />
 
       {/* Full-screen overlay during generation */}
       {generationStatus === "generating" && <GenerationOverlay />}
@@ -300,10 +352,16 @@ export default function WizardClient() {
               Resumed
             </span>
             <p className="flex-1 text-txt-2">
-              Picked up your in-progress brief from{" "}
+              Picked up your in-progress plan from{" "}
               {formatRelative(resumedAt)}. Your work is saved automatically as
               you go.
             </p>
+            <button
+              onClick={startOver}
+              className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-acc underline underline-offset-2 transition hover:text-acc-h"
+            >
+              Start fresh
+            </button>
           </div>
         )}
 
@@ -321,8 +379,51 @@ export default function WizardClient() {
           {step.description}
         </p>
 
+        {/* Step navigation — placed above the content so you can go Back / Next
+            without scrolling past a long grid of images. */}
+        <div className="mt-8 flex items-center justify-between gap-4 border-b border-bdr-2 pb-6">
+          <div className="flex items-center gap-5">
+            {isFirst ? (
+              <Link
+                href="/"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
+              >
+                ← Home
+              </Link>
+            ) : (
+              <button
+                onClick={goBack}
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
+              >
+                ← Back
+              </button>
+            )}
+            {(!isFirst || wizardState.industryId) && (
+              <button
+                onClick={() => {
+                  if (
+                    window.confirm("Start over? This clears your current brief.")
+                  )
+                    startOver();
+                }}
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
+              >
+                Start over
+              </button>
+            )}
+          </div>
+
+          <button
+            onClick={isLast ? generateBrief : goNext}
+            disabled={!canAdvance() || generationStatus === "generating"}
+            className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-sm font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-bg-3 disabled:text-txt-3 disabled:opacity-70"
+          >
+            {isLast ? "Generate brief →" : "Next →"}
+          </button>
+        </div>
+
         {/* Step body */}
-        <div className="mt-10">
+        <div className="mt-8">
           {current === "space" && (
             <SpaceStep state={wizardState} setState={patchState} />
           )}
@@ -352,32 +453,6 @@ export default function WizardClient() {
           )}
         </div>
 
-        {/* Step navigation */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-bdr-2 pt-8 sm:flex-row">
-          {isFirst ? (
-            <Link
-              href="/"
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
-            >
-              ← Home
-            </Link>
-          ) : (
-            <button
-              onClick={goBack}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
-            >
-              ← Back
-            </button>
-          )}
-
-          <button
-            onClick={isLast ? generateBrief : goNext}
-            disabled={!canAdvance() || generationStatus === "generating"}
-            className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-sm font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-bg-3 disabled:text-txt-3 disabled:opacity-70"
-          >
-            {isLast ? "Generate brief →" : "Next →"}
-          </button>
-        </div>
       </main>
     </>
   );
@@ -397,24 +472,4 @@ function formatRelative(date: Date): string {
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
   return date.toLocaleDateString();
-}
-
-function PlaceholderStep({
-  stepId,
-  stepLabel,
-}: {
-  stepId: string;
-  stepLabel: string;
-}) {
-  return (
-    <div className="border border-bdr-2 bg-bg-2 p-10 text-center backdrop-blur-sm">
-      <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-txt-3">
-        {stepId} step · placeholder
-      </p>
-      <p className="mx-auto mt-3 max-w-md text-[14px] leading-relaxed text-txt-2">
-        The real {stepLabel.toLowerCase()} controls (Pinterest grids, AI
-        suggestions, color builder, etc.) plug in here in an upcoming PR.
-      </p>
-    </div>
-  );
 }

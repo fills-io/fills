@@ -7,7 +7,11 @@
  * muted. A precise "Step N of 9 · Label" line sits underneath.
  */
 
-import { WIZARD_STEPS, type WizardStepId, stepNumber } from "@/lib/wizard-steps";
+import {
+  WIZARD_STEPS,
+  type WizardStep,
+  type WizardStepId,
+} from "@/lib/wizard-steps";
 
 const svg = {
   width: 16,
@@ -85,17 +89,20 @@ const ICONS: Record<WizardStepId, React.ReactNode> = {
 export default function WizardProgress({
   current,
   onJump,
+  steps = WIZARD_STEPS,
 }: {
   current: WizardStepId;
   onJump?: (id: WizardStepId) => void;
+  /** The steps actually shown (Quick mode shows a shorter list). */
+  steps?: readonly WizardStep[];
 }) {
-  const currentIdx = stepNumber(current); // 1-based
-  const total = WIZARD_STEPS.length;
+  const currentIdx = steps.findIndex((s) => s.id === current) + 1; // 1-based
+  const total = steps.length;
 
   return (
     <div className="border-b border-bdr-2 bg-bg-2 px-3 py-4 backdrop-blur-sm sm:px-8">
       <div className="mx-auto flex max-w-3xl items-center">
-        {WIZARD_STEPS.map((s, i) => {
+        {steps.map((s, i) => {
           const stepNum = i + 1;
           const state =
             stepNum < currentIdx
@@ -143,7 +150,7 @@ export default function WizardProgress({
       {/* Precise step counter */}
       <div className="mx-auto mt-3 max-w-3xl text-center font-mono text-[9px] uppercase tracking-[0.16em] text-txt-3">
         Step {currentIdx} of {total} ·{" "}
-        <span className="text-acc">{WIZARD_STEPS[currentIdx - 1]?.label}</span>
+        <span className="text-acc">{steps[currentIdx - 1]?.label}</span>
       </div>
     </div>
   );

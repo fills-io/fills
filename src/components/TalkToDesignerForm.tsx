@@ -109,7 +109,7 @@ export default function TalkToDesignerForm({
           className={`${input} min-h-[140px] leading-relaxed`}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="A retail unit in a Dubai mall, a home renovation, a restaurant fit-out… tell us a little about the project and where you'd like help."
+          placeholder="A retail unit in a Dubai mall, a home renovation, a restaurant build-out… tell us a little about the project and where you'd like help."
         />
       </div>
 

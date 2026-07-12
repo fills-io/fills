@@ -116,7 +116,7 @@ export default function SpaceStep({ state, setState }: Props) {
             02 · Your project
           </h2>
           <p className="text-[14px] text-txt-2">
-            Tell us what you&apos;re designing so we can shape the brief around it.
+            Tell us what you&apos;re designing so we can shape the plan around it.
           </p>
           <input
             type="text"
@@ -144,7 +144,7 @@ export default function SpaceStep({ state, setState }: Props) {
             </span>
           </div>
           <p className="text-[14px] text-txt-2">
-            Pick up to {MAX_SPACES} — combine rooms if the project spans a few.
+            Pick up to {MAX_SPACES}: combine rooms if the project spans a few.
           </p>
 
           <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">

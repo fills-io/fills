@@ -41,13 +41,13 @@ export const WIZARD_STEPS: readonly WizardStep[] = [
     id: "vibe",
     label: "Vibe",
     description:
-      "Pick 3 to 5 images that capture the feeling you want the space to have.",
+      "Pick 3 to 6 images that capture the feeling you want the space to have.",
   },
   {
     id: "colors",
     label: "Colors",
     description:
-      "Choose a palette: pull from an image, build from scratch, or refine an AI suggestion.",
+      "Choose your colours: pull from an image, build from scratch, or refine an AI suggestion.",
   },
   {
     id: "furniture",
@@ -83,7 +83,7 @@ export const WIZARD_STEPS: readonly WizardStep[] = [
     id: "review",
     label: "Review",
     description:
-      "A last look at every choice before we generate your full Design DNA brief.",
+      "A last look at every choice before we generate your full design plan (a brief).",
   },
 ] as const;
 

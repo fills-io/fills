@@ -54,7 +54,7 @@ export default function DesignCheckBanner({ state }: Props) {
       vibeQuery: state.vibeQuery,
       vibePinTitles: titleList(state.vibePins),
       palette: state.palette
-        ?.filter((c) => c.name || c.material)
+        ?.filter((c) => /^#[0-9a-f]{6}$/i.test(c.hex))
         .map((c) => ({
           hex: c.hex,
           name: c.name || undefined,
@@ -86,6 +86,8 @@ export default function DesignCheckBanner({ state }: Props) {
   }, [state]);
 
   useEffect(() => {
+    // Fire the coherence check once on mount (async, kicks off a fetch).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     runCheck();
     // Only on mount — re-checking on every state change would burn tokens.
     // The user has a manual "Re-check" button below.
@@ -99,7 +101,7 @@ export default function DesignCheckBanner({ state }: Props) {
         <div className="flex items-center gap-3">
           <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-acc" />
           <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-txt-3">
-            Reading your brief…
+            Reading your plan…
           </span>
         </div>
       </div>
@@ -113,7 +115,7 @@ export default function DesignCheckBanner({ state }: Props) {
 
   const VERDICT_STYLES = {
     strong: {
-      label: "Strong brief",
+      label: "Strong plan",
       ring: "border-emerald-700/50 bg-emerald-950/20",
       chip: "text-emerald-300",
       dot: "bg-emerald-400",

@@ -14,6 +14,7 @@
 import { useSearchParams } from "next/navigation";
 import PinterestGrid from "@/components/wizard/PinterestGrid";
 import { getIndustry } from "@/lib/space-taxonomy";
+import { CURATED_PINS, CURATED_VIBE } from "@/data/reference-images";
 import type { WizardState } from "@/lib/wizard-state";
 
 type Props = {
@@ -21,9 +22,9 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-/** Vibe selection range: pick 3 (min, so the AI has a real signal) to 5 (max). */
+/** Vibe selection range: pick 3 (min, so the AI has a real signal) to 6 (max). */
 const MIN_VIBE_PINS = 3;
-const MAX_VIBE_PINS = 5;
+const MAX_VIBE_PINS = 6;
 
 export default function VibeStep({ state, setState }: Props) {
   const params = useSearchParams();
@@ -43,11 +44,22 @@ export default function VibeStep({ state, setState }: Props) {
   const industry = state.industryId ? getIndustry(state.industryId) : null;
   const spaceLabel = industry?.spaces.find((s) => s.id === state.spaceId)?.label;
 
+  // Vibe references reflect the project category: a per-industry curated set
+  // (restaurant vibes for F&B, office vibes for workplace, …), falling back to
+  // the generic set for "Other" / unknown.
+  const vibeSet =
+    (state.industryId && CURATED_VIBE[state.industryId]) || CURATED_PINS.vibe;
+
+  // The style picked on the homepage ("feels like ___") pre-selects its chip.
+  const styleFromHome = (state.vibeQuery ?? params.get("vibe") ?? "")
+    .trim()
+    .toLowerCase();
+
   return (
     <PinterestGrid
       initialQuery={seededQuery}
-      categoryKey="vibe"
-      adaptive
+      curatedPins={vibeSet}
+      initialStyle={styleFromHome}
       maxSelections={MAX_VIBE_PINS}
       minSelections={MIN_VIBE_PINS}
       selectedPins={selected}
@@ -59,7 +71,7 @@ export default function VibeStep({ state, setState }: Props) {
           vibeQuery: seededQuery,
         })
       }
-      helperText="Pick 3 to 5 that capture the feeling you want. Use the style chips to explore different moods — once you pick one, similar references float to the top. These are the emotional anchor for the whole brief."
+      helperText="Pick 3 to 6 that capture the feeling you want. Type a style or use the chips to switch. These set the mood for the whole plan."
       suggestionContext={{
         step: "vibe",
         industry: industry?.label,

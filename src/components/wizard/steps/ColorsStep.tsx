@@ -1,22 +1,20 @@
 "use client";
 
 /**
- * Step 3 — Colors & Palette.
+ * Step 3 — Colours.
  *
- * Four-slot color palette builder (Primary / Secondary / Accent / Supporting).
- * Each slot is a hex value + a designer name + the material it shows up on.
+ * The palette is pulled straight from the images you picked: on arrival we read
+ * the real colours out of those pins' pixels and lay them into one connected
+ * bar, each block sized by how dominant that colour is. Tap a colour to change
+ * it, use the eyedropper, or "Suggest a palette" for a harmonised set.
  *
- * The "Suggest a palette" button hits /api/colors/generate, which proxies
- * Colormind.io — a free palette-completion service that returns harmonized
- * hex codes. We pull the first 4 colors and replace any slots whose user-set
- * name is empty. Slots the user has already named are treated as "locked".
+ * No naming fields, no proportional preview, no room matcher — just the colours,
+ * simply. (Those were removed per direct product feedback.)
  */
 
-import { useState } from "react";
-import ColorPaletteBuilder, {
-  PALETTE_SLOTS,
-  PalettePreview,
-} from "@/components/wizard/ColorPaletteBuilder";
+import { useEffect, useMemo, useRef, useState } from "react";
+import PaletteBar from "@/components/wizard/PaletteBar";
+import { extractPalette } from "@/lib/extract-colors";
 import type { ColorEntry } from "@/db/schema";
 import type { WizardState } from "@/lib/wizard-state";
 
@@ -25,144 +23,205 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-/** Default starting palette — pulled from the warm-cream/terracotta theme. */
-function defaultPalette(): ColorEntry[] {
-  return PALETTE_SLOTS.map((slot) => ({
-    hex: slot.defaultHex,
-    name: "",
-    material: "",
-  }));
+const PALETTE_SIZE = 6;
+const DEFAULT_HEXES = [
+  "#c8c3bb",
+  "#b9a797",
+  "#8c987d",
+  "#b79d85",
+  "#a48d6e",
+  "#5e6b4f",
+];
+
+function toEntries(hexes: string[]): ColorEntry[] {
+  const out: ColorEntry[] = [];
+  for (let i = 0; i < PALETTE_SIZE; i++) {
+    out.push({ hex: hexes[i] ?? DEFAULT_HEXES[i], name: "", material: "" });
+  }
+  return out;
+}
+
+function hexesOf(palette?: ColorEntry[]): string[] {
+  const hx = (palette ?? []).map((c) => c.hex);
+  for (let i = hx.length; i < PALETTE_SIZE; i++) hx.push(DEFAULT_HEXES[i]);
+  return hx.slice(0, PALETTE_SIZE);
+}
+
+/** Lighten (t>0) / darken (t<0) a hex by fraction t. */
+function shadeHex(hex: string, t: number): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+    const nv = t >= 0 ? v + (255 - v) * t : v * (1 + t);
+    return Math.max(0, Math.min(255, Math.round(nv)));
+  });
+  return "#" + ch.map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+/** Pad a short list of hexes up to a full palette with light/dark variants. */
+function padTo6(hexes: string[]): string[] {
+  const out = [...hexes];
+  const deltas = [0.2, -0.2, 0.35, -0.35];
+  let d = 0;
+  while (out.length < PALETTE_SIZE && hexes.length > 0) {
+    out.push(shadeHex(hexes[out.length % hexes.length], deltas[d % deltas.length]));
+    d++;
+  }
+  for (let i = out.length; i < PALETTE_SIZE; i++) out.push(DEFAULT_HEXES[i]);
+  return out.slice(0, PALETTE_SIZE);
 }
 
 export default function ColorsStep({ state, setState }: Props) {
-  const palette = state.palette ?? defaultPalette();
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const vibePins = useMemo(
+    () => (state.vibePins ?? []).filter((p) => p.imageUrl),
+    [state.vibePins],
+  );
+  const dominantFallback = useMemo(
+    () =>
+      vibePins
+        .map((p) => p.dominantColor?.trim())
+        .filter((c): c is string => !!c && /^#[0-9a-f]{6}$/i.test(c)),
+    [vibePins],
+  );
 
-  // Pinterest's Apify scraper returns a dominantColor per pin (when available).
-  // Surface only those vibe pins that came back with a usable hex.
-  const vibePinsWithColors = (state.vibePins ?? [])
-    .map((p) => p.dominantColor?.trim())
-    .filter((c): c is string => !!c && /^#[0-9a-f]{6}$/i.test(c));
+  const colors = hexesOf(state.palette);
+  const [busy, setBusy] = useState<"idle" | "extracting" | "suggesting">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const started = useRef(false);
 
-  /** Fill unnamed palette slots with dominant colors pulled from vibe pins. */
-  function pullFromVibe() {
-    if (vibePinsWithColors.length === 0) return;
-    const next: ColorEntry[] = palette.map((slot, i) => {
-      if (slot.name.trim()) return slot; // locked by name
-      const pulled = vibePinsWithColors[i];
-      return pulled ? { ...slot, hex: pulled } : slot;
-    });
-    setState({ palette: next });
+  async function runExtract() {
+    setBusy("extracting");
+    setError(null);
+    try {
+      const result = await extractPalette(
+        vibePins.map((p) => p.imageUrl),
+        PALETTE_SIZE,
+        dominantFallback,
+      );
+      setState({
+        palette: toEntries(result.map((c) => c.hex)),
+        paletteWeights: result.map((c) => c.weight),
+      });
+    } catch {
+      setError(
+        "Couldn't read colours from the images — you can still pick them by hand below.",
+      );
+      if (!state.palette) {
+        setState({
+          palette: toEntries(
+            dominantFallback.length ? padTo6(dominantFallback) : DEFAULT_HEXES,
+          ),
+          paletteWeights: undefined,
+        });
+      }
+    } finally {
+      setBusy("idle");
+    }
   }
 
-  async function suggestPalette() {
-    setStatus("loading");
-    setErrorMessage(null);
-    try {
-      // Lock any slot the user has already named — Colormind will respect it.
-      const locked = palette
-        .map((c) => (c.name.trim() ? c.hex : null))
-        .filter((v): v is string => v !== null);
-      const query = locked.length > 0 ? `?locked=${locked.join(",")}` : "";
+  // Auto-fill from the picked images the first time we land here, if untouched.
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    if (state.palette && state.palette.length > 0) return;
+    // One-time seed from the picked images (kicks off async extraction).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (vibePins.length > 0) runExtract();
+    else setState({ palette: toEntries(DEFAULT_HEXES), paletteWeights: undefined });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-      const response = await fetch(`/api/colors/generate${query}`);
-      const data = (await response.json()) as
+  /** Colormind palette, seeded from a couple of the current colours. */
+  async function suggest() {
+    setBusy("suggesting");
+    setError(null);
+    try {
+      const seed = colors.slice(0, 2);
+      const q = seed.length
+        ? `?locked=${encodeURIComponent(seed.join(","))}`
+        : "";
+      const res = await fetch(`/api/colors/generate${q}`);
+      const data = (await res.json()) as
         | { palette: string[] }
         | { ok: false; error: string };
-
-      if ("ok" in data && data.ok === false) {
-        throw new Error(data.error);
-      }
-      if (!("palette" in data)) {
-        throw new Error("Unexpected response from /api/colors/generate");
-      }
-
-      // Replace only the slots whose name is empty — preserve user-named ones.
-      const next: ColorEntry[] = palette.map((slot, i) => {
-        if (slot.name.trim()) return slot; // user-named = locked
-        return { ...slot, hex: data.palette[i] ?? slot.hex };
+      if ("ok" in data && data.ok === false) throw new Error(data.error);
+      if (!("palette" in data)) throw new Error("Unexpected response.");
+      // A harmonised suggestion has no per-colour dominance, so show it evenly.
+      setState({
+        palette: toEntries(padTo6(data.palette)),
+        paletteWeights: undefined,
       });
-      setState({ palette: next });
-      setStatus("idle");
     } catch (e) {
-      setStatus("error");
-      setErrorMessage(e instanceof Error ? e.message : String(e));
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy("idle");
     }
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <p className="text-[14px] text-txt-2">
-        Build the palette in four roles. The names and materials you write here
-        feed straight into the final Design DNA brief, so think of them as
-        designer-to-designer notes, not generic labels.
+        Your palette, pulled from the images you picked. Tap a colour to change
+        it, use the eyedropper, or generate a harmonised set.
       </p>
 
-      {/* Generation buttons */}
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={suggestPalette}
-            disabled={status === "loading"}
-            className="inline-flex items-center gap-2 border border-acc px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-acc transition hover:bg-acc hover:text-white disabled:opacity-50"
-          >
-            {status === "loading" ? "Generating…" : "Suggest a palette →"}
-          </button>
-
-          {vibePinsWithColors.length > 0 && (
-            <button
-              onClick={pullFromVibe}
-              className="inline-flex items-center gap-2 border border-bdr-2 px-5 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-txt-2 transition hover:border-txt-2 hover:text-txt"
-            >
-              <span
-                className="flex h-3 w-3 items-center justify-center gap-px"
-                aria-hidden="true"
-              >
-                {vibePinsWithColors.slice(0, 4).map((c, i) => (
-                  <span
-                    key={i}
-                    className="block h-3 w-[3px]"
-                    style={{ backgroundColor: c }}
-                  />
-                ))}
-              </span>
-              Pull from vibe pins
-            </button>
-          )}
-        </div>
-        <p className="text-[11px] text-txt-3">
-          Both buttons replace unnamed slots only. Slots you&apos;ve named stay.
-        </p>
-      </div>
-
-      {status === "error" && (
-        <div className="border border-red-900/40 bg-red-950/30 p-3 text-[12px] text-red-200">
-          Suggestion failed: {errorMessage}
+      {error && (
+        <div className="border border-amber-800/40 bg-amber-950/20 p-3 text-[12px] text-amber-200">
+          {error}
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
-        {/* Editor */}
-        <div className="space-y-6 lg:order-1">
-          <ColorPaletteBuilder
-            palette={palette}
-            onChange={(next) => setState({ palette: next })}
-          />
-          <p className="text-[11px] text-txt-3">
-            Tip: click any swatch to change its color freely, or type a hex code.
-            Leave a name blank while scouting — those slots get replaced when you
-            tap &ldquo;Suggest a palette.&rdquo; Name a slot to lock it.
-          </p>
+      {/* Provenance + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          {vibePins.slice(0, 6).map((p, i) => (
+            <div
+              key={p.id || i}
+              className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-bdr-2"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.imageUrl.replace("/736x/", "/236x/")}
+                alt=""
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ))}
+          {vibePins.length > 0 && (
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3">
+              {busy === "extracting" ? "Reading colours…" : "From your images"}
+            </span>
+          )}
         </div>
 
-        {/* Live preview — sticky on the right so it stays in view while editing */}
-        <div className="order-first lg:order-2">
-          <div className="lg:sticky lg:top-24">
-            <PalettePreview palette={palette} />
-          </div>
+        <div className="flex flex-wrap gap-2">
+          {vibePins.length > 0 && (
+            <button
+              onClick={runExtract}
+              disabled={busy !== "idle"}
+              className="border border-bdr-2 px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-txt-2 transition hover:border-acc hover:text-acc disabled:opacity-50"
+            >
+              {busy === "extracting" ? "Reading…" : "Rebuild from images"}
+            </button>
+          )}
+          <button
+            onClick={suggest}
+            disabled={busy !== "idle"}
+            className="border border-acc px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-acc transition hover:bg-acc hover:text-white disabled:opacity-50"
+          >
+            {busy === "suggesting" ? "Generating…" : "Suggest a palette →"}
+          </button>
         </div>
       </div>
+
+      {/* The one connected bar — blocks sized by dominance, clear divisions */}
+      <PaletteBar
+        colors={colors}
+        weights={state.paletteWeights}
+        onChange={(hexes) => setState({ palette: toEntries(hexes) })}
+      />
     </div>
   );
 }

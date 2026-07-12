@@ -44,7 +44,7 @@ const STATIONS = [
   {
     num: "03 / BUILD",
     title: "We build out the rest.",
-    body: "Furniture, lighting, flooring, ceiling, materials. We do the heavy lifting and pull references for each dimension based on your picks. About fifteen seconds.",
+    body: "Furniture, lighting, flooring, ceiling, materials. We do the heavy lifting and pull example images for each part based on your picks. About fifteen seconds.",
     visual: (
       <svg viewBox="0 0 200 84" preserveAspectRatio="xMidYMid meet" stroke="currentColor" fill="none" strokeWidth="0.7" className="text-txt-2">
         {[10, 24, 38, 52, 66].map((y, i) => (
@@ -60,7 +60,7 @@ const STATIONS = [
   {
     num: "04 / REFINE",
     title: "Make it yours.",
-    body: "All eight dimensions in front of you. Swap anything you don't love, regenerate anything that's off. Export as a PDF or shareable link, landscape or portrait, with your studio's logo if you need it.",
+    body: "All eight parts in front of you. Swap anything you don't love, redo anything that's off. Export as a PDF or shareable link, landscape or portrait, with your studio's logo if you need it.",
     visual: (
       <svg viewBox="0 0 200 84" preserveAspectRatio="xMidYMid meet" stroke="currentColor" fill="none" strokeWidth="0.9" strokeLinejoin="round" className="text-txt-2">
         <rect x="20" y="10" width="36" height="28" />
@@ -82,14 +82,14 @@ export default function HowItWorks() {
     <section id="how" className="border-b border-bdr bg-bg px-6 py-[104px] sm:px-8">
       <SectionHeader
         eyebrow="04 · How it works"
-        headline="From a few choices to a complete brief."
+        headline="From a few choices to a complete design plan."
         sub={
           <>
-            Eight design dimensions, in{" "}
+            Eight parts of the design, in{" "}
             <span className="text-acc">five minutes</span>.
           </>
         }
-        lead="Fills follows how senior studios actually scope a project. You give a starting direction. We build out the rest. You stay in control of the result."
+        lead="Fills follows how senior studios actually plan a project. You give a starting direction. We build out the rest. You stay in control of the result."
       />
 
       {/* Datum thread — a terracotta drafting line connecting the steps */}

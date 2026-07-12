@@ -38,21 +38,21 @@ function sample<T>(arr: readonly T[]): T {
 // industry slot). Once an industry is chosen, the industry-specific
 // suggestions take over.
 const GENERIC_SPECS = [
-  "boutique hotel suite",
-  "cocktail bar",
-  "yoga studio",
-  "loft apartment",
-  "specialty café",
-  "fragrance boutique",
-  "founder's office",
+  "restaurant",
+  "boutique",
+  "cafe",
+  "office",
+  "hotel suite",
+  "hair salon",
+  "apartment",
 ];
 const GENERIC_VIBES = [
-  "warm minimalism",
-  "japandi calm",
-  "1920s glam",
-  "moody intimate",
-  "Mediterranean",
-  "Belgian wabi",
+  "contemporary",
+  "modern",
+  "minimalist",
+  "scandinavian",
+  "industrial",
+  "mid-century",
 ];
 
 export default function ConceptBuilder() {
@@ -91,20 +91,20 @@ export default function ConceptBuilder() {
 
   function build() {
     if (tab === "quick") {
-      // → new QuickFlow, prefilled from the madlib.
+      // → the Quick canvas flow, prefilled from the madlib.
       const qs = new URLSearchParams({
-        path: "quick",
         industry: industry?.label ?? "",
         spec: spec.trim(),
         vibe: vibe.trim(),
       });
-      router.push(`/concept/wizard?${qs.toString()}`);
+      router.push(`/concept/quick?${qs.toString()}`);
     } else if (tab === "upload") {
       // → new QuickFlow upload path.
       router.push("/concept/wizard");
     } else {
-      // Full Studio keeps the existing detailed wizard.
-      router.push("/concept/wizard");
+      // Full Studio keeps the detailed 9-step wizard. The explicit ?path=full
+      // makes it open the full flow even if a "quick" draft is saved.
+      router.push("/concept/wizard?path=full");
     }
   }
 
@@ -405,61 +405,9 @@ function QuickPanel(props: {
   );
 }
 
-/* Typewriter for the placeholder examples — types a word out, holds, erases,
- * advances. Drives the "type here" feel. Off when focused/typing/reduced-motion. */
-function useTypewriter(words: string[], active: boolean): string {
-  const key = words.join("|");
-  const [text, setText] = useState("");
-  const [i, setI] = useState(0);
-  const [mode, setMode] = useState<"type" | "hold" | "erase">("type");
-
-  useEffect(() => {
-    if (!active) {
-      setText("");
-      setMode("type");
-      setI(0);
-      return;
-    }
-    const list = key ? key.split("|") : [];
-    if (list.length === 0) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setText(list[i % list.length]);
-      return;
-    }
-    const full = list[i % list.length];
-    let t: ReturnType<typeof setTimeout>;
-    if (mode === "type") {
-      t = setTimeout(
-        () =>
-          text.length < full.length
-            ? setText(full.slice(0, text.length + 1))
-            : setMode("hold"),
-        text.length < full.length ? 55 : 1300,
-      );
-    } else if (mode === "hold") {
-      t = setTimeout(() => setMode("erase"), 700);
-    } else {
-      t = setTimeout(
-        () => {
-          if (text.length > 0) setText(full.slice(0, text.length - 1));
-          else {
-            setI((p) => (p + 1) % list.length);
-            setMode("type");
-          }
-        },
-        text.length > 0 ? 28 : 120,
-      );
-    }
-    return () => clearTimeout(t);
-  }, [active, key, text, mode, i]);
-
-  return text;
-}
-
 /* Auto-sizing inline text input (serif, italic, dashed underline).
- * When empty + unfocused, it TYPES OUT example values (terracotta, with a
- * blinking caret) so it reads as an editable field, not read-only text.
- * The typing stops the moment you focus/type. */
+ * Shows a static placeholder when empty — no typing animation, no blinking
+ * caret. The example values live in the suggestion chips below the sentence. */
 function AutoSizeInput({
   value,
   onChange,
@@ -475,12 +423,8 @@ function AutoSizeInput({
 }) {
   const mirrorRef = useRef<HTMLSpanElement>(null);
   const [width, setWidth] = useState(160);
-  const [focused, setFocused] = useState(false);
 
   const options = placeholderOptions ?? [];
-  const typing = !disabled && !value && !focused && options.length > 0;
-  const typed = useTypewriter(options, typing);
-
   // Width is sized to the longest example so the sentence never reflows.
   const longest = options.length
     ? options.reduce((a, b) => (b.length > a.length ? b : a), placeholder)
@@ -501,23 +445,11 @@ function AutoSizeInput({
       >
         {value || longest}
       </span>
-      {/* Typewriter placeholder overlay — terracotta + blinking caret */}
-      {typing && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden whitespace-nowrap px-3.5 font-serif italic text-acc"
-        >
-          {typed}
-          <span className="ml-px inline-block w-px self-stretch bg-acc" style={{ animation: "cbBlink 1s step-end infinite" }} />
-        </span>
-      )}
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        placeholder={typing ? "" : placeholder}
+        placeholder={placeholder}
         disabled={disabled}
         autoComplete="off"
         style={{ width, maxWidth: "100%" }}
@@ -837,9 +769,9 @@ function StudioPanel() {
         Shape the whole <em className="italic text-acc">vision</em>.
       </div>
       <p className="mt-2.5 max-w-[470px] text-[13.5px] leading-relaxed text-txt-2">
-        Nine guided steps, about ten minutes, and you walk away with a complete,
-        client-ready brief: palette, materials, lighting, furniture, and more,
-        ready to export as a PDF.
+        Nine guided steps, about ten minutes, and you walk away with a
+        complete design plan (a brief): colours, materials, lighting,
+        furniture, and more, ready to export as a PDF.
       </p>
 
       {/* Step chips — auto-advance, hover to explore (which drives the preview). */}
@@ -912,10 +844,10 @@ function UploadPanel() {
         Drop <em className="italic text-acc">3 to 5 reference images</em>
       </span>
       <span className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-txt-3">
-        Aggregated extraction: palette · materials · lighting · vibe
+        We read them all for: colours · materials · lighting · vibe
       </span>
       <span className="font-sans text-[11px] text-txt-3">
-        PNG · JPG · HEIC, screenshots or moodboard exports, up to 10 MB each
+        PNG · JPG · HEIC, screenshots or saved images, up to 10 MB each
       </span>
       <input type="file" accept="image/*" multiple className="hidden" />
     </label>

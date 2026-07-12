@@ -4,8 +4,8 @@ import CardBrackets from "./CardBrackets";
 const OUTPUT_CARDS = [
   {
     num: "01",
-    title: "Palette",
-    desc: "A six-color system with usage notes for walls, accents, and soft furnishings.",
+    title: "Colours",
+    desc: "A six-color palette with notes on where each one goes: walls, accents, and soft furnishings.",
     visual: (
       <svg viewBox="0 0 220 44" width="100%" height="44" preserveAspectRatio="xMidYMid meet">
         <rect x="0" y="0" width="35" height="44" fill="#E8DCC8" />
@@ -97,7 +97,7 @@ export default function Output() {
             <span className="text-acc">anyone with walls</span>.
           </>
         }
-        lead="Fills is a mood board generator for interior design and architecture, designed by a working architect and trained on how senior studios brief clients. Describe your project, and in five minutes you get a complete editorial brief: palette, materials, lighting, furniture, spatial notes."
+        lead="Fills builds a mood board for your space (one page with your colors, materials, lighting and furniture), designed by a working architect and trained on how senior studios plan a project. Describe your project, and in five minutes you get a complete design plan: colors, materials, lighting, furniture, spatial notes."
       />
 
       <div className="mx-auto mt-16 grid max-w-[1280px] grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -122,7 +122,7 @@ export default function Output() {
       </div>
 
       <p className="mx-auto mt-16 max-w-2xl text-center text-[13px] leading-[1.85] font-light text-txt-2">
-        Landscape or portrait, digital link or PDF, white-label with your studio&apos;s logo. Send it to a contractor, an architect, or your{" "}
+        Landscape or portrait, digital link or PDF, add your studio&apos;s logo if you have one. Send it to a contractor, an architect, or your{" "}
         <em className="not-italic font-medium text-acc">group chat</em>.
       </p>
     </section>

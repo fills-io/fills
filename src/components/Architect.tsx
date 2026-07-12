@@ -3,26 +3,26 @@ import SectionHeader from "./SectionHeader";
 const TIERS = [
   {
     num: "01",
-    title: "A video call to review your brief.",
-    desc: "Once you have a brief, book a call with a working architect. Walk them through your mood board, get their take on what's working, and map out the next steps for your project.",
+    title: "A video call to review your plan.",
+    desc: "Once you have your design plan (a brief), book a call with a working architect. Walk them through your mood board, get their take on what's working, and map out the next steps for your project.",
     forWhom: "For a sanity check before you start spending.",
   },
   {
     num: "02",
     title: "Floor plans and elevations.",
-    desc: "From your brief, the architect develops 2D drawings: layouts, elevations, key sections. Real architectural drawings ready for a contractor to quote from.",
+    desc: "From your plan, the architect develops flat 2D drawings: layouts, wall views (elevations), key sections. Real architectural drawings ready for a contractor to quote from.",
     forWhom: "For when you have a contractor lined up.",
   },
   {
     num: "03",
     title: "A live spatial review with the architect.",
-    desc: "With your brief in hand, schedule a video call. Walk the project in 3D together: spatial recommendations, material adjustments, written summary after.",
-    forWhom: "For when you need direction without committing to full design.",
+    desc: "With your plan in hand, schedule a video call. Walk the project in 3D together: layout recommendations, material adjustments, written summary after.",
+    forWhom: "For when you need direction without committing to a full design service.",
   },
   {
     num: "04",
     title: "A complete 3D design.",
-    desc: "From brief through to documentation. Full 3D modelling, renders, and a build-ready spec. The architect's studio takes the project all the way.",
+    desc: "From plan through to the drawings a builder works from. Full 3D modelling, realistic renders, and a build-ready specification. The architect's studio takes the project all the way.",
     forWhom: "For when the project deserves an architect from start to finish.",
   },
 ];
@@ -42,7 +42,7 @@ export default function Architect() {
             <span className="text-acc">full 3D design</span>.
           </>
         }
-        lead="Real working architects, on call from inside your project. Once you have a brief in hand, bring one in for a video call, real drawings, a 3D walkthrough, or full design. At the level your project actually needs."
+        lead="Real working architects, on call from inside your project. Once you have your design plan in hand, bring one in for a video call, real drawings, a 3D walkthrough, or a full design service. At the level your project actually needs."
         tone="dark"
       />
 
@@ -74,7 +74,7 @@ export default function Architect() {
         <strong className="font-medium text-hero-cream">
           All four are available from inside your project.
         </strong>{" "}
-        Start a brief above to bring a working architect in.
+        Start a plan above to bring a working architect in.
       </p>
     </section>
   );
