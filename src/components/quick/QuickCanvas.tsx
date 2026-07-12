@@ -13,7 +13,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { INDUSTRIES, getIndustry } from "@/lib/concept-taxonomy";
 import { EMPTY_QUICK, type QuickState } from "@/lib/quick-state";
-import { generateBrief } from "@/lib/generate-brief-client";
+import { generateBrief, generateImage } from "@/lib/generate-brief-client";
+import { IMAGE_CATEGORIES, buildImagePrompt } from "@/lib/ai/image-prompt";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import type { PinterestPin } from "@/db/schema";
 import SetupStage from "./SetupStage";
@@ -21,7 +22,9 @@ import VibeStage from "./VibeStage";
 import PaletteStage from "./PaletteStage";
 import LiveBrief, { type PrimaryAction } from "./LiveBrief";
 import GenerationOverlay from "@/components/wizard/GenerationOverlay";
-import BriefDisplay from "@/components/wizard/BriefDisplay";
+import BriefDisplay, {
+  type GeneratedVisual,
+} from "@/components/wizard/BriefDisplay";
 
 /** Map a homepage industry LABEL or id (?industry=) back to a concept id.
  *  Forgiving: exact label, exact id, or a sensible prefix (so "Healthcare"
@@ -60,6 +63,7 @@ export default function QuickCanvas() {
     "idle",
   );
   const [brief, setBrief] = useState<GenerateBriefResponse | null>(null);
+  const [generated, setGenerated] = useState<GeneratedVisual[]>([]);
   const [genError, setGenError] = useState<string | null>(null);
 
   const vibeRef = useRef<HTMLDivElement>(null);
@@ -89,8 +93,13 @@ export default function QuickCanvas() {
   const generate = useCallback(async () => {
     setStatus("generating");
     setGenError(null);
+    setGenerated([]);
     try {
       const ind = getIndustry(state.industryId);
+      const paletteHexes = state.palette
+        .map((c) => c.hex)
+        .filter((h) => /^#[0-9a-f]{6}$/i.test(h));
+
       const data = await generateBrief({
         industry: ind?.label,
         space: state.spec || undefined,
@@ -100,11 +109,42 @@ export default function QuickCanvas() {
           .map((p) => p.title?.trim())
           .filter((t): t is string => !!t)
           .slice(0, 5),
-        palette: state.palette
-          .filter((c) => /^#[0-9a-f]{6}$/i.test(c.hex))
-          .map((c) => ({ hex: c.hex })),
+        palette: paletteHexes.map((hex) => ({ hex })),
       });
       setBrief(data);
+
+      // Auto-generate one photoreal render per category from the brief +
+      // palette. Best-effort: any that fail are simply left out.
+      const moodByCat: Record<string, string | undefined> = {
+        cover: data.sectionMoodLines.cover,
+        furniture: data.sectionMoodLines.furniture,
+        lighting: data.sectionMoodLines.lighting,
+        flooring: data.sectionMoodLines.surfaces,
+        ceiling: undefined,
+        materials: data.sectionMoodLines.materials,
+      };
+      const results = await Promise.allSettled(
+        IMAGE_CATEGORIES.map(async (cat): Promise<GeneratedVisual> => {
+          const prompt = buildImagePrompt({
+            focus: cat.focus,
+            industry: ind?.label,
+            space: state.spec || undefined,
+            vibe: state.vibeQuery || undefined,
+            paletteHexes,
+            moodLine: moodByCat[cat.key],
+          });
+          const dataUrl = await generateImage(prompt);
+          return { key: cat.key, label: cat.label, dataUrl };
+        }),
+      );
+      setGenerated(
+        results
+          .filter(
+            (r): r is PromiseFulfilledResult<GeneratedVisual> =>
+              r.status === "fulfilled",
+          )
+          .map((r) => r.value),
+      );
       setStatus("done");
     } catch (e) {
       setGenError(e instanceof Error ? e.message : String(e));
@@ -116,6 +156,7 @@ export default function QuickCanvas() {
     setState(EMPTY_QUICK);
     setPaletteOpen(false);
     setBrief(null);
+    setGenerated([]);
     setStatus("idle");
     setGenError(null);
     window.scrollTo({ top: 0 });
@@ -127,6 +168,7 @@ export default function QuickCanvas() {
       <main className="mx-auto max-w-4xl px-6 py-12 sm:px-8 sm:py-16">
         <BriefDisplay
           brief={brief}
+          generated={generated}
           pins={{
             // Curated pins carry no source URL; point the link at the image so
             // the brief's reference thumbnails are still clickable.
