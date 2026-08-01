@@ -28,6 +28,8 @@ export default function FlooringStep({ state, setState }: Props) {
     <PinterestStepWrapper
       spaceLabel={spaceLabel}
       industryLabel={industry?.label}
+      spaceId={state.industryId}
+      vibe={state.vibeQuery}
       suggestionStep="flooring"
       category="flooring"
       categoryKey="flooring"

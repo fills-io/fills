@@ -1,12 +1,16 @@
 "use client";
 
 /**
- * The generated Design DNA brief — the user's final artifact.
+ * The generated design brief — the user's deliverable.
  *
- * Image-forward and lean: a concise headline + one-line subtitle, a compact
- * palette bar, then LARGE reference images per category (the star of the page),
- * a short strategy block, and export. The heavy prose sections were removed on
- * feedback — the brief should read as a mood board, not an essay.
+ * Structured as a real handover document a designer or contractor can work
+ * from: what the project is, the palette with applications, big reference
+ * imagery, a materials/finishes schedule, furniture direction, a lighting
+ * plan, spatial notes, do/don't guardrails, and next steps.
+ *
+ * Image-forward and scannable: specs are laid out as lists and rows, not
+ * paragraphs. The only prose is the concept line, the intent, and one short
+ * "how it should look" note.
  */
 
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
@@ -48,14 +52,32 @@ function textOn(hex: string): string {
   return lum > 150 ? "#2a2a28" : "#f4f2ec";
 }
 
-/** The first sentence of the cinematic description — a tight subtitle. */
-function firstSentence(text: string): string {
-  const m = text.trim().match(/^.*?[.!?](\s|$)/);
-  return (m ? m[0] : text).trim();
-}
+const LABEL = "mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-acc";
 
-const LABEL =
-  "mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-acc";
+/** A compact spec row: bold key, supporting detail, quiet note. */
+function SpecRow({
+  head,
+  sub,
+  note,
+}: {
+  head: string;
+  sub: string;
+  note?: string;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-1 border-t border-bdr-2 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] sm:gap-4">
+      <div className="text-[14px] leading-snug text-txt">{head}</div>
+      <div>
+        <div className="text-[13px] leading-snug text-txt-2">{sub}</div>
+        {note && (
+          <div className="mt-0.5 text-[12px] leading-snug text-txt-3">
+            {note}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function BriefDisplay({
   brief,
@@ -69,17 +91,17 @@ export default function BriefDisplay({
 
   return (
     <article className="space-y-10">
-      {/* Header — concise */}
+      {/* Header */}
       <header className="border-b border-bdr-2 pb-8">
         <div className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           <span className="inline-block h-px w-6 bg-acc" />
-          Your design plan · ready
+          Design brief · {brief.summary.projectType}
         </div>
         <h1 className="font-serif text-[clamp(28px,4vw,44px)] font-normal leading-[1.12] tracking-tight text-txt">
           {brief.conceptLine}
         </h1>
-        <p className="mt-4 max-w-2xl font-serif text-[16px] italic leading-relaxed text-txt-2">
-          {firstSentence(brief.cinematicDescription)}
+        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-txt-2">
+          {brief.summary.intent}
         </p>
         <div className="mt-5 flex flex-wrap gap-1.5">
           {brief.keywords.slice(0, 10).map((kw) => (
@@ -93,9 +115,24 @@ export default function BriefDisplay({
         </div>
       </header>
 
-      {/* Palette — compact proportional bar + short names */}
+      {/* At a glance */}
+      <section className="grid grid-cols-1 gap-px border border-bdr bg-bdr sm:grid-cols-2">
+        {[
+          ["Who it's for", brief.summary.whoItsFor],
+          ["Scope", brief.summary.scopeNotes],
+        ].map(([label, body]) => (
+          <div key={label} className="bg-bg-2 p-5">
+            <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-acc">
+              {label}
+            </div>
+            <p className="mt-2 text-[13px] leading-relaxed text-txt-2">{body}</p>
+          </div>
+        ))}
+      </section>
+
+      {/* Palette — with where each colour goes */}
       <section>
-        <h2 className={LABEL}>Palette</h2>
+        <h2 className={LABEL}>Colour system</h2>
         <div className="flex h-16 w-full overflow-hidden rounded-lg border border-bdr-2 lg:h-20">
           {brief.colorSystem.map((c, i) => (
             <div
@@ -112,22 +149,23 @@ export default function BriefDisplay({
             </div>
           ))}
         </div>
-        <div className="mt-2.5 grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-4">
-          {brief.colorSystem.map((c) => (
-            <div key={c.role} className="text-[11px] leading-snug">
-              <span className="text-txt">{c.name}</span>
-              <span className="text-txt-3"> · {c.material}</span>
-            </div>
+        <div className="mt-1">
+          {brief.colorSystem.map((c, i) => (
+            <SpecRow
+              key={`${c.hex}-${i}`}
+              head={`${c.name} · ${c.hex.toUpperCase()}`}
+              sub={c.application}
+            />
           ))}
         </div>
       </section>
 
-      {/* LARGE reference images per category — the star of the page */}
+      {/* Reference imagery — large */}
       {pinSections.map(({ key, label }) => {
         const list = pins?.[key] ?? [];
         return (
           <section key={key}>
-            <h2 className={LABEL}>{label}</h2>
+            <h2 className={LABEL}>{label} references</h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {list.map((pin) => (
                 <a
@@ -152,30 +190,119 @@ export default function BriefDisplay({
         );
       })}
 
-      {/* Strategy — the one text block, kept tight */}
+      {/* Materials & finishes */}
       <section>
-        <h2 className={LABEL}>Strategy</h2>
-        <div className="grid grid-cols-1 gap-px border border-bdr bg-bdr sm:grid-cols-3">
-          {(
-            [
-              ["psychological", "Psychological"],
-              ["functional", "Functional"],
-              ["marketing", "Marketing"],
-            ] as const
-          ).map(([key, label]) => (
-            <div key={key} className="bg-bg-2 p-5">
-              <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-acc">
-                {label}
-              </div>
-              <p className="mt-2.5 text-[13px] leading-relaxed text-txt-2">
-                {brief.strategicPillars[key]}
-              </p>
-            </div>
+        <h2 className={LABEL}>Materials &amp; finishes</h2>
+        <div className="border-b border-bdr-2">
+          {brief.materials.map((m, i) => (
+            <SpecRow
+              key={i}
+              head={m.material}
+              sub={m.application}
+              note={m.note}
+            />
           ))}
         </div>
       </section>
 
-      {/* Export — PDF download with logo + orientation controls. */}
+      {/* Furniture */}
+      <section>
+        <h2 className={LABEL}>Furniture</h2>
+        <div className="border-b border-bdr-2">
+          {brief.furniture.map((f, i) => (
+            <SpecRow key={i} head={f.item} sub={f.character} note={f.note} />
+          ))}
+        </div>
+      </section>
+
+      {/* Lighting plan */}
+      <section>
+        <h2 className={LABEL}>Lighting plan</h2>
+        <p className="text-[14px] leading-relaxed text-txt-2">
+          {brief.lighting.strategy}
+        </p>
+        <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.12em] text-acc">
+          {brief.lighting.colorTemperature}
+        </p>
+        <div className="mt-3 border-b border-bdr-2">
+          {brief.lighting.layers.map((l) => (
+            <SpecRow
+              key={l.layer}
+              head={l.layer}
+              sub={l.fixtures}
+              note={l.note}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Spatial notes */}
+      <section>
+        <h2 className={LABEL}>Layout &amp; spatial notes</h2>
+        <ul className="space-y-2">
+          {brief.spatialNotes.map((n, i) => (
+            <li key={i} className="flex gap-3 text-[14px] leading-relaxed text-txt-2">
+              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-acc" />
+              {n}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Do / Don't */}
+      <section className="grid grid-cols-1 gap-px border border-bdr bg-bdr sm:grid-cols-2">
+        <div className="bg-bg-2 p-5">
+          <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-acc">
+            Do
+          </div>
+          <ul className="mt-3 space-y-2">
+            {brief.dos.map((d, i) => (
+              <li key={i} className="flex gap-2.5 text-[13px] leading-snug text-txt-2">
+                <span className="text-acc">+</span>
+                {d}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="bg-bg-2 p-5">
+          <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
+            Don&apos;t
+          </div>
+          <ul className="mt-3 space-y-2">
+            {brief.donts.map((d, i) => (
+              <li key={i} className="flex gap-2.5 text-[13px] leading-snug text-txt-2">
+                <span className="text-txt-3">−</span>
+                {d}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* How it should look */}
+      <section className="border border-bdr bg-bg-2 p-6">
+        <h2 className={LABEL}>How it should look</h2>
+        <p className="font-serif text-[15px] leading-[1.7] text-txt">
+          {brief.cinematicDescription}
+        </p>
+      </section>
+
+      {/* Next steps */}
+      <section>
+        <h2 className={LABEL}>Next steps</h2>
+        <ol className="space-y-2.5">
+          {brief.nextSteps.map((s, i) => (
+            <li key={i} className="flex gap-3 text-[14px] leading-relaxed text-txt-2">
+              <span className="font-mono text-[11px] text-acc">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              {s}
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* Export */}
       <ExportPanel brief={brief} pins={pins} />
 
       {/* Actions */}

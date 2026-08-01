@@ -7,13 +7,14 @@
  */
 
 import { useMemo, useState } from "react";
-import { getIndustry, VIBE_BY_IND } from "@/lib/concept-taxonomy";
+import { getIndustry } from "@/lib/concept-taxonomy";
 import { findIndustryByLabel } from "@/lib/space-taxonomy";
 import {
   CURATED_PINS,
   CURATED_VIBE,
   type CuratedPin,
 } from "@/data/reference-images";
+import { usableOnly } from "@/lib/image-quality";
 import type { QuickState } from "@/lib/quick-state";
 
 type Props = {
@@ -25,15 +26,16 @@ const MAX_SEARCHES = 6;
 const MAX_PICKS = 5;
 const SHOWN = 24;
 
+/** Token match against a pin's style + title. Returns [] when nothing matches
+ *  so the caller can show an honest empty state instead of the whole pool. */
 function filterPool(pool: CuratedPin[], query: string): CuratedPin[] {
   const q = query.trim().toLowerCase();
   if (!q) return pool;
   const toks = q.split(/\s+/);
-  const m = pool.filter((p) => {
+  return pool.filter((p) => {
     const hay = (p.style + " " + (p.title || "")).toLowerCase();
     return toks.some((t) => hay.includes(t));
   });
-  return m.length ? m : pool;
 }
 
 export default function VibeStage({ state, patch }: Props) {
@@ -41,29 +43,73 @@ export default function VibeStage({ state, patch }: Props) {
 
   const pool = useMemo(() => {
     const spaceId = ind ? findIndustryByLabel(ind.label)?.id : null;
-    return (spaceId && CURATED_VIBE[spaceId]) || CURATED_PINS.vibe;
+    const raw = (spaceId && CURATED_VIBE[spaceId]) || CURATED_PINS.vibe;
+    // Never offer product listings, text-overlay graphics or collages.
+    const clean = usableOnly(raw);
+    return clean.length >= 12 ? clean : raw;
   }, [ind]);
 
-  const keywords = state.industryId
-    ? VIBE_BY_IND[state.industryId] ?? []
-    : [];
+  // Style chips come from the styles ACTUALLY present in this industry's pool,
+  // so a chip can never return nothing. (The old hardcoded list offered e.g.
+  // "luxe" to Healthcare, which had zero luxe images.)
+  const styles = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const p of pool) {
+      if (p.style) counts.set(p.style, (counts.get(p.style) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .filter(([, n]) => n >= 3)
+      .sort((a, b) => b[1] - a[1])
+      .map(([s]) => s);
+  }, [pool]);
 
+  // Style filtering is free and instant. Only free-text search is metered.
+  const [style, setStyle] = useState<string | null>(() => {
+    const seed = (state.vibeQuery ?? "").trim().toLowerCase();
+    return seed && styles.includes(seed) ? seed : null;
+  });
   const [query, setQuery] = useState("");
+  const [submitted, setSubmitted] = useState("");
   const [searchCount, setSearchCount] = useState(0);
-  const [lastSearched, setLastSearched] = useState(state.vibeQuery || "");
-  const [results, setResults] = useState<CuratedPin[]>(() =>
-    filterPool(pool, state.vibeQuery || "").slice(0, SHOWN),
-  );
+  const [shown, setShown] = useState(SHOWN);
 
   const searchLocked = searchCount >= MAX_SEARCHES;
   const picks = state.picks;
 
+  const results = useMemo(() => {
+    if (submitted) return filterPool(pool, submitted);
+    if (style) return pool.filter((p) => p.style === style);
+    return pool;
+  }, [pool, submitted, style]);
+
+  const visible = results.slice(0, shown);
+  const canLoadMore = visible.length < results.length;
+
   function runSearch(term: string) {
     const q = term.trim();
     if (!q || searchLocked) return;
-    setResults(filterPool(pool, q).slice(0, SHOWN));
+    setSubmitted(q);
+    setStyle(null);
+    setShown(SHOWN);
     setSearchCount((c) => c + 1);
-    setLastSearched(q);
+  }
+
+  function chooseStyle(s: string | null) {
+    setStyle(s);
+    setSubmitted("");
+    setQuery("");
+    setShown(SHOWN);
+  }
+
+  /** Describe the vibe from what they actually picked, not a stale search. */
+  function vibeFrom(next: CuratedPin[]): string | undefined {
+    if (next.length === 0) return state.vibeQuery || undefined;
+    const tally = new Map<string, number>();
+    for (const p of next) {
+      if (p.style) tally.set(p.style, (tally.get(p.style) ?? 0) + 1);
+    }
+    const top = [...tally.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    return top ?? state.vibeQuery ?? undefined;
   }
 
   function togglePick(pin: CuratedPin) {
@@ -73,12 +119,7 @@ export default function VibeStage({ state, patch }: Props) {
       : picks.length >= MAX_PICKS
         ? picks
         : [...picks, pin];
-    patch({
-      picks: next,
-      vibeQuery: next.length
-        ? lastSearched || next[0].style || state.vibeQuery
-        : state.vibeQuery,
-    });
+    patch({ picks: next, vibeQuery: vibeFrom(next) });
   }
 
   return (
@@ -146,47 +187,63 @@ export default function VibeStage({ state, patch }: Props) {
       {/* Search budget — small, secondary. */}
       <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
         {searchLocked
-          ? "Search limit reached — pick from what you found."
-          : `${MAX_SEARCHES - searchCount} of ${MAX_SEARCHES} free searches left`}
+          ? "Free searches used — browsing by style is still unlimited"
+          : `${MAX_SEARCHES - searchCount} of ${MAX_SEARCHES} free searches left · browsing by style is free`}
       </p>
 
-      {/* Keyword suggestions */}
-      {!searchLocked && keywords.length > 0 && (
+      {/* Style chips — always available, always free, never a dead end. */}
+      {styles.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="mr-1 font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
-            Try
+            Style
           </span>
-          {keywords.map((k) => (
+          <button
+            type="button"
+            onClick={() => chooseStyle(null)}
+            className={`border px-3 py-1.5 text-[12.5px] transition ${
+              !style && !submitted
+                ? "border-acc bg-[rgba(200,81,42,0.1)] text-acc"
+                : "border-bdr text-txt-2 hover:border-acc hover:text-acc"
+            }`}
+          >
+            All
+          </button>
+          {styles.map((s) => (
             <button
-              key={k}
+              key={s}
               type="button"
-              onClick={() => {
-                setQuery(k);
-                runSearch(k);
-              }}
-              className="border border-bdr px-3 py-1.5 text-[12.5px] text-txt-2 transition hover:border-acc hover:bg-[rgba(200,81,42,0.06)] hover:text-acc"
+              onClick={() => chooseStyle(s)}
+              className={`border px-3 py-1.5 text-[12.5px] capitalize transition ${
+                style === s
+                  ? "border-acc bg-[rgba(200,81,42,0.1)] text-acc"
+                  : "border-bdr text-txt-2 hover:border-acc hover:text-acc"
+              }`}
             >
-              {k}
+              {s}
             </button>
           ))}
         </div>
       )}
 
-      {searchLocked && (
-        <div className="mt-4 flex items-start gap-3 border border-acc/30 border-l-2 border-l-acc bg-[rgba(200,81,42,0.06)] p-4 text-[13px] italic leading-relaxed text-txt-2">
-          <span className="font-mono text-[9px] not-italic uppercase tracking-[0.14em] text-acc">
-            Limit
-          </span>
-          <span>
-            You&apos;ve used your free searches. Pick from what you&apos;ve
-            found — sign up later to keep exploring with unlimited searches.
-          </span>
+      {/* Honest empty state for a search that found nothing. */}
+      {submitted && results.length === 0 && (
+        <div className="mt-5 border border-bdr bg-bg-2 p-4 text-[13px] leading-relaxed text-txt-2">
+          Nothing matched <b className="text-txt">“{submitted}”</b> in{" "}
+          {ind?.label ?? "this category"}. Try a style below, or{" "}
+          <button
+            type="button"
+            onClick={() => chooseStyle(null)}
+            className="text-acc underline underline-offset-2"
+          >
+            show all {pool.length} images
+          </button>
+          .
         </div>
       )}
 
       {/* Masonry grid */}
       <div className="mt-6 columns-2 gap-3 sm:columns-3 lg:columns-4">
-        {results.map((p, i) => {
+        {visible.map((p, i) => {
           const sel = picks.some((x) => x.id === p.id);
           return (
             <button
@@ -217,6 +274,19 @@ export default function VibeStage({ state, patch }: Props) {
           );
         })}
       </div>
+
+      {/* More of the pool, on demand — the grid used to cap at 24 forever. */}
+      {canLoadMore && (
+        <div className="mb-6 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setShown((n) => n + SHOWN)}
+            className="border border-bdr-2 px-5 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:border-acc hover:text-acc"
+          >
+            Show more ({results.length - visible.length} left)
+          </button>
+        </div>
+      )}
 
       {/* Pick status */}
       {picks.length > 0 && (

@@ -45,6 +45,10 @@ type Props = {
   suggestionStep?: string;
   /** Industry label ("Residential" etc.), passed to AI suggestions. */
   industryLabel?: string;
+  /** space-taxonomy industry id, so the curated grid is project-aware. */
+  spaceId?: string | null;
+  /** The user's chosen style, used to rank the curated grid. */
+  vibe?: string;
 };
 
 export default function PinterestStepWrapper({
@@ -60,6 +64,8 @@ export default function PinterestStepWrapper({
   urlSeedKey,
   suggestionStep,
   industryLabel,
+  spaceId,
+  vibe,
 }: Props) {
   const params = useSearchParams();
 
@@ -76,6 +82,8 @@ export default function PinterestStepWrapper({
     <PinterestGrid
       initialQuery={seededQuery}
       categoryKey={categoryKey}
+      spaceId={spaceId}
+      vibe={vibe}
       maxSelections={maxSelections}
       selectedPins={selectedPins}
       onSelectionChange={(pins) =>

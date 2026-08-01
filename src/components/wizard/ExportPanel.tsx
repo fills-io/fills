@@ -74,12 +74,17 @@ export default function ExportPanel({ brief, pins }: Props) {
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      const slug = brief.conceptLine
+      // Name it after the project, not a truncated concept line, so a client
+      // can tell what the file is from the filename alone.
+      const slug = brief.summary.projectType
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "")
-        .slice(0, 40);
-      anchor.download = `fills-brief-${slug || "design-dna"}.pdf`;
+        .split("-")
+        .slice(0, 5)
+        .join("-");
+      const date = new Date().toISOString().slice(0, 10);
+      anchor.download = `fills-brief-${slug || "design"}-${date}.pdf`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -93,9 +98,14 @@ export default function ExportPanel({ brief, pins }: Props) {
 
   return (
     <section className="border border-bdr bg-bg-2 p-6">
-      <h2 className="mb-5 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
+      <h2 className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
         Export as PDF
       </h2>
+      <p className="mb-5 text-[13px] leading-relaxed text-txt-2">
+        A brief you can send straight to a designer or contractor: the concept,
+        colour system with applications, materials and finishes, furniture,
+        the lighting plan, layout notes, and every reference image.
+      </p>
 
       <div className="grid gap-6 sm:grid-cols-2">
         {/* Orientation */}
@@ -171,7 +181,7 @@ export default function ExportPanel({ brief, pins }: Props) {
           disabled={busy}
           className="inline-flex items-center gap-2 bg-acc px-6 py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {busy ? "Generating…" : "↓ Download PDF"}
+          {busy ? "Building your PDF…" : "↓ Download PDF"}
         </button>
       </div>
     </section>

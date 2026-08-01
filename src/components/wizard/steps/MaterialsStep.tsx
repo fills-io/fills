@@ -28,6 +28,8 @@ export default function MaterialsStep({ state, setState }: Props) {
     <PinterestStepWrapper
       spaceLabel={spaceLabel}
       industryLabel={industry?.label}
+      spaceId={state.industryId}
+      vibe={state.vibeQuery}
       suggestionStep="materials"
       category="materials texture"
       categoryKey="materials"

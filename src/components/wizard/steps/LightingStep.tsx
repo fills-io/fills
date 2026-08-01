@@ -29,6 +29,8 @@ export default function LightingStep({ state, setState }: Props) {
     <PinterestStepWrapper
       spaceLabel={spaceLabel}
       industryLabel={industry?.label}
+      spaceId={state.industryId}
+      vibe={state.vibeQuery}
       suggestionStep="lighting"
       category="lighting"
       categoryKey="lighting"

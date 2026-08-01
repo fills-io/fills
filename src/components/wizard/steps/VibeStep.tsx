@@ -33,10 +33,11 @@ export default function VibeStep({ state, setState }: Props) {
   //   1. Whatever the user previously typed on this step (state.vibeQuery)
   //   2. The homepage Quick form's vibe input (?vibe=...)
   //   3. A sensible default
-  const seededQuery =
-    state.vibeQuery ??
-    params.get("vibe") ??
-    "warm minimalism interior";
+  // A real style signal from the user (their own earlier choice, or the
+  // homepage madlib). Deliberately NOT defaulted — writing a placeholder here
+  // used to tell the AI every project was "warm minimalism".
+  const userStyle = (state.vibeQuery ?? params.get("vibe") ?? "").trim();
+  const seededQuery = userStyle || "warm minimalism interior";
 
   const selected = state.vibePins ?? [];
 
@@ -63,14 +64,23 @@ export default function VibeStep({ state, setState }: Props) {
       maxSelections={MAX_VIBE_PINS}
       minSelections={MIN_VIBE_PINS}
       selectedPins={selected}
-      onSelectionChange={(pins) =>
+      onSelectionChange={(pins) => {
+        // Describe the vibe from what they actually PICKED (the dominant style
+        // across their references), falling back to their stated style. Never
+        // persist the placeholder seed.
+        const styles = pins
+          .map((p) => (p as { style?: string }).style)
+          .filter((s): s is string => !!s);
+        const top = styles.length
+          ? [...new Set(styles)]
+              .map((s) => ({ s, n: styles.filter((x) => x === s).length }))
+              .sort((a, b) => b.n - a.n)[0].s
+          : "";
         setState({
           vibePins: pins,
-          // Remember the active query so coming back to this step
-          // doesn't reset the user's search.
-          vibeQuery: seededQuery,
-        })
-      }
+          vibeQuery: userStyle || top || undefined,
+        });
+      }}
       helperText="Pick 3 to 6 that capture the feeling you want. Type a style or use the chips to switch. These set the mood for the whole plan."
       suggestionContext={{
         step: "vibe",

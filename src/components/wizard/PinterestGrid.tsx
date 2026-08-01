@@ -19,7 +19,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PinterestPin } from "@/db/schema";
-import { CURATED_PINS, type CuratedPin } from "@/data/reference-images";
+import { type CuratedPin } from "@/data/reference-images";
+import { usableOnly } from "@/lib/image-quality";
+import { buildCategoryPool } from "@/lib/select-images";
 
 export type SuggestionContext = {
   step: string;
@@ -56,6 +58,12 @@ type Props = {
   /** Offsets the curated slice so repeated grids (furniture sub-sections)
    *  show different references. */
   sliceSeed?: number;
+  /** space-taxonomy industry id. With a categoryKey, the grid blends in real
+   *  rooms of this project type so a hotel lobby doesn't get living-room
+   *  furniture. */
+  spaceId?: string | null;
+  /** The user's style, used to rank the curated pool. */
+  vibe?: string;
 };
 
 /** Curated pin → the PinterestPin shape the wizard state stores. */
@@ -82,7 +90,12 @@ function thumb(url: string): string {
 export default function PinterestGrid(props: Props) {
   const curated =
     props.curatedPins ??
-    (props.categoryKey ? CURATED_PINS[props.categoryKey] : undefined);
+    (props.categoryKey
+      ? buildCategoryPool(props.categoryKey, {
+          spaceId: props.spaceId,
+          vibe: props.vibe,
+        })
+      : undefined);
   if (curated && curated.length > 0) {
     return <CuratedPicker {...props} curated={curated} />;
   }
@@ -113,12 +126,16 @@ function CuratedPicker({
   const showChips = styles.length >= 2;
 
   // Rotate the pool for repeated grids (furniture sub-sections) so each shows
-  // a different slice of the same curated set.
+  // a different slice of the same curated set. Product listings, text-overlay
+  // graphics and collages are filtered out first so they can never be picked.
   const pool = useMemo(() => {
-    if (!sliceSeed) return curated;
-    const n = curated.length;
+    const clean = usableOnly(curated);
+    const base = clean.length >= 12 ? clean : curated;
+    if (!sliceSeed) return base;
+    const n = base.length;
+    if (n === 0) return base;
     const start = ((sliceSeed * 6) % n + n) % n;
-    return [...curated.slice(start), ...curated.slice(0, start)];
+    return [...base.slice(start), ...base.slice(0, start)];
   }, [curated, sliceSeed]);
 
   // A typed query wins over the chips; otherwise the active chip filters.
@@ -360,7 +377,10 @@ function LiveGrid({
         | { ok: false; error: string };
       if ("ok" in data && data.ok === false) throw new Error(data.error);
       if (!("pins" in data)) throw new Error("Unexpected response shape");
-      setPins(data.pins);
+      // Drop product listings / text-overlay graphics from live results too,
+      // but keep the raw set if filtering would leave the grid too empty.
+      const clean = usableOnly(data.pins);
+      setPins(clean.length >= 8 ? clean : data.pins);
       setStatus("idle");
     } catch (e) {
       setStatus("error");
@@ -369,6 +389,8 @@ function LiveGrid({
   }, []);
 
   useEffect(() => {
+    // Fetch when the submitted query changes (external system -> React).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (submittedQuery.trim().length > 0) fetchPins(submittedQuery);
   }, [submittedQuery, fetchPins]);
 

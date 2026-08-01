@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { INDUSTRIES, getIndustry } from "@/lib/concept-taxonomy";
+import { findIndustryByLabel } from "@/lib/space-taxonomy";
 import { EMPTY_QUICK, type QuickState } from "@/lib/quick-state";
 import { generateBrief } from "@/lib/generate-brief-client";
 import { selectCategoryImages, AUTO_CATEGORIES } from "@/lib/select-images";
@@ -98,6 +99,37 @@ export default function QuickCanvas() {
         .map((c) => c.hex)
         .filter((h) => /^#[0-9a-f]{6}$/i.test(h));
 
+      // 1. Choose the reference images FIRST, so the AI can describe the same
+      //    materials and fittings the user will see next to its words. (Doing
+      //    this after the call left the text and the pictures unrelated.)
+      const spaceId = ind ? findIndustryByLabel(ind.label)?.id ?? null : null;
+      const selected = AUTO_CATEGORIES.map((cat) => ({
+        cat,
+        pins: selectCategoryImages(cat, {
+          vibe: state.vibeQuery,
+          paletteHexes,
+          spaceId,
+          count: 6,
+        }),
+      }));
+
+      const titles = (cat: string) =>
+        selected
+          .find((s) => s.cat === cat)
+          ?.pins.map((p) => p.title?.trim())
+          .filter((t): t is string => !!t)
+          .slice(0, 4) ?? [];
+
+      const pins: BriefPins = {};
+      for (const { cat, pins: list } of selected) {
+        pins[cat] = list.map((p) => ({
+          ...p,
+          url: p.imageUrl,
+        })) as unknown as PinterestPin[];
+      }
+      setCategoryPins(pins);
+
+      // 2. Generate the brief against those exact references.
       const data = await generateBrief({
         industry: ind?.label,
         space: state.spec || undefined,
@@ -108,20 +140,15 @@ export default function QuickCanvas() {
           .filter((t): t is string => !!t)
           .slice(0, 5),
         palette: paletteHexes.map((hex) => ({ hex })),
+        furnitureSubSections: [
+          { name: "Furniture", query: "furniture", pinTitles: titles("furniture") },
+        ],
+        lightingPinTitles: titles("lighting"),
+        flooringPinTitles: titles("flooring"),
+        ceilingPinTitles: titles("ceiling"),
+        materialsPinTitles: titles("materials"),
       });
       setBrief(data);
-
-      // Auto-SELECT real reference images per category from the scraped/curated
-      // pools, matched to the vibe + palette. (No generation — real images.)
-      const pins: BriefPins = {};
-      for (const cat of AUTO_CATEGORIES) {
-        pins[cat] = selectCategoryImages(cat, {
-          vibe: state.vibeQuery,
-          paletteHexes,
-          count: 6,
-        }).map((p) => ({ ...p, url: p.imageUrl })) as unknown as PinterestPin[];
-      }
-      setCategoryPins(pins);
       setStatus("done");
     } catch (e) {
       setGenError(e instanceof Error ? e.message : String(e));

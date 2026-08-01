@@ -49,6 +49,19 @@ const bodySchema = z.object({
   palette: z.array(paletteEntrySchema).max(8).optional(),
   furnitureQuery: z.string().max(200).optional(),
   furniturePinTitles: z.array(z.string().max(200)).max(10).optional(),
+  // Full Studio splits furniture into AI-named sub-sections (Sofa / Chairs /
+  // Coffee table). Without this key Zod stripped the whole furniture
+  // selection before it ever reached the prompt.
+  furnitureSubSections: z
+    .array(
+      z.object({
+        name: z.string().max(80),
+        query: z.string().max(200).optional(),
+        pinTitles: z.array(z.string().max(200)).max(10).optional(),
+      }),
+    )
+    .max(6)
+    .optional(),
   lightingPinTitles: z.array(z.string().max(200)).max(10).optional(),
   flooringPinTitles: z.array(z.string().max(200)).max(10).optional(),
   ceilingPinTitles: z.array(z.string().max(200)).max(10).optional(),

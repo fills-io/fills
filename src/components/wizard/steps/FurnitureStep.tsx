@@ -158,6 +158,8 @@ export default function FurnitureStep({ state, setState }: Props) {
           <PinterestGrid
             initialQuery={subSection.query}
             categoryKey="furniture"
+            spaceId={state.industryId}
+            vibe={state.vibeQuery}
             sliceSeed={i + 1}
             maxSelections={MAX_PINS_PER_SUBSECTION}
             selectedPins={subSection.pins}

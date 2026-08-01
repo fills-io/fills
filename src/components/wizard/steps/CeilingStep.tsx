@@ -28,6 +28,8 @@ export default function CeilingStep({ state, setState }: Props) {
     <PinterestStepWrapper
       spaceLabel={spaceLabel}
       industryLabel={industry?.label}
+      spaceId={state.industryId}
+      vibe={state.vibeQuery}
       suggestionStep="ceiling"
       category="ceiling treatment"
       categoryKey="ceiling"
