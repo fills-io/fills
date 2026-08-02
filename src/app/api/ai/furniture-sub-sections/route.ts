@@ -22,6 +22,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { aiText } from "@/lib/ai";
 import { checkRateLimit } from "@/lib/rate-limit";
+
+/** A single sentence a user can act on, instead of Zod's JSON dump. */
+function firstIssue(error: z.ZodError): string {
+  const issue = error.issues[0];
+  if (issue?.code === "too_big") {
+    const field = String(issue.path[0] ?? "answer");
+    return `Your ${field} is too long — please shorten it.`;
+  }
+  return "Some of your answers couldn't be read. Please check them.";
+}
 import {
   FURNITURE_SUB_SECTIONS_SYSTEM_PROMPT,
   FURNITURE_SUB_SECTIONS_SCHEMA,
@@ -55,7 +65,13 @@ export async function POST(request: NextRequest) {
   }
   if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: parsed.error.message },
+      {
+        ok: false,
+        // Zod's message is a pretty-printed JSON array of issue objects.
+        // It was rendered verbatim into the UI as a wall of braces; the
+        // only cause a user can act on is having written too much.
+        error: firstIssue(parsed.error),
+      },
       { status: 400 },
     );
   }
