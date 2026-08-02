@@ -14,6 +14,16 @@ export const metadata: Metadata = {
     title: "Talk to a Designer | Fills",
     description:
       "Get a working interior architect's eyes on your project. Tell us what you're working on and a designer will reply by email.",
+    images: ["/opengraph-image"],
+  },
+  // Without its own block this inherits the root twitter card and shares under
+  // the homepage headline — openGraph and twitter are replaced, not merged.
+  twitter: {
+    card: "summary_large_image",
+    title: "Talk to a Designer | Fills",
+    description:
+      "Get a working interior architect's eyes on your project. Tell us what you're working on and a designer will reply by email.",
+    images: ["/opengraph-image"],
   },
 };
 

@@ -19,6 +19,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { aiText } from "@/lib/ai";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   DESIGN_CHECK_SYSTEM_PROMPT,
   DESIGN_CHECK_SCHEMA,
@@ -51,6 +52,10 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // One model call per check, and the button can be clicked repeatedly.
+  const limited = checkRateLimit(request, "design-check", 30, 3_600_000);
+  if (limited) return limited;
+
   let parsed;
   try {
     const body = await request.json();
@@ -90,11 +95,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(payload);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[/api/ai/design-check] AI call failed:", error);
+  } catch (error) {    console.error("[/api/ai/design-check] AI call failed:", error);
     return NextResponse.json(
-      { ok: false, error: message },
+      { ok: false, error: "Couldn't run the design check just now." },
       { status: 500 },
     );
   }

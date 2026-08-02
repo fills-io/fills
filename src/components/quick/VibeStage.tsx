@@ -166,6 +166,8 @@ export default function VibeStage({ state, patch }: Props) {
             </svg>
           </span>
           <input
+            // Matches the `vibeQuery` cap on /api/ai/generate-brief.
+            maxLength={200}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => {

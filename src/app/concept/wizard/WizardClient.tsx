@@ -23,6 +23,8 @@ import {
   EMPTY_WIZARD_STATE,
 } from "@/lib/wizard-state";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/wizard-storage";
+import { saveBrief } from "@/lib/save-brief";
+import ShareBar from "@/components/wizard/ShareBar";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import WizardProgress from "@/components/wizard/WizardProgress";
 import SpaceStep from "@/components/wizard/steps/SpaceStep";
@@ -41,6 +43,19 @@ import GenerationOverlay from "@/components/wizard/GenerationOverlay";
  *  generates straight from Colours (no separate Review step). */
 const QUICK_STEP_IDS = ["vibe", "colors"] as const;
 
+/** The wizard's picks, in the shape the brief view and the saved copy use. */
+function briefPins(state: WizardState) {
+  return {
+    vibe: state.vibePins,
+    // Furniture is picked per sub-section; the brief shows one reference row.
+    furniture: (state.furnitureSubSections ?? []).flatMap((s) => s.pins ?? []),
+    lighting: state.lightingPins,
+    flooring: state.flooringPins,
+    ceiling: state.ceilingPins,
+    materials: state.materialsPins,
+  };
+}
+
 export default function WizardClient() {
   const [current, setCurrent] = useState<WizardStepId>("space");
   const [wizardState, setWizardState] = useState<WizardState>(EMPTY_WIZARD_STATE);
@@ -57,6 +72,7 @@ export default function WizardClient() {
   const [generatedBrief, setGeneratedBrief] =
     useState<GenerateBriefResponse | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
 
   const params = useSearchParams();
 
@@ -274,8 +290,25 @@ export default function WizardClient() {
         throw new Error(err?.error || `HTTP ${response.status}`);
       }
       const data = (await response.json()) as GenerateBriefResponse;
+      const industryLabel = wizardState.industryId
+        ? getIndustry(wizardState.industryId)?.label
+        : undefined;
       setGeneratedBrief(data);
       setGenerationStatus("done");
+
+      // Give it a permanent address. Not awaited: a failed save must not hold
+      // up a brief the user can already read.
+      saveBrief({
+        brief: data,
+        pins: briefPins(wizardState),
+        facts: { industry: industryLabel, style: wizardState.vibeQuery },
+        spaceType: industryLabel ?? "unspecified",
+        creationMode: "full",
+      }).then(setShareToken);
+
+      // The draft is spent. Leaving it behind greeted the user with "resume
+      // your in-progress plan" on a brief they had already finished.
+      clearDraft();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setGenerationError(message);
@@ -290,6 +323,7 @@ export default function WizardClient() {
     setGenerationStatus("idle");
     setGenerationError(null);
     setResumedAt(null);
+    setShareToken(null);
     setCurrent("space");
   }
 
@@ -297,19 +331,10 @@ export default function WizardClient() {
   if (generationStatus === "done" && generatedBrief) {
     return (
       <main className="mx-auto max-w-4xl px-6 py-12 sm:px-8 sm:py-16">
+        <ShareBar token={shareToken} />
         <BriefDisplay
           brief={generatedBrief}
-          pins={{
-            vibe: wizardState.vibePins,
-            // Flatten all furniture sub-section pins into a single reference row.
-            furniture: (wizardState.furnitureSubSections ?? []).flatMap(
-              (s) => s.pins ?? [],
-            ),
-            lighting: wizardState.lightingPins,
-            flooring: wizardState.flooringPins,
-            ceiling: wizardState.ceilingPins,
-            materials: wizardState.materialsPins,
-          }}
+          pins={briefPins(wizardState)}
           onRegenerate={generateBrief}
           onStartOver={startOver}
         />
@@ -371,9 +396,11 @@ export default function WizardClient() {
           Step {String(idx).padStart(2, "0")} / {String(total).padStart(2, "0")}
         </div>
 
-        <h1 className="font-serif text-[clamp(32px,4.5vw,48px)] font-normal leading-[1.1] tracking-tight text-txt">
+        {/* A step label, not the page title — the page's h1 lives in the
+            server wrapper so crawlers see one heading, not nine. */}
+        <h2 className="font-serif text-[clamp(32px,4.5vw,48px)] font-normal leading-[1.1] tracking-tight text-txt">
           {step.label}
-        </h1>
+        </h2>
 
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-txt-2">
           {step.description}

@@ -18,7 +18,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/interior-design-brief-template`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${base}/blog`, changeFrequency: "weekly", priority: 0.7 },
     ...postEntries,
+    { url: `${base}/talk-to-a-designer`, changeFrequency: "monthly", priority: 0.7 },
+    // The two real entry points into the builder. /concept is deliberately
+    // absent: it only redirects to /concept/wizard, and listing a redirect earns
+    // a "page with redirect" error in Search Console.
     { url: `${base}/concept/quick`, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${base}/concept`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${base}/concept/wizard`, changeFrequency: "monthly", priority: 0.6 },
   ];
 }

@@ -107,85 +107,103 @@ export default function SampleBoards() {
       {/* Lightbox */}
       {board && (
         <div
-          className="fixed inset-0 z-[500] flex items-center justify-center bg-black/80 p-6 backdrop-blur-md"
+          className="fixed inset-0 z-[500] bg-black/80 backdrop-blur-md"
           onClick={close}
         >
-          <div
-            className="relative grid w-full max-w-[1000px] grid-cols-1 overflow-hidden border border-bdr bg-bg shadow-2xl md:grid-cols-[1fr_360px]"
-            onClick={(e) => e.stopPropagation()}
+          {/* Close sits on the (non-scrolling) backdrop on phones, where the
+              stacked card is taller than the screen and its own corner button
+              scrolls out of reach. */}
+          <button
+            onClick={close}
+            aria-label="Close"
+            className="absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-bg/95 text-txt shadow-lg transition hover:bg-acc hover:text-white md:hidden"
           >
-            {/* Image side */}
-            <div
-              className="relative min-h-[280px]"
-              style={{ background: paletteGradient(board.palette) }}
-            >
-              <span className="absolute left-4 top-4 bg-black/60 px-2.5 py-1.5 font-mono text-[10px] tracking-[0.08em] text-white">
-                {String((open ?? 0) + 1).padStart(2, "0")} / {String(SAMPLE_BOARDS.length).padStart(2, "0")}
-              </span>
-              <button
-                onClick={close}
-                aria-label="Close"
-                className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full bg-bg/95 text-txt transition hover:bg-acc hover:text-white"
-              >
-                ✕
-              </button>
-              <button
-                onClick={prev}
-                aria-label="Previous"
-                className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-bg/95 text-txt transition hover:bg-acc hover:text-white"
-              >
-                ‹
-              </button>
-              <button
-                onClick={next}
-                aria-label="Next"
-                className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-bg/95 text-txt transition hover:bg-acc hover:text-white"
-              >
-                ›
-              </button>
-            </div>
+            ✕
+          </button>
 
-            {/* Info side */}
-            <div className="flex flex-col gap-4 overflow-y-auto p-8">
-              <div className="font-mono text-[9px] font-medium uppercase tracking-[0.16em] text-acc">
-                {board.tag} · Sample board
-              </div>
-              <h3 className="font-serif text-[26px] leading-[1.15] text-txt">
-                {board.name}
-                <br />
-                <em className="text-[18px] italic text-acc">{board.style}</em>
-              </h3>
-              <p className="text-[13px] leading-[1.8] text-txt-2">{board.desc}</p>
-              <div>
-                <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
-                  Palette
-                </div>
-                <div className="flex gap-1.5">
-                  {board.palette.map((c, j) => (
-                    <span key={j} className="h-9 w-9 border border-bdr-2" style={{ backgroundColor: c }} />
-                  ))}
-                </div>
-              </div>
-              <div className="mt-2 grid grid-cols-2 gap-4 border-t border-bdr pt-4">
-                <div>
-                  <div className="mb-1 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
-                    Size
-                  </div>
-                  <div className="text-[13px] font-medium text-txt">{board.size}</div>
-                </div>
-                <div>
-                  <div className="mb-1 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
-                    Materials
-                  </div>
-                  <div className="text-[11px] leading-[1.5] text-txt">{board.materials}</div>
-                </div>
-              </div>
-              <Link
-                href="/concept/wizard"
-                className="mt-2 inline-flex w-fit items-center gap-2 bg-acc px-5 py-3 text-[12px] font-medium uppercase tracking-[0.08em] text-white transition hover:gap-3 hover:bg-acc-h"
+          {/* Scroll layer. `min-h-full` on the centring row means the card is
+              centred when it fits and simply flows from the top when it
+              doesn't — flex centring alone pushes overflow off both ends. */}
+          <div className="h-full overflow-y-auto overscroll-contain">
+            <div className="flex min-h-full items-center justify-center p-4 sm:p-6">
+              <div
+                className="relative grid w-full max-w-[1000px] grid-cols-1 overflow-hidden border border-bdr bg-bg shadow-2xl md:grid-cols-[1fr_360px]"
+                onClick={(e) => e.stopPropagation()}
               >
-                Build a plan like this →
-              </Link>
+                {/* Image side */}
+                <div
+                  className="relative min-h-[280px]"
+                  style={{ background: paletteGradient(board.palette) }}
+                >
+                  <span className="absolute left-4 top-4 bg-black/60 px-2.5 py-1.5 font-mono text-[10px] tracking-[0.08em] text-white">
+                    {String((open ?? 0) + 1).padStart(2, "0")} / {String(SAMPLE_BOARDS.length).padStart(2, "0")}
+                  </span>
+                  <button
+                    onClick={close}
+                    aria-label="Close"
+                    className="absolute right-4 top-4 hidden h-9 w-9 place-items-center rounded-full bg-bg/95 text-txt transition hover:bg-acc hover:text-white md:grid"
+                  >
+                    ✕
+                  </button>
+                  <button
+                    onClick={prev}
+                    aria-label="Previous"
+                    className="absolute left-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-bg/95 text-txt transition hover:bg-acc hover:text-white"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    onClick={next}
+                    aria-label="Next"
+                    className="absolute right-3 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-bg/95 text-txt transition hover:bg-acc hover:text-white"
+                  >
+                    ›
+                  </button>
+                </div>
+
+                {/* Info side */}
+                <div className="flex flex-col gap-4 overflow-y-auto p-6 sm:p-8">
+                  <div className="font-mono text-[9px] font-medium uppercase tracking-[0.16em] text-acc">
+                    {board.tag} · Sample board
+                  </div>
+                  <h3 className="font-serif text-[26px] leading-[1.15] text-txt">
+                    {board.name}
+                    <br />
+                    <em className="text-[18px] italic text-acc">{board.style}</em>
+                  </h3>
+                  <p className="text-[13px] leading-[1.8] text-txt-2">{board.desc}</p>
+                  <div>
+                    <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
+                      Palette
+                    </div>
+                    <div className="flex gap-1.5">
+                      {board.palette.map((c, j) => (
+                        <span key={j} className="h-9 w-9 border border-bdr-2" style={{ backgroundColor: c }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-2 grid grid-cols-2 gap-4 border-t border-bdr pt-4">
+                    <div>
+                      <div className="mb-1 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
+                        Size
+                      </div>
+                      <div className="text-[13px] font-medium text-txt">{board.size}</div>
+                    </div>
+                    <div>
+                      <div className="mb-1 font-mono text-[9px] uppercase tracking-[0.1em] text-txt-3">
+                        Materials
+                      </div>
+                      <div className="text-[11px] leading-[1.5] text-txt">{board.materials}</div>
+                    </div>
+                  </div>
+                  <Link
+                    href="/concept/wizard"
+                    className="mt-2 inline-flex w-fit items-center gap-2 bg-acc px-5 py-3 text-[12px] font-medium uppercase tracking-[0.08em] text-white transition hover:gap-3 hover:bg-acc-h"
+                  >
+                    Build a plan like this →
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>

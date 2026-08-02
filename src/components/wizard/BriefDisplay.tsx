@@ -48,6 +48,17 @@ function textOn(hex: string): string {
 
 const LABEL = "mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-acc";
 
+/**
+ * Pinterest serves the same asset at several widths off the same path. The
+ * brief can carry ~70 references, and the 736px original is many times the
+ * cell it lands in — costly on a phone. Only the <img> src is narrowed: the
+ * pin objects keep their full-resolution URL for the PDF export and the
+ * click-through.
+ */
+function thumb(url: string | undefined, width: "236x" | "474x") {
+  return url?.replace("/736x/", `/${width}/`);
+}
+
 /** A compact spec row: bold key, supporting detail, quiet note. */
 function SpecRow({
   head,
@@ -107,9 +118,13 @@ function Refs({
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={pin.imageUrl || pin.imageThumbUrl}
+            src={thumb(
+              pin.imageUrl || pin.imageThumbUrl,
+              size === "lg" ? "474x" : "236x",
+            )}
             alt={pin.altText || pin.title || "Reference image"}
             loading="lazy"
+            decoding="async"
             className={`w-full object-cover transition group-hover:opacity-90 ${
               size === "lg" ? "aspect-[3/4]" : "aspect-[4/5]"
             }`}

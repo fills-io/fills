@@ -191,7 +191,11 @@ export default function PaletteStage({ state, patch }: Props) {
           return (
             <div
               key={i}
-              className="group relative min-w-0 border-r border-bg-2 last:border-r-0"
+              // A weight-proportional width can fall to ~28px on a phone, which
+              // is narrower than the padlock sitting on it — so the controls and
+              // the hex spill over the neighbouring colour. Floor the width on
+              // small screens; desktop keeps the pure proportional split.
+              className="group relative min-w-[46px] border-r border-bg-2 last:border-r-0 sm:min-w-0"
               style={{ flexGrow: grow(i), flexBasis: 0, backgroundColor: c.hex }}
             >
               <input
@@ -230,7 +234,9 @@ export default function PaletteStage({ state, patch }: Props) {
                       sample(i);
                     }}
                     aria-label={`Eyedropper for ${paletteRole(i)}`}
-                    className="grid h-6 w-6 place-items-center rounded-full bg-black/25 text-white"
+                    // Two buttons don't fit on a phone-width block, and no
+                    // touch browser ships the EyeDropper API anyway.
+                    className="hidden h-6 w-6 place-items-center rounded-full bg-black/25 text-white sm:grid"
                     style={{ color: text }}
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -247,10 +253,12 @@ export default function PaletteStage({ state, patch }: Props) {
                 className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex flex-col items-center gap-0.5 px-1 text-center"
                 style={{ color: text }}
               >
-                <span className="font-mono text-[9px] uppercase tracking-[0.12em] opacity-80">
+                {/* "Secondary" is wider than a phone-width block — the widths
+                    already say which colour leads, so drop the role there. */}
+                <span className="hidden font-mono text-[9px] uppercase tracking-[0.12em] opacity-80 sm:block">
                   {paletteRole(i)}
                 </span>
-                <span className="font-mono text-[10px] uppercase lg:text-[11px]">
+                <span className="max-w-full truncate font-mono text-[9px] uppercase sm:text-[10px] lg:text-[11px]">
                   {c.hex.toUpperCase()}
                 </span>
               </div>

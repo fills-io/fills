@@ -21,6 +21,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { aiText } from "@/lib/ai";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   FURNITURE_SUB_SECTIONS_SYSTEM_PROMPT,
   FURNITURE_SUB_SECTIONS_SCHEMA,
@@ -38,6 +39,10 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // One model call per furniture step.
+  const limited = checkRateLimit(request, "furniture-subs", 40, 3_600_000);
+  if (limited) return limited;
+
   let parsed;
   try {
     const body = await request.json();
@@ -84,9 +89,7 @@ export async function POST(request: NextRequest) {
         "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600",
       },
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[/api/ai/furniture-sub-sections] AI call failed:", error);
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  } catch (error) {    console.error("[/api/ai/furniture-sub-sections] AI call failed:", error);
+    return NextResponse.json({ ok: false, error: "Couldn't work out the furniture sections just now." }, { status: 500 });
   }
 }

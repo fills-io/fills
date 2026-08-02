@@ -13,6 +13,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db, leads } from "@/db";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,10 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Stops the table filling with junk submissions.
+  const limited = checkRateLimit(request, "leads", 20, 3_600_000);
+  if (limited) return limited;
+
   let parsed;
   try {
     parsed = bodySchema.safeParse(await request.json());
@@ -52,9 +57,7 @@ export async function POST(request: NextRequest) {
       source: parsed.data.source || null,
     });
     return NextResponse.json({ ok: true });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[/api/leads] insert failed:", error);
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+  } catch (error) {    console.error("[/api/leads] insert failed:", error);
+    return NextResponse.json({ ok: false, error: "Couldn't send your message just now." }, { status: 500 });
   }
 }

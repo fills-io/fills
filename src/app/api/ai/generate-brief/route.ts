@@ -21,6 +21,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { aiText } from "@/lib/ai";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   GENERATE_BRIEF_SYSTEM_PROMPT,
   GENERATE_BRIEF_SCHEMA,
@@ -69,6 +70,10 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // GPT-5 at roughly $0.05 a call — the most expensive thing we run.
+  const limited = checkRateLimit(request, "brief", 10, 3_600_000);
+  if (limited) return limited;
+
   let parsed;
   try {
     const body = await request.json();
@@ -154,11 +159,9 @@ export async function POST(request: NextRequest) {
       `[/api/ai/generate-brief] generated brief in ${result.latencyMs}ms with ${result.model}`,
     );
     return NextResponse.json(payload);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[/api/ai/generate-brief] AI call failed:", error);
+  } catch (error) {    console.error("[/api/ai/generate-brief] AI call failed:", error);
     return NextResponse.json(
-      { ok: false, error: message },
+      { ok: false, error: "Couldn't generate the brief just now. Please try again." },
       { status: 500 },
     );
   }

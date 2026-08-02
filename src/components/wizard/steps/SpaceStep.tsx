@@ -120,6 +120,8 @@ export default function SpaceStep({ state, setState }: Props) {
           </p>
           <input
             type="text"
+            // Sent as both `industry` and `space`, each capped at 80 by the API.
+            maxLength={80}
             value={state.customIndustry ?? ""}
             onChange={(e) => setState({ customIndustry: e.target.value })}
             placeholder="e.g. Private aviation lounge, art studio, co-living space…"
@@ -219,6 +221,8 @@ export default function SpaceStep({ state, setState }: Props) {
                 </label>
                 <textarea
                   id="space-description"
+                  // The API caps `spaceDescription` at 800. The placeholder invites a long answer, so cap it here rather than rejecting it after the wait.
+                  maxLength={800}
                   value={state.spaceDescription ?? ""}
                   onChange={(e) => setState({ spaceDescription: e.target.value })}
                   placeholder="e.g. North-facing, double-height ceiling, opens onto a small terrace. Client wants warm but not heavy."

@@ -133,6 +133,8 @@ export default function SetupStage({ state, patch }: Props) {
           </button>
         ) : (
           <input
+            // The API caps `space` at 80 — without this the user only finds out at the final click.
+            maxLength={80}
             value={specInput}
             onChange={(e) => setSpecInput(e.target.value)}
             onBlur={commitInput}

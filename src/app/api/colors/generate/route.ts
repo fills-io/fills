@@ -18,6 +18,7 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { checkRateLimit } from "@/lib/rate-limit";
 import {
   fetchColormindPalette,
   hexToRgb,
@@ -32,6 +33,10 @@ const querySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  // Free upstream, but an open proxy to it is still ours to answer for.
+  const limited = checkRateLimit(request, "colors", 120, 3_600_000);
+  if (limited) return limited;
+
   const parsed = querySchema.safeParse(
     Object.fromEntries(request.nextUrl.searchParams),
   );
@@ -56,9 +61,7 @@ export async function GET(request: NextRequest) {
     const fullPalette = await fetchColormindPalette(input);
     // Colormind returns 5 colours — return all of them (callers slice/pad).
     return NextResponse.json({ palette: fullPalette.slice(0, 5) });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[/api/colors/generate] failed:", error);
-    return NextResponse.json({ ok: false, error: message }, { status: 502 });
+  } catch (error) {    console.error("[/api/colors/generate] failed:", error);
+    return NextResponse.json({ ok: false, error: "Couldn't mix a new palette just now." }, { status: 502 });
   }
 }

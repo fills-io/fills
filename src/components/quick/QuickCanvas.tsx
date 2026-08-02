@@ -13,8 +13,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { INDUSTRIES, getIndustry } from "@/lib/concept-taxonomy";
 import { findIndustryByLabel } from "@/lib/space-taxonomy";
-import { EMPTY_QUICK, type QuickState } from "@/lib/quick-state";
+import {
+  EMPTY_QUICK,
+  QUICK_PALETTE_SIZE,
+  type QuickState,
+} from "@/lib/quick-state";
 import { generateBrief } from "@/lib/generate-brief-client";
+import { saveBrief } from "@/lib/save-brief";
+import {
+  clearQuickDraft,
+  loadQuickDraft,
+  quickDraftAge,
+  saveQuickDraft,
+} from "@/lib/quick-storage";
 import { selectCategoryImages, AUTO_CATEGORIES } from "@/lib/select-images";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import type { PinterestPin } from "@/db/schema";
@@ -23,6 +34,7 @@ import VibeStage from "./VibeStage";
 import PaletteStage from "./PaletteStage";
 import LiveBrief, { type PrimaryAction } from "./LiveBrief";
 import GenerationOverlay from "@/components/wizard/GenerationOverlay";
+import ShareBar from "@/components/wizard/ShareBar";
 import BriefDisplay, { type BriefPins } from "@/components/wizard/BriefDisplay";
 
 /** Map a homepage industry LABEL or id (?industry=) back to a concept id.
@@ -42,15 +54,67 @@ function idFromLabel(label: string | null): string | null {
   return hit?.id ?? null;
 }
 
+/**
+ * The next step, pinned to the bottom of a phone screen.
+ *
+ * On mobile the Live brief panel unsticks and falls BELOW the image grid, so
+ * the only way forward sat about 1.8 screens down with nothing to say it was
+ * there. Above lg the sticky side panel already does this job.
+ */
+function MobileActionBar({ action }: { action: PrimaryAction | null }) {
+  if (!action) return null;
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-bdr-2 bg-bg/95 px-5 py-3 backdrop-blur lg:hidden">
+      <button
+        type="button"
+        onClick={action.onClick}
+        disabled={action.disabled}
+        className="w-full bg-acc px-5 py-3.5 text-[13px] font-medium uppercase tracking-[0.1em] text-white transition disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        {action.label} →
+      </button>
+      {action.reason && (
+        <p className="mt-2 text-center text-[11px] text-txt-3">{action.reason}</p>
+      )}
+    </div>
+  );
+}
+
 export default function QuickCanvas() {
   const params = useSearchParams();
 
-  const [state, setState] = useState<QuickState>(() => ({
-    ...EMPTY_QUICK,
+  // Arriving with ?industry=… from the homepage means the user has just told
+  // us what they want, so that wins over anything saved earlier.
+  //
+  // ?palette= carries the colours Upload mode read out of the user's own
+  // photos. Those are a real decision they have already made, so they arrive
+  // locked — the palette step refines them rather than replacing them.
+  const seededPalette = (params.get("palette") ?? "")
+    .split(",")
+    .map((h) => h.trim())
+    .filter((h) => /^#[0-9a-f]{6}$/i.test(h))
+    .slice(0, QUICK_PALETTE_SIZE);
+
+  const fromUrl = {
     industryId: idFromLabel(params.get("industry")),
     spec: params.get("spec")?.trim() ?? "",
     vibeQuery: params.get("vibe")?.trim() ?? "",
-  }));
+    ...(seededPalette.length > 0
+      ? {
+          palette: seededPalette.map((hex) => ({ hex, name: "", material: "" })),
+          locks: seededPalette.map(() => true),
+        }
+      : {}),
+  };
+  const [state, setState] = useState<QuickState>(() => {
+    if (fromUrl.industryId || seededPalette.length > 0) {
+      return { ...EMPTY_QUICK, ...fromUrl };
+    }
+    return loadQuickDraft() ?? { ...EMPTY_QUICK, ...fromUrl };
+  });
+  const [resumedAge] = useState<string | null>(() =>
+    fromUrl.industryId || seededPalette.length > 0 ? null : quickDraftAge(),
+  );
 
   const patch = useCallback(
     (p: Partial<QuickState>) => setState((prev) => ({ ...prev, ...p })),
@@ -64,6 +128,15 @@ export default function QuickCanvas() {
   const [brief, setBrief] = useState<GenerateBriefResponse | null>(null);
   const [categoryPins, setCategoryPins] = useState<BriefPins>({});
   const [genError, setGenError] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+
+  // Keep the draft current. Writing on every change is cheap next to what it
+  // protects, and there is nothing to save until a project type is chosen.
+  useEffect(() => {
+    if (status !== "idle" && status !== "error") return;
+    if (!state.industryId) return;
+    saveQuickDraft(state);
+  }, [state, status]);
 
   const vibeRef = useRef<HTMLDivElement>(null);
   const paletteRef = useRef<HTMLDivElement>(null);
@@ -158,6 +231,27 @@ export default function QuickCanvas() {
       });
       setBrief(data);
       setStatus("done");
+
+      // Give the brief a home. It used to live only in this tab, so a refresh
+      // destroyed both the user's work and a paid model call. Deliberately not
+      // awaited before showing the brief — a failed save must never hold up
+      // something the user can already see.
+      saveBrief({
+        brief: data,
+        pins,
+        facts: {
+          industry: ind?.label,
+          areaSqm: state.areaSqm,
+          hasOutdoor: state.hasOutdoor,
+          style: state.vibeQuery,
+        },
+        spaceType: ind?.label ?? state.spec ?? "unspecified",
+        creationMode: "quick",
+      }).then(setShareToken);
+
+      // The draft has served its purpose; keeping it would greet the user with
+      // "resume your plan" on a brief they already finished.
+      clearQuickDraft();
     } catch (e) {
       setGenError(e instanceof Error ? e.message : String(e));
       setStatus("error");
@@ -171,6 +265,8 @@ export default function QuickCanvas() {
     setCategoryPins({});
     setStatus("idle");
     setGenError(null);
+    setShareToken(null);
+    clearQuickDraft();
     window.scrollTo({ top: 0 });
   }
 
@@ -178,6 +274,7 @@ export default function QuickCanvas() {
   if (status === "done" && brief) {
     return (
       <main className="mx-auto max-w-4xl px-6 py-12 sm:px-8 sm:py-16">
+        <ShareBar token={shareToken} />
         <BriefDisplay
           brief={brief}
           facts={{
@@ -232,6 +329,24 @@ export default function QuickCanvas() {
       {status === "generating" && <GenerationOverlay />}
 
       <main className="mx-auto max-w-[1240px] px-6 pb-32 pt-10 sm:px-8">
+        {resumedAge && status === "idle" && (
+          <div className="mb-8 flex flex-wrap items-center gap-3 border border-bdr-2 bg-bg-2 px-4 py-3">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-acc">
+              Resumed
+            </span>
+            <p className="min-w-0 flex-1 text-[13px] text-txt-2">
+              Picked up your plan from {resumedAge}. Your work is saved as you go.
+            </p>
+            <button
+              type="button"
+              onClick={startOver}
+              className="shrink-0 font-mono text-[10px] uppercase tracking-[0.12em] text-txt-3 underline underline-offset-2 transition hover:text-acc"
+            >
+              Start fresh
+            </button>
+          </div>
+        )}
+
         {status === "error" && genError && (
           <div className="mb-8 border border-rose-700/50 bg-rose-950/30 p-5">
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-rose-300">
@@ -267,6 +382,8 @@ export default function QuickCanvas() {
           <LiveBrief state={state} action={action} />
         </div>
       </main>
+
+      <MobileActionBar action={action} />
     </>
   );
 }

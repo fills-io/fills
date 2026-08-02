@@ -18,6 +18,16 @@ export const metadata: Metadata = {
     title: "Interior Design Blog | Fills",
     description:
       "Practical notes on writing interior design briefs and building mood boards, from a working architect.",
+    images: ["/opengraph-image"],
+  },
+  // Next replaces the whole openGraph/twitter block rather than merging fields,
+  // so a page that only sets openGraph still shares the homepage headline on X.
+  twitter: {
+    card: "summary_large_image",
+    title: "Interior Design Blog | Fills",
+    description:
+      "Practical notes on writing interior design briefs and building mood boards, from a working architect.",
+    images: ["/opengraph-image"],
   },
 };
 

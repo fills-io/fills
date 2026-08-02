@@ -22,6 +22,16 @@ export const metadata: Metadata = {
     title: "Free Interior Design Brief Template (Printable) | Fills",
     description:
       "A free, printable interior design brief template covering goals, style, budget, and constraints. Built by a working architect.",
+    images: ["/opengraph-image"],
+  },
+  // "Free template" is the whole reason anyone shares this link, so it needs its
+  // own card — openGraph and twitter are replaced wholesale, never merged.
+  twitter: {
+    card: "summary_large_image",
+    title: "Free Interior Design Brief Template (Printable) | Fills",
+    description:
+      "A free, printable interior design brief template covering goals, style, budget, and constraints. Built by a working architect.",
+    images: ["/opengraph-image"],
   },
 };
 

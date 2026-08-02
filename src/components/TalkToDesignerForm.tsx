@@ -107,6 +107,8 @@ export default function TalkToDesignerForm({
         <textarea
           id="ttd-message"
           className={`${input} min-h-[140px] leading-relaxed`}
+          // Matches the `message` cap on /api/leads.
+          maxLength={2000}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="A retail unit in a Dubai mall, a home renovation, a restaurant build-out… tell us a little about the project and where you'd like help."

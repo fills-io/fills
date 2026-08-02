@@ -365,13 +365,20 @@ function LiveGrid({
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPins = useCallback(async (q: string) => {
+  const fetchPins = useCallback(async (q: string, signal?: AbortSignal) => {
     setStatus("loading");
     setError(null);
     try {
       const response = await fetch(
         `/api/pinterest/search?q=${encodeURIComponent(q)}&limit=24`,
+        { signal },
       );
+      // A gateway timeout answers with an HTML error page; parsing that as
+      // JSON surfaced "Unexpected token '<'" to the user as the reason.
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || `HTTP ${response.status}`);
+      }
       const data = (await response.json()) as
         | { query: string; count: number; pins: PinterestPin[] }
         | { ok: false; error: string };
@@ -383,6 +390,7 @@ function LiveGrid({
       setPins(clean.length >= 8 ? clean : data.pins);
       setStatus("idle");
     } catch (e) {
+      if ((e as Error).name === "AbortError") return;
       setStatus("error");
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -390,8 +398,13 @@ function LiveGrid({
 
   useEffect(() => {
     // Fetch when the submitted query changes (external system -> React).
+    // Tied to an AbortController so a slow earlier search can't land after —
+    // and overwrite — the results of the one the user is waiting on.
+    if (submittedQuery.trim().length === 0) return;
+    const controller = new AbortController();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (submittedQuery.trim().length > 0) fetchPins(submittedQuery);
+    fetchPins(submittedQuery, controller.signal);
+    return () => controller.abort();
   }, [submittedQuery, fetchPins]);
 
   function handleSubmit(e: React.FormEvent) {
@@ -438,7 +451,7 @@ function LiveGrid({
         {helperText && <p className="text-[12px] text-txt-3">{helperText}</p>}
       </form>
 
-      <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.14em]">
+      <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.14em]">
         <span className={atMax ? "text-acc" : "text-txt-3"}>
           {selectedPins.length} of {maxSelections} selected
         </span>

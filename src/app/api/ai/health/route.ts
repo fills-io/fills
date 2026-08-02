@@ -10,18 +10,41 @@
  *   200 OK   — { ok: true, provider: string, model: string, reply: string, latencyMs: number }
  *   500 ERR  — { ok: false, error: string }
  *
- * Cheap (one tiny call per ping) but not free — don't put this on a
- * 5-second uptime monitor. For manual verification after deploys.
+ * Each ping costs a model call, so the model is only contacted when the
+ * caller explicitly asks with ?ping=1. A bare GET answers from configuration
+ * alone. The old behaviour billed us for every scraper, preview crawler and
+ * naive uptime monitor that ever touched this URL.
+ *
+ * Response:
+ *   200 OK   — { ok, provider, model, reply?, latencyMs }
+ *   500 ERR  — { ok: false, error }
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { aiText } from "@/lib/ai";
+import { getTextProvider } from "@/lib/ai/config";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const startedAt = Date.now();
+
+  // Configuration-only answer: enough to tell whether a deploy is wired up,
+  // and it costs nothing.
+  if (request.nextUrl.searchParams.get("ping") !== "1") {
+    return NextResponse.json({
+      ok: true,
+      provider: getTextProvider().name,
+      configured: Boolean(process.env.OPENAI_API_KEY),
+      note: "Add ?ping=1 to actually call the model.",
+      latencyMs: Date.now() - startedAt,
+    });
+  }
+
+  const limited = checkRateLimit(request, "ai-health", 10, 3_600_000);
+  if (limited) return limited;
 
   try {
     const result = await aiText({
