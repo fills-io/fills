@@ -17,13 +17,30 @@
  */
 
 import type { CuratedPin } from "@/data/reference-images";
+import rejected from "@/data/rejected-images.json";
+
+/**
+ * Pins the pixel audit (scripts/audit-refs.mjs) found to be collages, mood
+ * board graphics or product cut-outs — images with a flat white gutter running
+ * across them. A title can't reveal those, so they are listed by id.
+ */
+const REJECTED_IDS: ReadonlySet<string> = new Set(rejected.rejected);
 
 /** Phrases that mark an image as a graphic/listing/article rather than a photo. */
 const REJECT_PATTERNS: RegExp[] = [
   // Marketplaces + explicit commerce
   /\b(etsy|amazon|ebay|alibaba|wayfair|ikea\s+hack|aliexpress)\b/i,
   /\b(for sale|buy now|shop now|on sale|discount|coupon|free shipping)\b/i,
-  /\b(price|pricing|\$\s?\d|usd\s?\d|₹\s?\d|£\s?\d|€\s?\d)\b/i,
+  // NOTE: no \b before the currency symbols. A word boundary needs a word
+  // character on one side, so /\b\$\d/ never fires on " $5.49" — which is how
+  // "Brazilian Oak … $5.49/sqf - Advantage Lumber" reached a brief.
+  /\b(price|pricing)\b|[$£€₹]\s?\d|\busd\s?\d/i,
+  // Promotions: "Save 20% On Premium", "WVH Summer Sale: 20% off".
+  /\bsave\s+\d|\d+\s?%\s?(off|discount)|\b\d+\s?% off\b/i,
+  // Holiday campaign openers: "This Father's Day, move …".
+  /^this\s+\w+('|’)?s?\s+(day|weekend|season|sale)\b/i,
+  // Retailer listings end with the storefront: "… | Zara Home United States".
+  /\|\s*[A-Z][\w'’&.]*(\s+[\w'’&.]+)*\s+(united states|uk|usa|home|store|shop|official)\b/i,
   /\b(set of \d|pack of \d|\d+\s?(pcs?|pieces)\b)/i,
   /\b\d+-(head|light|piece|pack|tier|seater)\b/i,
   /\b(sample|swatch pack|colou?r ?way|sku|model no)\b/i,
@@ -48,6 +65,14 @@ const REJECT_PATTERNS: RegExp[] = [
   /\b(types? of|advantages|disadvantages|pros and cons|vs\.?|versus|comparison|difference between)\b/i,
   /\b(top|best)\s?\d+\b/i,
   /\b\d+\s+(best|top|amazing|beautiful|stunning|creative|modern)\b/i,
+  // A title that OPENS with a count is a roundup, and a roundup pin is a
+  // collage with a headline burned across it ("19+ Wooden False Ceiling
+  // Designs", "40 Scandinavian Living Room Designs"). In this dataset a
+  // leading number is also a product multipack or a street address — there is
+  // no case where it marks a photograph we want.
+  /^\s*\d+\s*\+?\s+\S/,
+  // Roundup nouns that "ideas" alone misses.
+  /\b\d+\s*\+?\s+.*\b(designs?|ideas?|inspos?|looks?|styles?|trends?)\b/i,
   /\b(everything you need|what you need to know|explained|explore latest|latest trends?|trending now)\b/i,
   /\b(infographic|chart|diagram|checklist|glossary)\b/i,
 
@@ -107,10 +132,12 @@ const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u;
 
 /** True when the pin looks like a clean interior photograph we can show. */
 export function isUsableReference(pin: {
+  id?: string;
   title?: string;
   imageUrl?: string;
 }): boolean {
   if (!pin.imageUrl) return false;
+  if (pin.id && REJECTED_IDS.has(pin.id)) return false;
   const title = (pin.title ?? "").trim();
 
   // No title is fine — plenty of good pins are untitled. Judge only what we have.
@@ -129,9 +156,9 @@ export function isUsableReference(pin: {
 }
 
 /** Filter a pool down to usable references (keeps original order). */
-export function usableOnly<T extends { title?: string; imageUrl?: string }>(
-  pins: T[],
-): T[] {
+export function usableOnly<
+  T extends { id?: string; title?: string; imageUrl?: string },
+>(pins: T[]): T[] {
   return pins.filter(isUsableReference);
 }
 

@@ -24,7 +24,9 @@ type Props = {
 
 const MAX_SEARCHES = 6;
 const MAX_PICKS = 5;
-const SHOWN = 24;
+/** Images shown before "Show more". The pools hold 150-250 per industry, so
+ *  this is a starting view, not a cap. */
+const SHOWN = 40;
 
 /** Token match against a pin's style + title. Returns [] when nothing matches
  *  so the caller can show an honest empty state instead of the whole pool. */
@@ -76,10 +78,25 @@ export default function VibeStage({ state, patch }: Props) {
   const searchLocked = searchCount >= MAX_SEARCHES;
   const picks = state.picks;
 
+  // Matches lead, then the rest of the pool follows, so a narrow style (Luxe
+  // might only have eight images) never leaves the user with a short grid and
+  // nothing to browse.
   const results = useMemo(() => {
-    if (submitted) return filterPool(pool, submitted);
-    if (style) return pool.filter((p) => p.style === style);
-    return pool;
+    const lead = submitted
+      ? filterPool(pool, submitted)
+      : style
+        ? pool.filter((p) => p.style === style)
+        : pool;
+    if (lead.length === pool.length) return pool;
+    const seen = new Set(lead.map((p) => p.id));
+    return [...lead, ...pool.filter((p) => !seen.has(p.id))];
+  }, [pool, submitted, style]);
+
+  /** How many of `results` are exact matches for the active filter. */
+  const exactCount = useMemo(() => {
+    if (submitted) return filterPool(pool, submitted).length;
+    if (style) return pool.filter((p) => p.style === style).length;
+    return pool.length;
   }, [pool, submitted, style]);
 
   const visible = results.slice(0, shown);
@@ -225,20 +242,21 @@ export default function VibeStage({ state, patch }: Props) {
         </div>
       )}
 
-      {/* Honest empty state for a search that found nothing. */}
-      {submitted && results.length === 0 && (
+      {/* Honest state when the filter matched nothing or only a handful. */}
+      {(submitted || style) && exactCount === 0 && (
         <div className="mt-5 border border-bdr bg-bg-2 p-4 text-[13px] leading-relaxed text-txt-2">
-          Nothing matched <b className="text-txt">“{submitted}”</b> in{" "}
-          {ind?.label ?? "this category"}. Try a style below, or{" "}
-          <button
-            type="button"
-            onClick={() => chooseStyle(null)}
-            className="text-acc underline underline-offset-2"
-          >
-            show all {pool.length} images
-          </button>
-          .
+          Nothing matched{" "}
+          <b className="text-txt">“{submitted || style}”</b> in{" "}
+          {ind?.label ?? "this category"} — showing everything else instead.
         </div>
+      )}
+      {(submitted || style) && exactCount > 0 && (
+        <p className="mt-4 text-[12px] text-txt-3">
+          {exactCount} {submitted ? "match" : ""}
+          {exactCount === 1 ? "" : submitted ? "es" : ""}
+          {style && !submitted ? ` ${style} image${exactCount === 1 ? "" : "s"}` : ""}{" "}
+          first, then the rest of the {pool.length}.
+        </p>
       )}
 
       {/* Masonry grid */}

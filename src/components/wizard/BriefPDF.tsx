@@ -53,12 +53,23 @@ const BDR = "#d8cdb8";
 
 const DECK: [number, number] = [1440, 810];
 
+/**
+ * Pinterest stores our references at 474px, which is far too small for a
+ * 1440pt page — a five-across image lands in a ~250pt slot and still reads
+ * soft in print. The CDN serves the same asset at 1200px from the same path
+ * (verified; /originals/ 403s on some pins, so we don't use it), which is
+ * roughly four times the pixels. We upgrade before fetching.
+ */
+function hiRes(url: string): string {
+  return url.replace(/\/(\d+)x\//, (m, w) => (Number(w) < 1200 ? "/1200x/" : m));
+}
+
 function pdfSrc(url?: string): string | null {
   if (!url) return null;
   if (url.startsWith("data:")) return url;
   try {
     const u = new URL(
-      url,
+      hiRes(url),
       typeof window !== "undefined" ? window.location.href : undefined,
     );
     if (u.hostname === "pinimg.com" || u.hostname.endsWith(".pinimg.com")) {
@@ -118,13 +129,22 @@ const s = StyleSheet.create({
   lead: { fontSize: 12.5, lineHeight: 1.72, color: TXT_2, maxWidth: 560 },
   small: { fontSize: 10, lineHeight: 1.6, color: TXT_2 },
 
-  // image grids
+  // Image grids. Heights are chosen against the slot WIDTH each grid produces
+  // on a 1312pt content area, so every crop stays close to the portrait shape
+  // the references are actually shot in. Landscape letterbox slots were what
+  // made the earlier deck look like everything had been cut short.
   row: { flexDirection: "row", gap: 14 },
   fill: { flex: 1 },
-  imgTall: { width: "100%", height: 470, objectFit: "cover" },
-  imgWide: { width: "100%", height: 300, objectFit: "cover" },
-  imgSm: { width: "100%", height: 224, objectFit: "cover" },
+  imgTall: { width: "100%", height: 470, objectFit: "cover" }, // 3-up in a column
+  imgMed: { width: "100%", height: 330, objectFit: "cover" }, // 5-up, ~0.76
+  imgWide: { width: "100%", height: 300, objectFit: "cover" }, // 5-up, ~0.84
+  imgSq: { width: "100%", height: 296, objectFit: "cover" }, // 4-up, ~0.93
   caption: { fontSize: 7.5, color: TXT_3, letterSpacing: 1.6, marginTop: 6 },
+
+  // Full-bleed mood board: no padding, two rows of five, edge to edge.
+  moodPage: { backgroundColor: INK, padding: 0 },
+  moodRow: { flexDirection: "row", gap: 8 },
+  moodImg: { flex: 1, height: 401, objectFit: "cover" },
 
   // palette
   band: { flexDirection: "row", height: 210 },
@@ -133,11 +153,11 @@ const s = StyleSheet.create({
   bandName: { fontSize: 14, fontFamily: "Times-Roman", marginTop: 3 },
   bandApp: { fontSize: 8.5, lineHeight: 1.45, marginTop: 5 },
 
-  // spec list
+  // Spec list — a schedule, set in two columns so it stays one screen deep.
+  specCols: { flexDirection: "row", gap: 48 },
   spec: { flexDirection: "row", borderTopWidth: 0.6, borderTopColor: BDR, paddingVertical: 9, gap: 16 },
-  specKey: { width: "34%", fontSize: 11, color: TXT, lineHeight: 1.35 },
+  specKey: { width: "44%", fontSize: 11, color: TXT, lineHeight: 1.35 },
   specVal: { flex: 1, fontSize: 10, color: TXT_2, lineHeight: 1.45 },
-  specNote: { fontSize: 8.5, color: TXT_3, lineHeight: 1.4, marginTop: 2 },
 
   bullet: { flexDirection: "row", gap: 8, marginBottom: 7 },
   bulletMark: { fontSize: 10, color: ACC, fontFamily: "Helvetica-Bold" },
@@ -175,14 +195,29 @@ function Head({
   );
 }
 
-const SECTION_KEYS: Array<[keyof BriefPins, string]> = [
-  ["vibe", "The direction"],
-  ["materials", "Materials & finishes"],
-  ["furniture", "Furniture"],
-  ["lighting", "Lighting"],
-  ["flooring", "Flooring"],
-  ["ceiling", "Ceiling"],
-];
+/**
+ * A schedule (material -> where it goes) laid out in two columns. One long
+ * column ran off the bottom of a 16:9 page and forced a text-only overflow
+ * spread; two columns keep every category to a single slide.
+ */
+function Schedule({ rows }: { rows: Array<[string, string]> }) {
+  const half = Math.ceil(rows.length / 2);
+  const cols = [rows.slice(0, half), rows.slice(half)];
+  return (
+    <View style={s.specCols}>
+      {cols.map((col, c) => (
+        <View key={c} style={s.fill}>
+          {col.map(([k, v], i) => (
+            <View key={i} style={s.spec} wrap={false}>
+              <Text style={s.specKey}>{k}</Text>
+              <Text style={s.specVal}>{v}</Text>
+            </View>
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
 
 export default function BriefPDF({
   brief,
@@ -195,24 +230,72 @@ export default function BriefPDF({
   const orientation = format === "deck" ? undefined : "portrait";
   const today = new Date().toISOString().slice(0, 10);
 
-  const srcs = (k: keyof BriefPins, n: number) =>
-    (pins?.[k] ?? [])
+  // Every image appears exactly ONCE in the deck. Pages draw from per-category
+  // queues; slicing from the front of one shared list is what made the same
+  // shots turn up on three different spreads.
+  const CATS: (keyof BriefPins)[] = [
+    "vibe",
+    "materials",
+    "furniture",
+    "lighting",
+    "flooring",
+    "ceiling",
+  ];
+  const queues: Partial<Record<keyof BriefPins, string[]>> = {};
+  for (const k of CATS) {
+    queues[k] = (pins?.[k] ?? [])
       .map((p) => pdfSrc(p.imageUrl || p.imageThumbUrl))
-      .filter((x): x is string => !!x)
-      .slice(0, n);
+      .filter((x): x is string => !!x);
+  }
+  const used = new Set<string>();
 
-  const hero = srcs("vibe", 1)[0] ?? srcs("materials", 1)[0] ?? null;
+  /**
+   * Take `n` unused images for a spread. If that category is short (the user
+   * may have picked only three vibe references), top up from the other pools
+   * rather than shipping a half-empty grid.
+   */
+  function take(k: keyof BriefPins, n: number): string[] {
+    const out: string[] = [];
+    const pull = (q?: string[]) => {
+      while (q && q.length > 0 && out.length < n) {
+        const src = q.shift() as string;
+        if (!used.has(src)) {
+          used.add(src);
+          out.push(src);
+        }
+      }
+    };
+    pull(queues[k]);
+    if (out.length < n) for (const other of CATS) pull(queues[other]);
+    return out;
+  }
+
+  // Allocated up front, in the order the deck should get the best images —
+  // not in JSX order, so the mood board isn't starved by the pages after it.
+  const p = {
+    cover: take("vibe", 1)[0] ?? null,
+    project: take("vibe", 3),
+    inspiration: take("vibe", 5),
+    colour: take("materials", 5),
+    materials: take("materials", 5),
+    furniture: take("furniture", 5),
+    lighting: take("lighting", 5),
+    flooring: take("flooring", 4),
+    ceiling: take("ceiling", 4),
+    // Whatever is left, ten across two full-bleed rows.
+    mood: [...take("furniture", 4), ...take("lighting", 3), ...take("flooring", 3)],
+  };
+
   const name = facts?.projectName?.trim() || brief.summary.projectType;
-
 
   return (
     <Document title={`${name} — design brief`} author="Fills" subject={brief.conceptLine}>
       {/* 1 — Cover */}
       <Page size={size} orientation={orientation} style={[s.page, s.cover]}>
-        {hero ? (
+        {p.cover ? (
           <>
             {/* eslint-disable-next-line jsx-a11y/alt-text */}
-            <Image src={hero} style={s.coverImg} />
+            <Image src={p.cover} style={s.coverImg} />
             <View style={s.coverScrim} />
           </>
         ) : null}
@@ -264,7 +347,7 @@ export default function BriefPDF({
             </Text>
           </View>
           <View style={[s.row, s.fill]}>
-            {srcs("vibe", 2).map((src, i) => (
+            {p.project.map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
               <Image key={i} src={src} style={[s.fill, s.imgTall]} />
             ))}
@@ -272,7 +355,7 @@ export default function BriefPDF({
         </View>
       </Page>
 
-      {/* 3 — Inspiration: the one paragraph + four images */}
+      {/* 3 — Inspiration: the one paragraph of real writing, plus five images */}
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Inspiration" name={name} date={today} />
         <Text style={[s.h1, { marginBottom: 18 }]}>{brief.conceptLine}</Text>
@@ -280,14 +363,32 @@ export default function BriefPDF({
           {brief.cinematicDescription}
         </Text>
         <View style={s.row}>
-          {srcs("vibe", 4).map((src, i) => (
+          {p.inspiration.map((src, i) => (
             // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={[s.fill, s.imgSm]} />
+            <Image key={i} src={src} style={[s.fill, s.imgMed]} />
           ))}
         </View>
       </Page>
 
-      {/* 4 — Palette */}
+      {/* 4 — Mood board. Full bleed, ten images, not one word. */}
+      {p.mood.length > 0 ? (
+        <Page size={size} orientation={orientation} style={s.moodPage}>
+          <View style={s.moodRow}>
+            {p.mood.slice(0, 5).map((src, i) => (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image key={i} src={src} style={s.moodImg} />
+            ))}
+          </View>
+          <View style={[s.moodRow, { marginTop: 8 }]}>
+            {p.mood.slice(5, 10).map((src, i) => (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image key={i} src={src} style={s.moodImg} />
+            ))}
+          </View>
+        </Page>
+      ) : null}
+
+      {/* 5 — Palette */}
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Colour" name={name} date={today} />
         <View style={s.band}>
@@ -304,102 +405,76 @@ export default function BriefPDF({
           ))}
         </View>
         <View style={[s.row, { marginTop: 18 }]}>
-          {srcs("materials", 4).map((src, i) => (
+          {p.colour.map((src, i) => (
             // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={[s.fill, s.imgSm]} />
+            <Image key={i} src={src} style={[s.fill, s.imgMed]} />
           ))}
         </View>
       </Page>
 
-      {/* 5 — Materials & finishes: images + schedule */}
+      {/* 6 — Materials & finishes: images + schedule */}
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Materials & finishes" name={name} date={today} />
-        <View style={[s.row, { marginBottom: 20 }]}>
-          {srcs("materials", 3).map((src, i) => (
+        <View style={[s.row, { marginBottom: 22 }]}>
+          {p.materials.map((src, i) => (
             // eslint-disable-next-line jsx-a11y/alt-text
             <Image key={i} src={src} style={[s.fill, s.imgWide]} />
           ))}
         </View>
-        {brief.materials.slice(0, 6).map((m, i) => (
-          <View key={i} style={s.spec} wrap={false}>
-            <Text style={s.specKey}>{m.material}</Text>
-            <View style={s.fill}>
-              <Text style={s.specVal}>{m.application}</Text>
-              <Text style={s.specNote}>{m.note}</Text>
-            </View>
-          </View>
-        ))}
+        <Schedule
+          rows={brief.materials.map((m) => [m.material, m.application])}
+        />
       </Page>
 
-      {/* 6 — Furniture */}
+      {/* 7 — Furniture */}
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Furniture" name={name} date={today} />
-        <View style={[s.row, { marginBottom: 20 }]}>
-          {srcs("furniture", 4).map((src, i) => (
+        <View style={[s.row, { marginBottom: 22 }]}>
+          {p.furniture.map((src, i) => (
             // eslint-disable-next-line jsx-a11y/alt-text
             <Image key={i} src={src} style={[s.fill, s.imgWide]} />
           ))}
         </View>
-        {brief.furniture.map((f, i) => (
-          <View key={i} style={s.spec} wrap={false}>
-            <Text style={s.specKey}>{f.item}</Text>
-            <View style={s.fill}>
-              <Text style={s.specVal}>{f.character}</Text>
-              <Text style={s.specNote}>{f.note}</Text>
-            </View>
-          </View>
-        ))}
+        <Schedule rows={brief.furniture.map((f) => [f.item, f.character])} />
       </Page>
 
-      {/* 7 — Lighting */}
+      {/* 8 — Lighting */}
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Lighting" name={name} date={today} />
-        <View style={[s.row, { marginBottom: 20 }]}>
-          {srcs("lighting", 4).map((src, i) => (
+        <View style={[s.row, { marginBottom: 22 }]}>
+          {p.lighting.map((src, i) => (
             // eslint-disable-next-line jsx-a11y/alt-text
             <Image key={i} src={src} style={[s.fill, s.imgWide]} />
           ))}
         </View>
-        <Text style={[s.eyebrow, { marginBottom: 10 }]}>
+        <Text style={[s.eyebrow, { marginBottom: 12 }]}>
           {brief.lighting.colorTemperature.toUpperCase()}
         </Text>
-        {brief.lighting.layers.map((l) => (
-          <View key={l.layer} style={s.spec} wrap={false}>
-            <Text style={s.specKey}>{l.layer}</Text>
-            <View style={s.fill}>
-              <Text style={s.specVal}>{l.fixtures}</Text>
-              <Text style={s.specNote}>{l.note}</Text>
-            </View>
-          </View>
-        ))}
+        <Schedule
+          rows={brief.lighting.layers.map((l) => [l.layer, l.fixtures])}
+        />
       </Page>
 
-      {/* 8 — Surfaces: flooring + ceiling */}
+      {/* 9 — Surfaces: flooring over ceiling, four across each */}
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Surfaces" name={name} date={today} />
-        <View style={s.row}>
-          <View style={s.fill}>
-            <View style={s.row}>
-              {srcs("flooring", 2).map((src, i) => (
-                // eslint-disable-next-line jsx-a11y/alt-text
-                <Image key={i} src={src} style={[s.fill, s.imgTall]} />
-              ))}
-            </View>
-            <Text style={s.caption}>FLOORING</Text>
-          </View>
-          <View style={s.fill}>
-            <View style={s.row}>
-              {srcs("ceiling", 2).map((src, i) => (
-                // eslint-disable-next-line jsx-a11y/alt-text
-                <Image key={i} src={src} style={[s.fill, s.imgTall]} />
-              ))}
-            </View>
-            <Text style={s.caption}>CEILING</Text>
-          </View>
+        <Text style={s.caption}>FLOORING</Text>
+        <View style={[s.row, { marginTop: 6 }]}>
+          {p.flooring.map((src, i) => (
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image key={i} src={src} style={[s.fill, s.imgSq]} />
+          ))}
+        </View>
+        <Text style={[s.caption, { marginTop: 18 }]}>CEILING</Text>
+        <View style={[s.row, { marginTop: 6 }]}>
+          {p.ceiling.map((src, i) => (
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image key={i} src={src} style={[s.fill, s.imgSq]} />
+          ))}
         </View>
       </Page>
 
-      {/* 9 — Layout, guardrails, next steps */}
+      {/* 10 — Layout, guardrails, next steps */}
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Layout & next steps" name={name} date={today} />
         <View style={[s.row, { marginBottom: 20 }]}>
@@ -441,29 +516,6 @@ export default function BriefPDF({
         ))}
       </Page>
 
-      {/* 10 — Full reference set */}
-      <Page size={size} orientation={orientation} style={s.page}>
-        <Head label="References" name={name} date={today} />
-        {SECTION_KEYS.map(([key, label]) => {
-          const list = srcs(key, 6);
-          if (list.length === 0) return null;
-          return (
-            <View key={key} style={{ marginBottom: 14 }} wrap={false}>
-              <Text style={s.caption}>{label.toUpperCase()}</Text>
-              <View style={[s.row, { marginTop: 6 }]}>
-                {list.map((src, i) => (
-                  // eslint-disable-next-line jsx-a11y/alt-text
-                  <Image
-                    key={i}
-                    src={src}
-                    style={[s.fill, { height: 96, objectFit: "cover" }]}
-                  />
-                ))}
-              </View>
-            </View>
-          );
-        })}
-      </Page>
     </Document>
   );
 }

@@ -18,7 +18,11 @@
  * still read like a designer wrote it.
  */
 
-export const GENERATE_BRIEF_SYSTEM_PROMPT = `You are a senior interior designer writing the DESIGN BRIEF that a client will hand to their designer, architect, or contractor. This is a working document, not a mood board caption. Someone must be able to price, specify, and build from it.
+export const GENERATE_BRIEF_SYSTEM_PROMPT = `You are a senior interior designer writing a CONCEPT DECK for a client to hand to their designer, architect, or contractor.
+
+This is a presentation, not an essay. Real studio decks carry about 200 words across the whole document — the images do the arguing and the words are LABELS. Someone must still be able to price and specify from it, so be specific, but say it in the fewest words possible.
+
+Hard rule: apart from the intent and the closing description, nothing you write is a sentence. Everything else is a label or a phrase. If you catch yourself explaining, stop.
 
 Voice — non-negotiable:
 - Restrained, considered, designer-confident. Someone who has actually built spaces.
@@ -50,20 +54,18 @@ Required output fields:
     - application: WHERE this colour actually goes in this space. This is the useful part.
       Good: "walls and ceiling, lime-washed plaster". Bad: "used throughout for warmth".
 
-  materials — 5 to 7 entries. This is the finishes schedule and the most important section.
-    material: the specific material and finish, e.g. "White oak, rift-sawn, matte hardwax oil".
-    application: exactly where it is used, e.g. "Reception desk face, wall panelling to 1200mm".
-    note: one short practical line — durability, maintenance, cost tier, or a sourcing pointer.
+  materials — 5 to 7 entries. The finishes schedule. LABELS, not sentences.
+    material: the material and finish only, e.g. "White oak, rift-sawn, matte oil".
+    application: where it goes, in a few words, e.g. "Desk face, panelling to 1200mm".
 
-  furniture — 4 to 6 entries.
+  furniture — 4 to 6 entries. Also labels.
     item: the piece, e.g. "Lounge seating, low-back".
-    character: form, material, proportion in one line.
-    note: layout or quantity guidance, e.g. "Two pairs facing across a low table, leave 900mm circulation".
+    character: form, material, proportion. A phrase, not a sentence.
 
   lighting — the lighting plan:
-    strategy: 2-3 sentences on how light behaves in this space and what it must achieve.
+    strategy: ONE short sentence on how light should behave here.
     colorTemperature: specific, e.g. "2700K throughout, 3000K in task zones".
-    layers: exactly 3 entries with layer ("Ambient"|"Task"|"Accent"), fixtures (specific types), note (placement/control/dimming).
+    layers: exactly 3 entries — layer ("Ambient"|"Task"|"Accent") and fixtures (the fitting types, a phrase).
 
   spatialNotes — 3 to 4 bullets on zoning, circulation, sightlines, and what happens where. Directional and concrete.
 
@@ -171,9 +173,9 @@ export const GENERATE_BRIEF_SCHEMA = {
       additionalProperties: false,
       properties: {
         projectType: str(3, 80),
-        intent: str(40, 400),
-        whoItsFor: str(20, 300),
-        scopeNotes: str(30, 400),
+        intent: str(40, 220),
+        whoItsFor: str(20, 160),
+        scopeNotes: str(20, 180),
       },
       required: ["projectType", "intent", "whoItsFor", "scopeNotes"],
     },
@@ -213,11 +215,10 @@ export const GENERATE_BRIEF_SCHEMA = {
         type: "object",
         additionalProperties: false,
         properties: {
-          material: str(3, 90),
-          application: str(5, 140),
-          note: str(5, 160),
+          material: str(3, 70),
+          application: str(5, 90),
         },
-        required: ["material", "application", "note"],
+        required: ["material", "application"],
       },
     },
 
@@ -229,11 +230,10 @@ export const GENERATE_BRIEF_SCHEMA = {
         type: "object",
         additionalProperties: false,
         properties: {
-          item: str(3, 80),
-          character: str(10, 160),
-          note: str(5, 160),
+          item: str(3, 60),
+          character: str(10, 90),
         },
-        required: ["item", "character", "note"],
+        required: ["item", "character"],
       },
     },
 
@@ -241,7 +241,7 @@ export const GENERATE_BRIEF_SCHEMA = {
       type: "object",
       additionalProperties: false,
       properties: {
-        strategy: str(40, 400),
+        strategy: str(40, 200),
         colorTemperature: str(3, 90),
         layers: {
           type: "array",
@@ -252,10 +252,9 @@ export const GENERATE_BRIEF_SCHEMA = {
             additionalProperties: false,
             properties: {
               layer: { type: "string", enum: ["Ambient", "Task", "Accent"] },
-              fixtures: str(5, 140),
-              note: str(5, 160),
+              fixtures: str(5, 90),
             },
-            required: ["layer", "fixtures", "note"],
+            required: ["layer", "fixtures"],
           },
         },
       },
@@ -266,20 +265,20 @@ export const GENERATE_BRIEF_SCHEMA = {
       type: "array",
       minItems: 3,
       maxItems: 4,
-      items: str(15, 220),
+      items: str(15, 130),
     },
 
-    dos: { type: "array", minItems: 4, maxItems: 5, items: str(8, 120) },
-    donts: { type: "array", minItems: 4, maxItems: 5, items: str(8, 120) },
+    dos: { type: "array", minItems: 4, maxItems: 5, items: str(8, 80) },
+    donts: { type: "array", minItems: 4, maxItems: 5, items: str(8, 80) },
 
     nextSteps: {
       type: "array",
       minItems: 3,
       maxItems: 4,
-      items: str(10, 180),
+      items: str(10, 130),
     },
 
-    cinematicDescription: str(150, 500),
+    cinematicDescription: str(150, 420),
   },
   required: [
     "conceptLine",
@@ -315,12 +314,10 @@ export type GenerateBriefResponse = {
   materials: Array<{
     material: string;
     application: string;
-    note: string;
   }>;
   furniture: Array<{
     item: string;
     character: string;
-    note: string;
   }>;
   lighting: {
     strategy: string;
@@ -328,7 +325,6 @@ export type GenerateBriefResponse = {
     layers: Array<{
       layer: "Ambient" | "Task" | "Accent";
       fixtures: string;
-      note: string;
     }>;
   };
   spatialNotes: string[];

@@ -125,7 +125,9 @@ export function buildCategoryPool(
     push(rankedCategory[k]?.pin);
     push(rankedIndustry[k]?.pin);
   }
-  return out.length > 0 ? out : CURATED_PINS[category] ?? [];
+  // If the blend produced nothing, fall back to the category pool — still
+  // FILTERED. Falling back to the raw pool was how ad pins reached the picker.
+  return out.length > 0 ? out : (CURATED_PINS[category] ?? []).filter(isUsableReference);
 }
 
 export type SelectOptions = {
@@ -196,11 +198,23 @@ export function selectCategoryImages(
     }
   }
 
-  // Last resort: if filtering left us short, top up from the unfiltered
-  // category pool so a step is never empty.
+  // If the two ranked pools ran out, top up from OTHER categories' clean
+  // close-ups rather than from this category's raw pool.
+  //
+  // This used to read from the unfiltered `CURATED_PINS[category]`, which is
+  // how a "SALE — 20% off" pin and a watermarked flooring advert reached a
+  // finished brief: the filter was applied to the ranked pools and then
+  // quietly bypassed the moment those pools were a few images short. Returning
+  // fewer, clean images is always better than filling the count with junk.
   if (out.length < count) {
-    for (const p of CURATED_PINS[category] ?? []) {
-      push(p);
+    for (const key of Object.keys(CURATED_PINS)) {
+      if (key === category) continue;
+      for (const p of CURATED_PINS[key] ?? []) {
+        if (!isUsableReference(p)) continue;
+        if (categoryAffinity(p, category) <= 0) continue;
+        push(p);
+        if (out.length >= count) break;
+      }
       if (out.length >= count) break;
     }
   }

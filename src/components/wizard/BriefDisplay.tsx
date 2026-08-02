@@ -199,12 +199,7 @@ export default function BriefDisplay({
         <h2 className={LABEL}>Materials &amp; finishes</h2>
         <div className="border-b border-bdr-2">
           {brief.materials.map((m, i) => (
-            <SpecRow
-              key={i}
-              head={m.material}
-              sub={m.application}
-              note={m.note}
-            />
+            <SpecRow key={i} head={m.material} sub={m.application} />
           ))}
         </div>
       </section>
@@ -214,7 +209,7 @@ export default function BriefDisplay({
         <h2 className={LABEL}>Furniture</h2>
         <div className="border-b border-bdr-2">
           {brief.furniture.map((f, i) => (
-            <SpecRow key={i} head={f.item} sub={f.character} note={f.note} />
+            <SpecRow key={i} head={f.item} sub={f.character} />
           ))}
         </div>
       </section>
@@ -230,12 +225,7 @@ export default function BriefDisplay({
         </p>
         <div className="mt-3 border-b border-bdr-2">
           {brief.lighting.layers.map((l) => (
-            <SpecRow
-              key={l.layer}
-              head={l.layer}
-              sub={l.fixtures}
-              note={l.note}
-            />
+            <SpecRow key={l.layer} head={l.layer} sub={l.fixtures} />
           ))}
         </div>
       </section>

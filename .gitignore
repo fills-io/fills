@@ -49,3 +49,7 @@ Fills-Strategy-Roadmap.pdf
 
 # Personal Claude Code permission overrides (local paths — never commit)
 .claude/settings.local.json
+
+# One-off audit artifacts (regenerate with scripts/audit-refs.mjs)
+scripts/.audit-detail.json
+scripts/.vision-detail.json

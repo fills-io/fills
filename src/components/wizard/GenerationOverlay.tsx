@@ -43,12 +43,29 @@ const TIPS: { eyebrow: string; text: string }[] = [
 export default function GenerationOverlay() {
   const [activeIdx, setActiveIdx] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
+  const [pct, setPct] = useState(0);
 
   // Advance the checklist, but stop (and hold) on the last row.
   useEffect(() => {
     if (activeIdx >= ROWS.length - 1) return;
     const t = setTimeout(() => setActiveIdx((i) => i + 1), ROWS[activeIdx].dur);
     return () => clearTimeout(t);
+  }, [activeIdx]);
+
+  // A percentage on the step that is actually running. Completed rows count
+  // fully; the active row eases toward (but never reaches) its share, so it
+  // never claims to be finished before the brief actually lands.
+  useEffect(() => {
+    const share = 100 / ROWS.length;
+    const floor = activeIdx * share;
+    const ceil = floor + share * 0.97;
+    // Re-anchor to the new step's floor (external timer -> React).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPct(floor);
+    const id = setInterval(() => {
+      setPct((p) => (p >= ceil ? ceil : p + Math.max(0.25, (ceil - p) * 0.06)));
+    }, 220);
+    return () => clearInterval(id);
   }, [activeIdx]);
 
   useEffect(() => {
@@ -147,7 +164,7 @@ export default function GenerationOverlay() {
                       <span className="font-medium text-acc">✓</span>&nbsp;Done
                     </>
                   ) : active ? (
-                    "Working"
+                    <span className="tabular-nums">{Math.round(pct)}%</span>
                   ) : (
                     "Pending"
                   )}
