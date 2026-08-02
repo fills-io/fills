@@ -164,6 +164,26 @@ export default function QuickCanvas() {
   const [genError, setGenError] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
 
+  // Seed the uploaded palette once the query string is actually readable.
+  //
+  // This cannot live in the useState initialiser alone: these pages render
+  // inside Suspense, so useSearchParams() is empty on the first client render
+  // and the initialiser — which runs exactly once — saw no palette at all.
+  // The banner appeared (it recomputes every render) while the state behind it
+  // stayed unlocked, so the first vibe pick wiped the user's colours.
+  const seededKey = seededPalette.join(",");
+  const seedApplied = useRef(false);
+  useEffect(() => {
+    if (seedApplied.current || seededPalette.length === 0) return;
+    seedApplied.current = true;
+    setState((prev) => ({
+      ...prev,
+      palette: seededPalette.map((hex) => ({ hex, name: "", material: "" })),
+      locks: seededPalette.map(() => true),
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seededKey]);
+
   // Keep the draft current. Writing on every change is cheap next to what it
   // protects, and there is nothing to save until a project type is chosen.
   useEffect(() => {
