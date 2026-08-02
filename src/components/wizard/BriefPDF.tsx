@@ -5,8 +5,15 @@
  *
  * Modelled on how studios actually present a concept (see the Turtle / Emaar
  * Beachfront reference deck): a 16:9 presentation, roughly five or six images
- * per spread, and almost no prose. Facts are labels, not paragraphs. The one
- * piece of real writing is the inspiration narrative.
+ * per spread, and almost no prose.
+ *
+ * THE DECK IS DELIBERATELY NOT THE WHOLE BRIEF. The model still writes the
+ * lighting plan, spatial notes, do/don't guardrails, colour locations, scope
+ * and next steps — BriefDisplay shows all of it on the page, in its own
+ * section, because that is what a designer actually builds from. None of it
+ * appears here. A deck you hand across a table earns attention with images;
+ * the specification lives on the page it links back to. If you are tempted to
+ * add a paragraph to this file, it belongs in BriefDisplay instead.
  *
  * IMAGES: @react-pdf fetches every <Image> src from the browser, and
  * Pinterest's CDN sends no CORS headers, so direct i.pinimg.com URLs silently
@@ -139,12 +146,21 @@ const s = StyleSheet.create({
   imgMed: { width: "100%", height: 330, objectFit: "cover" }, // 5-up, ~0.76
   imgWide: { width: "100%", height: 300, objectFit: "cover" }, // 5-up, ~0.84
   imgSq: { width: "100%", height: 296, objectFit: "cover" }, // 4-up, ~0.93
+  // 5-up above a short schedule: tall enough that the spread does not end in
+  // 260pt of empty paper, which is how the materials page first read.
+  imgSpec: { width: "100%", height: 430, objectFit: "cover" }, // 5-up, ~0.58
+  // 4-up, twice: eight references, a near-square crop (317 x 300). Two rows
+  // plus the caption must clear 708pt of content height — at 320 the furniture
+  // spread pushed its caption onto an eleventh page.
+  imgQuad: { width: "100%", height: 300, objectFit: "cover" },
   caption: { fontSize: 7.5, color: TXT_3, letterSpacing: 1.6, marginTop: 6 },
 
   // Full-bleed mood board: no padding, two rows of five, edge to edge.
+  // Absolute widths rather than flex, because this page has no padding to
+  // absorb rounding: 5 x 281.6 + 4 x 8 gap = 1440 exactly.
   moodPage: { backgroundColor: INK, padding: 0 },
   moodRow: { flexDirection: "row", gap: 8 },
-  moodImg: { flex: 1, height: 401, objectFit: "cover" },
+  moodImg: { width: 281.6, height: 400, objectFit: "cover" },
 
   // palette
   band: { flexDirection: "row", height: 210 },
@@ -272,18 +288,28 @@ export default function BriefPDF({
 
   // Allocated up front, in the order the deck should get the best images —
   // not in JSX order, so the mood board isn't starved by the pages after it.
+  // Allocation order is NOT page order. The two pure-image spreads are claimed
+  // first: when they were allocated last the pool had run dry, and the mood
+  // board shipped with five of its ten slots empty against a black background
+  // while the closing page had none at all. The spreads that also carry text
+  // can absorb a short row; these two cannot.
   const p = {
     cover: take("vibe", 1)[0] ?? null,
+    mood: [
+      ...take("furniture", 4),
+      ...take("lighting", 3),
+      ...take("flooring", 3),
+    ],
+    closing: take("ceiling", 3),
     project: take("vibe", 3),
     inspiration: take("vibe", 5),
     colour: take("materials", 5),
     materials: take("materials", 5),
-    furniture: take("furniture", 5),
-    lighting: take("lighting", 5),
+    furniture: take("furniture", 8),
+    // Lighting has no written plan any more, so the spread is pure reference.
+    lighting: take("lighting", 8),
     flooring: take("flooring", 4),
     ceiling: take("ceiling", 4),
-    // Whatever is left, ten across two full-bleed rows.
-    mood: [...take("furniture", 4), ...take("lighting", 3), ...take("flooring", 3)],
   };
 
   const name = facts?.projectName?.trim() || brief.summary.projectType;
@@ -340,11 +366,8 @@ export default function BriefPDF({
         </View>
 
         <View style={{ flexDirection: "row", gap: 28, marginTop: 26 }}>
-          <View style={{ width: "38%" }}>
+          <View style={{ width: "32%" }}>
             <Text style={s.lead}>{brief.summary.intent}</Text>
-            <Text style={[s.small, { marginTop: 16, color: TXT_3 }]}>
-              {brief.summary.whoItsFor}
-            </Text>
           </View>
           <View style={[s.row, s.fill]}>
             {p.project.map((src, i) => (
@@ -398,9 +421,6 @@ export default function BriefPDF({
                 {c.hex.toUpperCase()}
               </Text>
               <Text style={[s.bandName, { color: textOn(c.hex) }]}>{c.name}</Text>
-              <Text style={[s.bandApp, { color: textOn(c.hex) }]}>
-                {c.application}
-              </Text>
             </View>
           ))}
         </View>
@@ -418,7 +438,7 @@ export default function BriefPDF({
         <View style={[s.row, { marginBottom: 22 }]}>
           {p.materials.map((src, i) => (
             // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={[s.fill, s.imgWide]} />
+            <Image key={i} src={src} style={[s.fill, s.imgSpec]} />
           ))}
         </View>
         <Schedule
@@ -426,33 +446,41 @@ export default function BriefPDF({
         />
       </Page>
 
-      {/* 7 — Furniture */}
+      {/* 7 — Furniture: eight references over a single line of names. */}
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Furniture" name={name} date={today} />
-        <View style={[s.row, { marginBottom: 22 }]}>
-          {p.furniture.map((src, i) => (
+        <View style={s.row}>
+          {p.furniture.slice(0, 4).map((src, i) => (
             // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={[s.fill, s.imgWide]} />
+            <Image key={i} src={src} style={[s.fill, s.imgQuad]} />
           ))}
         </View>
-        <Schedule rows={brief.furniture.map((f) => [f.item, f.character])} />
+        <View style={[s.row, { marginTop: 14 }]}>
+          {p.furniture.slice(4, 8).map((src, i) => (
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image key={i} src={src} style={[s.fill, s.imgQuad]} />
+          ))}
+        </View>
+        <Text style={[s.caption, { marginTop: 16 }]}>
+          {brief.furniture.map((f) => f.item).join("   ·   ").toUpperCase()}
+        </Text>
       </Page>
 
-      {/* 8 — Lighting */}
+      {/* 8 — Lighting: reference only, no plan. */}
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Lighting" name={name} date={today} />
-        <View style={[s.row, { marginBottom: 22 }]}>
-          {p.lighting.map((src, i) => (
+        <View style={s.row}>
+          {p.lighting.slice(0, 4).map((src, i) => (
             // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={[s.fill, s.imgWide]} />
+            <Image key={i} src={src} style={[s.fill, s.imgQuad]} />
           ))}
         </View>
-        <Text style={[s.eyebrow, { marginBottom: 12 }]}>
-          {brief.lighting.colorTemperature.toUpperCase()}
-        </Text>
-        <Schedule
-          rows={brief.lighting.layers.map((l) => [l.layer, l.fixtures])}
-        />
+        <View style={[s.row, { marginTop: 14 }]}>
+          {p.lighting.slice(4, 8).map((src, i) => (
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image key={i} src={src} style={[s.fill, s.imgQuad]} />
+          ))}
+        </View>
       </Page>
 
       {/* 9 — Surfaces: flooring over ceiling, four across each */}
@@ -474,46 +502,18 @@ export default function BriefPDF({
         </View>
       </Page>
 
-      {/* 10 — Layout, guardrails, next steps */}
+      {/* 10 — Closing: the direction in ten words, over three references. */}
       <Page size={size} orientation={orientation} style={s.page}>
-        <Head label="Layout & next steps" name={name} date={today} />
-        <View style={[s.row, { marginBottom: 20 }]}>
-          <View style={s.card}>
-            <Text style={s.cardHead}>LAYOUT</Text>
-            {brief.spatialNotes.map((n, i) => (
-              <View key={i} style={s.bullet} wrap={false}>
-                <Text style={s.bulletMark}>·</Text>
-                <Text style={s.bulletText}>{n}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={s.card}>
-            <Text style={s.cardHead}>DO</Text>
-            {brief.dos.map((d, i) => (
-              <View key={i} style={s.bullet} wrap={false}>
-                <Text style={s.bulletMark}>+</Text>
-                <Text style={s.bulletText}>{d}</Text>
-              </View>
-            ))}
-          </View>
-          <View style={s.card}>
-            <Text style={s.cardHead}>DON&apos;T</Text>
-            {brief.donts.map((d, i) => (
-              <View key={i} style={s.bullet} wrap={false}>
-                <Text style={[s.bulletMark, { color: TXT_3 }]}>−</Text>
-                <Text style={s.bulletText}>{d}</Text>
-              </View>
-            ))}
-          </View>
+        <Head label="The direction" name={name} date={today} />
+        <Text style={[s.h1, { marginBottom: 26, maxWidth: 1100 }]}>
+          {brief.keywords.join("  ·  ")}
+        </Text>
+        <View style={s.row}>
+          {p.closing.map((src, i) => (
+            // eslint-disable-next-line jsx-a11y/alt-text
+            <Image key={i} src={src} style={[s.fill, s.imgTall]} />
+          ))}
         </View>
-
-        <Text style={[s.eyebrow, { marginBottom: 10 }]}>NEXT STEPS</Text>
-        {brief.nextSteps.map((n, i) => (
-          <View key={i} style={s.bullet} wrap={false}>
-            <Text style={s.bulletMark}>{String(i + 1).padStart(2, "0")}</Text>
-            <Text style={s.bulletText}>{n}</Text>
-          </View>
-        ))}
       </Page>
 
     </Document>

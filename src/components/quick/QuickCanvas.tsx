@@ -109,9 +109,9 @@ export default function QuickCanvas() {
           vibe: state.vibeQuery,
           paletteHexes,
           spaceId,
-          // Enough for the deck to run five or six images a spread like a real
-          // studio presentation, without repeating any.
-          count: 9,
+          // The deck spends ~52 images across ten spreads and never repeats
+          // one, so each category has to supply more than it shows.
+          count: 12,
         }),
       }));
 

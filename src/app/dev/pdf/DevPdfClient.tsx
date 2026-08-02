@@ -105,14 +105,14 @@ export default function DevPdfClient() {
         vibe: "warm coastal minimalism",
         paletteHexes: BRIEF.colorSystem.map((c) => c.hex),
         spaceId: null,
-        count: 9,
+        count: 12,
       }).map((p) => ({ ...p, url: p.imageUrl })) as unknown as PinterestPin[];
     }
     pins.vibe = selectCategoryImages("materials", {
       vibe: "warm coastal minimalism",
       paletteHexes: BRIEF.colorSystem.map((c) => c.hex),
       spaceId: null,
-      count: 9,
+      count: 12,
     }).map((p) => ({ ...p, url: p.imageUrl })) as unknown as PinterestPin[];
 
     // Dump every chosen pin so a bad reference can be traced to its category.

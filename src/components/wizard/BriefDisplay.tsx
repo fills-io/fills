@@ -37,15 +37,6 @@ type Props = {
   onStartOver: () => void;
 };
 
-const PIN_SECTIONS: { key: keyof BriefPins; label: string }[] = [
-  { key: "vibe", label: "Vibe" },
-  { key: "furniture", label: "Furniture" },
-  { key: "lighting", label: "Lighting" },
-  { key: "flooring", label: "Flooring" },
-  { key: "ceiling", label: "Ceiling" },
-  { key: "materials", label: "Materials" },
-];
-
 function textOn(hex: string): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
   if (!m) return "#f4f2ec";
@@ -82,6 +73,53 @@ function SpecRow({
   );
 }
 
+/**
+ * The reference images for one part of the brief.
+ *
+ * These used to be collected into a single block of "reference imagery" far
+ * from the words they illustrate, so the lighting shots sat nowhere near the
+ * lighting plan. Each section now carries its own.
+ */
+function Refs({
+  list,
+  size = "md",
+}: {
+  list?: PinterestPin[];
+  size?: "lg" | "md";
+}) {
+  if (!list || list.length === 0) return null;
+  return (
+    <div
+      className={`mb-4 grid gap-3 ${
+        size === "lg"
+          ? "grid-cols-2 sm:grid-cols-3"
+          : "grid-cols-3 sm:grid-cols-5"
+      }`}
+    >
+      {list.map((pin) => (
+        <a
+          key={pin.id}
+          href={pin.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={pin.title || pin.altText || "Reference"}
+          className="group overflow-hidden border border-bdr-2"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={pin.imageUrl || pin.imageThumbUrl}
+            alt={pin.altText || pin.title || "Reference image"}
+            loading="lazy"
+            className={`w-full object-cover transition group-hover:opacity-90 ${
+              size === "lg" ? "aspect-[3/4]" : "aspect-[4/5]"
+            }`}
+          />
+        </a>
+      ))}
+    </div>
+  );
+}
+
 export default function BriefDisplay({
   brief,
   pins,
@@ -89,9 +127,6 @@ export default function BriefDisplay({
   onRegenerate,
   onStartOver,
 }: Props) {
-  const pinSections = pins
-    ? PIN_SECTIONS.filter(({ key }) => (pins[key]?.length ?? 0) > 0)
-    : [];
 
   return (
     <article className="space-y-10">
@@ -118,6 +153,15 @@ export default function BriefDisplay({
           ))}
         </div>
       </header>
+
+      {/* The direction — the vibe references and the one piece of real writing */}
+      <section>
+        <h2 className={LABEL}>The direction</h2>
+        <Refs list={pins?.vibe} size="lg" />
+        <p className="font-serif text-[15px] leading-[1.7] text-txt">
+          {brief.cinematicDescription}
+        </p>
+      </section>
 
       {/* At a glance */}
       <section className="grid grid-cols-1 gap-px border border-bdr bg-bdr sm:grid-cols-2">
@@ -164,39 +208,10 @@ export default function BriefDisplay({
         </div>
       </section>
 
-      {/* Reference imagery — large */}
-      {pinSections.map(({ key, label }) => {
-        const list = pins?.[key] ?? [];
-        return (
-          <section key={key}>
-            <h2 className={LABEL}>{label} references</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {list.map((pin) => (
-                <a
-                  key={pin.id}
-                  href={pin.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={pin.title || pin.altText || "Reference"}
-                  className="group overflow-hidden border border-bdr-2"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={pin.imageUrl || pin.imageThumbUrl}
-                    alt={pin.altText || pin.title || "Reference image"}
-                    loading="lazy"
-                    className="aspect-[4/3] w-full object-cover transition group-hover:opacity-90"
-                  />
-                </a>
-              ))}
-            </div>
-          </section>
-        );
-      })}
-
       {/* Materials & finishes */}
       <section>
         <h2 className={LABEL}>Materials &amp; finishes</h2>
+        <Refs list={pins?.materials} />
         <div className="border-b border-bdr-2">
           {brief.materials.map((m, i) => (
             <SpecRow key={i} head={m.material} sub={m.application} />
@@ -207,6 +222,7 @@ export default function BriefDisplay({
       {/* Furniture */}
       <section>
         <h2 className={LABEL}>Furniture</h2>
+        <Refs list={pins?.furniture} />
         <div className="border-b border-bdr-2">
           {brief.furniture.map((f, i) => (
             <SpecRow key={i} head={f.item} sub={f.character} />
@@ -214,9 +230,24 @@ export default function BriefDisplay({
         </div>
       </section>
 
+      {/* Flooring & ceiling — reference only, no schedule of their own */}
+      {(pins?.flooring?.length ?? 0) > 0 && (
+        <section>
+          <h2 className={LABEL}>Flooring</h2>
+          <Refs list={pins?.flooring} />
+        </section>
+      )}
+      {(pins?.ceiling?.length ?? 0) > 0 && (
+        <section>
+          <h2 className={LABEL}>Ceiling</h2>
+          <Refs list={pins?.ceiling} />
+        </section>
+      )}
+
       {/* Lighting plan */}
       <section>
         <h2 className={LABEL}>Lighting plan</h2>
+        <Refs list={pins?.lighting} />
         <p className="text-[14px] leading-relaxed text-txt-2">
           {brief.lighting.strategy}
         </p>
@@ -271,14 +302,6 @@ export default function BriefDisplay({
             ))}
           </ul>
         </div>
-      </section>
-
-      {/* How it should look */}
-      <section className="border border-bdr bg-bg-2 p-6">
-        <h2 className={LABEL}>How it should look</h2>
-        <p className="font-serif text-[15px] leading-[1.7] text-txt">
-          {brief.cinematicDescription}
-        </p>
       </section>
 
       {/* Next steps */}
