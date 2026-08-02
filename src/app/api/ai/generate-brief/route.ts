@@ -94,10 +94,16 @@ export async function POST(request: NextRequest) {
       tier: "full",
       schema: GENERATE_BRIEF_SCHEMA,
       schemaName: "design_dna_brief",
-      // The handover brief is long (summary, materials schedule, furniture,
-      // lighting layers, notes, do/don't, next steps) AND GPT-5 spends
-      // reasoning tokens from the same budget. 8192 truncated it mid-JSON.
+      // GPT-5 spends reasoning tokens from the same budget as the output, and
+      // 8192 truncated the JSON mid-object.
       maxOutputTokens: 24000,
+      // The single most important setting on this route. At the default
+      // effort the call took 57s against a 60s serverless limit, so briefs
+      // intermittently died on a Vercel timeout rather than any error we
+      // could show. The output is a schema-constrained deck of labels — it
+      // needs recall and taste, not long deliberation — so "low" costs
+      // nothing in quality and brings the call back inside the budget.
+      reasoningEffort: "low",
     });
 
     if (!result.text.trim()) {

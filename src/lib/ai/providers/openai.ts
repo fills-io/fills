@@ -80,6 +80,12 @@ export const openaiProvider: TextProvider = {
       request.temperature = opts.temperature;
     }
 
+    // Reasoning tokens are produced BEFORE any output, so this is what
+    // actually decides whether a call fits inside the serverless timeout.
+    if (isGpt5Family && opts.reasoningEffort) {
+      request.reasoning_effort = opts.reasoningEffort;
+    }
+
     if (opts.schema) {
       request.response_format = {
         type: "json_schema",
