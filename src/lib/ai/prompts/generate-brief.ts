@@ -156,6 +156,14 @@ export function buildGenerateBriefPrompt(input: {
   return lines.join("\n");
 }
 
+/**
+ * A bounded string.
+ *
+ * Keep maxLength GENEROUS. Structured outputs enforce it by cutting the model
+ * off mid-word rather than making it plan a shorter answer, and tight caps put
+ * things like "low-glare downl" and "LED toe-kick to millw" straight onto the
+ * user's brief. Brevity is the prompt's job; this is only a backstop.
+ */
 const str = (minLength: number, maxLength: number) => ({
   type: "string",
   minLength,
@@ -173,9 +181,9 @@ export const GENERATE_BRIEF_SCHEMA = {
       additionalProperties: false,
       properties: {
         projectType: str(3, 80),
-        intent: str(40, 220),
-        whoItsFor: str(20, 160),
-        scopeNotes: str(20, 180),
+        intent: str(40, 300),
+        whoItsFor: str(20, 220),
+        scopeNotes: str(20, 280),
       },
       required: ["projectType", "intent", "whoItsFor", "scopeNotes"],
     },
@@ -201,7 +209,7 @@ export const GENERATE_BRIEF_SCHEMA = {
           },
           hex: { type: "string", pattern: "^#[0-9a-fA-F]{6}$" },
           name: str(2, 40),
-          application: str(10, 140),
+          application: str(10, 180),
         },
         required: ["role", "hex", "name", "application"],
       },
@@ -215,8 +223,8 @@ export const GENERATE_BRIEF_SCHEMA = {
         type: "object",
         additionalProperties: false,
         properties: {
-          material: str(3, 70),
-          application: str(5, 90),
+          material: str(3, 90),
+          application: str(5, 140),
         },
         required: ["material", "application"],
       },
@@ -230,8 +238,8 @@ export const GENERATE_BRIEF_SCHEMA = {
         type: "object",
         additionalProperties: false,
         properties: {
-          item: str(3, 60),
-          character: str(10, 90),
+          item: str(3, 80),
+          character: str(10, 140),
         },
         required: ["item", "character"],
       },
@@ -241,7 +249,7 @@ export const GENERATE_BRIEF_SCHEMA = {
       type: "object",
       additionalProperties: false,
       properties: {
-        strategy: str(40, 200),
+        strategy: str(40, 260),
         colorTemperature: str(3, 90),
         layers: {
           type: "array",
@@ -252,7 +260,7 @@ export const GENERATE_BRIEF_SCHEMA = {
             additionalProperties: false,
             properties: {
               layer: { type: "string", enum: ["Ambient", "Task", "Accent"] },
-              fixtures: str(5, 90),
+              fixtures: str(5, 160),
             },
             required: ["layer", "fixtures"],
           },
@@ -265,20 +273,20 @@ export const GENERATE_BRIEF_SCHEMA = {
       type: "array",
       minItems: 3,
       maxItems: 4,
-      items: str(15, 130),
+      items: str(15, 190),
     },
 
-    dos: { type: "array", minItems: 4, maxItems: 5, items: str(8, 80) },
-    donts: { type: "array", minItems: 4, maxItems: 5, items: str(8, 80) },
+    dos: { type: "array", minItems: 4, maxItems: 5, items: str(8, 130) },
+    donts: { type: "array", minItems: 4, maxItems: 5, items: str(8, 130) },
 
     nextSteps: {
       type: "array",
       minItems: 3,
       maxItems: 4,
-      items: str(10, 130),
+      items: str(10, 190),
     },
 
-    cinematicDescription: str(150, 420),
+    cinematicDescription: str(150, 560),
   },
   required: [
     "conceptLine",
