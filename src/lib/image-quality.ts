@@ -79,6 +79,23 @@ const REJECT_PATTERNS: RegExp[] = [
   /\b(meuble[s]?|canapé|chambre|décoration|salle de bain)\b/i,
   /\b(muebles|dormitorio|cocina moderna|sala de estar)\b/i,
 
+  // Known advertisers whose promoted pins keep appearing in the pools
+  /\b(silamp|cartilla|bizzotto|beliani|castiglione|westwing|maisons du monde|leroy merlin|made\.com|wayfair|temu|shein)\b/i,
+
+  // Spanish / Italian / Portuguese product-catalogue vocabulary.
+  // NOTE: no trailing \b — JS word boundaries don't fire after accented
+  // letters (à, ó, á are non-word chars), which let "Novità" through.
+  /\b(alfombra|reloj|pieza|renueva|espacios|cortinas?|lamp(ara|á)ra?|sill(o|ó)n|sof(a|á)|estanter(i|í)a)/i,
+  /\b(illuminazione|piscin[ae]|novit(a|à)|tend[ae]|lampadario|divano|poltrona|tappeto|arredo)/i,
+  /\b(lumin(a|á)ria|tapete|m(o|ó)veis)/i,
+
+  // Social-platform re-posts (screenshots, carousels, watermarked reels)
+  /\|\s*(facebook|pinterest|instagram|tiktok|youtube)\b/i,
+  /\bon (instagram|tiktok|facebook|threads)\b/i,
+
+  // Marketing renders and catalogue shots
+  /\b(rendering|catalogue|catalog|lookbook|new collection|nuova collezione)\b/i,
+
   // Truncated ad copy: caption cut mid-sentence
   /[:;,]\s*$/,
   /(\.\.\.|…)\s*$/,
