@@ -92,10 +92,12 @@ export const openaiProvider: TextProvider = {
     }
 
     const response = await getClient().chat.completions.create(request);
-    const text = response.choices[0]?.message?.content ?? "";
+    const choice = response.choices[0];
+    const text = choice?.message?.content ?? "";
 
     return {
       text,
+      finishReason: choice?.finish_reason,
       model,
       provider: "openai",
       latencyMs: Date.now() - startedAt,

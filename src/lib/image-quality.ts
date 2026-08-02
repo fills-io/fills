@@ -62,6 +62,27 @@ const REJECT_PATTERNS: RegExp[] = [
 
   // Floor plans and drawings (useful later, not as a look-and-feel reference)
   /\b(floor ?plan|elevation drawing|section drawing|blueprint|autocad|sketchup)\b/i,
+
+  // ── Pinterest AD PINS ────────────────────────────────────────────────
+  // These are the ones with marketing text burned into the image. Their
+  // captions are truncated ad copy, so they announce themselves:
+
+  // Marketing imperatives aimed at the viewer
+  /\b(transform|elevate|upgrade|discover|reimagine|refresh|revamp|declutter)\s+(your|his|her|their)\b/i,
+  /\b(feel at home|your dream|dream (kitchen|home|bathroom|bedroom)|make it yours)\b/i,
+  // Imperative openers: "Top off your ceiling", "Give your room a lift"
+  /^(top off|give|bring|add|turn|treat|update|complete|finish|style|dress)\s+(your|a|the)\b/i,
+
+  // Non-English furniture/decor advertising vocabulary
+  /\b(arreda|arredi|arredamento|cucina|cucine|soggiorno|spazi|ispirazione|camera da letto|mobili)\b/i,
+  /\b(dekor|wohnzimmer|küche|schlafzimmer|einrichtung|luxuriös\w*|gemütlich\w*)\b/i,
+  /\b(meuble[s]?|canapé|chambre|décoration|salle de bain)\b/i,
+  /\b(muebles|dormitorio|cocina moderna|sala de estar)\b/i,
+
+  // Truncated ad copy: caption cut mid-sentence
+  /[:;,]\s*$/,
+  /(\.\.\.|…)\s*$/,
+  /\b(for|to|the|a|an|your|our|with|and|of|that|this|in|on|from|per|la|le|il|lo|un|una|di|e|und|der|die|das|et|con|y|del)\s*$/i,
 ];
 
 /** Emoji and decorative symbols are a strong "marketing graphic" tell. */

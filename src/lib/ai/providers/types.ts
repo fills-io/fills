@@ -48,6 +48,9 @@ export type TextGenerateOptions = {
 export type TextGenerateResult = {
   /** The model's text response (raw string, before any schema validation). */
   text: string;
+  /** Why generation stopped — "length" means the output was truncated and the
+   *  JSON will not parse. Surfaced so callers can report it honestly. */
+  finishReason?: string;
   /** Concrete model used (e.g. "gpt-5-mini"). For logging / debugging. */
   model: string;
   /** Provider that handled this request. For logging. */

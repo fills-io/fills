@@ -94,18 +94,52 @@ export async function POST(request: NextRequest) {
       tier: "full",
       schema: GENERATE_BRIEF_SCHEMA,
       schemaName: "design_dna_brief",
-      // Headroom for the full brief: ~8 fields × ~150 words each plus
-      // reasoning overhead. 8192 is comfortable.
-      maxOutputTokens: 8192,
+      // The handover brief is long (summary, materials schedule, furniture,
+      // lighting layers, notes, do/don't, next steps) AND GPT-5 spends
+      // reasoning tokens from the same budget. 8192 truncated it mid-JSON.
+      maxOutputTokens: 24000,
     });
+
+    if (!result.text.trim()) {
+      console.error(
+        `[/api/ai/generate-brief] empty response (finish_reason=${result.finishReason})`,
+      );
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `The model returned nothing (finish_reason=${result.finishReason ?? "unknown"}).`,
+        },
+        { status: 502 },
+      );
+    }
+
+    if (result.finishReason === "length") {
+      console.error(
+        "[/api/ai/generate-brief] output truncated (finish_reason=length)",
+      );
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "The brief was cut off before it finished. Please try again.",
+        },
+        { status: 502 },
+      );
+    }
 
     let payload: GenerateBriefResponse;
     try {
       payload = JSON.parse(result.text);
     } catch {
-      console.error("[/api/ai/generate-brief] malformed JSON:", result.text);
+      console.error(
+        `[/api/ai/generate-brief] malformed JSON (finish_reason=${result.finishReason}, ${result.text.length} chars):`,
+        result.text.slice(0, 2000),
+      );
       return NextResponse.json(
-        { ok: false, error: "Model returned malformed JSON" },
+        {
+          ok: false,
+          error: `Model returned malformed JSON (finish_reason=${result.finishReason ?? "unknown"})`,
+        },
         { status: 502 },
       );
     }

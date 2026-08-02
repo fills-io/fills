@@ -41,7 +41,7 @@ Required output fields:
     whoItsFor: who uses this space and what they need from it. Be specific about the people.
     scopeNotes: 1-2 sentences on what this brief covers and what still needs confirming on site (dimensions, services, existing conditions). Be honest that measurements are not yet captured.
 
-  keywords — 8 to 12 short lowercase tags. Material, era, or mood. Search-shaped.
+  keywords — 8 to 10 short lowercase tags. Material, era, or mood. Search-shaped.
 
   colorSystem — ONE ENTRY PER COLOUR the user gave you (4 to 6). Never drop one of their colours.
     Roles: "primary"|"secondary"|"accent"|"supporting" — use "supporting" more than once if needed.
@@ -50,7 +50,7 @@ Required output fields:
     - application: WHERE this colour actually goes in this space. This is the useful part.
       Good: "walls and ceiling, lime-washed plaster". Bad: "used throughout for warmth".
 
-  materials — 5 to 8 entries. This is the finishes schedule and the most important section.
+  materials — 5 to 7 entries. This is the finishes schedule and the most important section.
     material: the specific material and finish, e.g. "White oak, rift-sawn, matte hardwax oil".
     application: exactly where it is used, e.g. "Reception desk face, wall panelling to 1200mm".
     note: one short practical line — durability, maintenance, cost tier, or a sourcing pointer.
@@ -65,12 +65,12 @@ Required output fields:
     colorTemperature: specific, e.g. "2700K throughout, 3000K in task zones".
     layers: exactly 3 entries with layer ("Ambient"|"Task"|"Accent"), fixtures (specific types), note (placement/control/dimming).
 
-  spatialNotes — 3 to 5 bullets on zoning, circulation, sightlines, and what happens where. Directional and concrete.
+  spatialNotes — 3 to 4 bullets on zoning, circulation, sightlines, and what happens where. Directional and concrete.
 
-  dos — 4 to 6 short imperatives specific to this project. e.g. "Keep sightlines from entry to the back wall open".
-  donts — 4 to 6 short imperatives. The things that would break this brief. e.g. "No cool-white downlights".
+  dos — 4 to 5 short imperatives specific to this project. e.g. "Keep sightlines from entry to the back wall open".
+  donts — 4 to 5 short imperatives. The things that would break this brief. e.g. "No cool-white downlights".
 
-  nextSteps — 3 to 5 practical actions for the client, in order. What to measure, confirm, source, or ask their designer. Make the first one about getting accurate dimensions.
+  nextSteps — 3 to 4 practical actions for the client, in order. What to measure, confirm, source, or ask their designer. Make the first one about getting accurate dimensions.
 
   cinematicDescription — one paragraph, 60-90 words. The finished room as a photographer would shoot it: light direction and quality, what is in frame, materials catching light.
 
@@ -181,7 +181,7 @@ export const GENERATE_BRIEF_SCHEMA = {
     keywords: {
       type: "array",
       minItems: 8,
-      maxItems: 12,
+      maxItems: 10,
       items: str(2, 40),
     },
 
@@ -208,7 +208,7 @@ export const GENERATE_BRIEF_SCHEMA = {
     materials: {
       type: "array",
       minItems: 5,
-      maxItems: 8,
+      maxItems: 7,
       items: {
         type: "object",
         additionalProperties: false,
@@ -265,21 +265,21 @@ export const GENERATE_BRIEF_SCHEMA = {
     spatialNotes: {
       type: "array",
       minItems: 3,
-      maxItems: 5,
+      maxItems: 4,
       items: str(15, 220),
     },
 
-    dos: { type: "array", minItems: 4, maxItems: 6, items: str(8, 140) },
-    donts: { type: "array", minItems: 4, maxItems: 6, items: str(8, 140) },
+    dos: { type: "array", minItems: 4, maxItems: 5, items: str(8, 120) },
+    donts: { type: "array", minItems: 4, maxItems: 5, items: str(8, 120) },
 
     nextSteps: {
       type: "array",
       minItems: 3,
-      maxItems: 5,
+      maxItems: 4,
       items: str(10, 180),
     },
 
-    cinematicDescription: str(150, 700),
+    cinematicDescription: str(150, 500),
   },
   required: [
     "conceptLine",
