@@ -32,18 +32,31 @@ export type BriefInput = {
  * up", not "the model misbehaved". We say so in words the user can act on
  * rather than surfacing "HTTP 500".
  */
+/** Thrown for failures that a second identical request could still fix. */
+class TransientError extends Error {}
+
 async function requestBrief(input: BriefInput): Promise<GenerateBriefResponse> {
-  const res = await fetch("/api/ai/generate-brief", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(input),
-  });
+  let res: Response;
+  try {
+    res = await fetch("/api/ai/generate-brief", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+    });
+  } catch {
+    // The connection dropped — worth another go.
+    throw new TransientError("Couldn't reach the server. Check your connection.");
+  }
   if (!res.ok) {
     const err = await res.json().catch(() => null);
-    if (err?.error) throw new Error(err.error);
+    if (res.status >= 500) {
+      throw new TransientError(err?.error || "The brief took too long to come back.");
+    }
+    // 4xx means the request itself is wrong — something the user typed is too
+    // long, most likely. Repeating it verbatim can only fail the same way.
     throw new Error(
-      res.status >= 500
-        ? "The brief took too long to come back."
+      err?.error
+        ? "Some of your answers are too long for the brief. Try shortening them."
         : `Couldn't generate the brief (${res.status}).`,
     );
   }
@@ -62,6 +75,10 @@ export async function generateBrief(
   try {
     return await requestBrief(input);
   } catch (first) {
+    // Only retry what a retry can fix. Retrying a 400 sent the same rejected
+    // body a second time and then showed the user "Try again", which could
+    // never work — it just doubled the wait before the same dead end.
+    if (!(first instanceof TransientError)) throw first;
     try {
       return await requestBrief(input);
     } catch {
