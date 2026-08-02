@@ -91,14 +91,21 @@ export default function SetupStage({ state, patch }: Props) {
                   onClick={() => {
                     // Changing industry invalidates everything downstream —
                     // reset picks + palette so the old industry can't leak in.
+                    //
+                    // EXCEPT a palette the user supplied themselves. Upload
+                    // mode reads colours out of their own photos and arrives
+                    // with them locked; those aren't derived from the industry,
+                    // so wiping them here threw away the entire point of
+                    // uploading before the user ever reached the palette step.
+                    const userSupplied = state.locks.some(Boolean);
                     patch({
                       industryId: i.id,
                       spec: "",
                       picks: [],
                       vibeQuery: "",
-                      palette: [],
-                      paletteWeights: [],
-                      locks: [],
+                      ...(userSupplied
+                        ? {}
+                        : { palette: [], paletteWeights: [], locks: [] }),
                     });
                     setSpecInput("");
                     setDdOpen(false);
