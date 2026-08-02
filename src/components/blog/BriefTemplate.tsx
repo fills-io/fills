@@ -111,9 +111,12 @@ export default function BriefTemplate() {
           <span style={{ color: TERRA }}>Fills · Free template</span>
           <span>Brief · v.01</span>
         </div>
-        <h1 className="font-serif" style={{ fontWeight: 500, fontSize: "32px", lineHeight: 1.05, letterSpacing: "-.01em", margin: "16px 0 6px", color: INK }}>
+        {/* The sheet's masthead, not the page's headline — the host page already
+            owns the h1, and two of them competed for the same query. Every type
+            style is inline, so the demotion to h2 is invisible. */}
+        <h2 className="font-serif" style={{ fontWeight: 500, fontSize: "32px", lineHeight: 1.05, letterSpacing: "-.01em", margin: "16px 0 6px", color: INK }}>
           Interior design brief
-        </h1>
+        </h2>
         <p className="font-serif" style={{ fontStyle: "italic", fontSize: "15px", color: "#7C7264", margin: "0 0 22px" }}>
           A one-page starting point for any project.
         </p>

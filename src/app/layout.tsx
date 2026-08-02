@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, DM_Sans, DM_Mono, Archivo } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
@@ -33,8 +33,10 @@ const archivo = Archivo({
   display: "swap",
 });
 
+const SITE_URL = "https://fills.io";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://fills.io"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Interior Design Brief Generator & AI Mood Board Tool | Fills",
     template: "%s · Fills",
@@ -54,11 +56,16 @@ export const metadata: Metadata = {
   ],
   applicationName: "Fills",
   authors: [{ name: "Fills" }],
-  alternates: { canonical: "https://fills.io" },
+  // A URL *instance* (not the string "https://fills.io") makes Next resolve the
+  // canonical against each page's own pathname, so an un-overridden page
+  // self-canonicalises. With a string, every page inherited it verbatim and told
+  // Google it was a duplicate of the homepage — /concept/quick and
+  // /concept/wizard were both pointing at "/".
+  alternates: { canonical: new URL(SITE_URL) },
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",
-    url: "https://fills.io",
+    url: SITE_URL,
     siteName: "Fills",
     title: "Interior Design Brief Generator & AI Mood Board Tool | Fills",
     description:
@@ -70,6 +77,14 @@ export const metadata: Metadata = {
     description:
       "Turn a one-line brief into a complete interior design mood board in five minutes. Built by a working architect.",
   },
+};
+
+// Without this, iOS Safari assumes a 980px desktop page and zooms in on any
+// input under 16px — and never zooms back out. No maximumScale/userScalable:
+// pinch-to-zoom is an accessibility requirement, not a nuisance.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 // Structured data — helps Google (and AI Overviews) understand what Fills is.

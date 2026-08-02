@@ -18,11 +18,23 @@
 
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { checkRateLimit } from "@/lib/rate-limit";
+
 import {
   fetchColormindPalette,
   hexToRgb,
   type ColormindInputColor,
 } from "@/lib/colormind";
+
+/** A single sentence a user can act on, instead of Zod's JSON dump. */
+function firstIssue(error: z.ZodError): string {
+  const issue = error.issues[0];
+  if (issue?.code === "too_big") {
+    const field = String(issue.path[0] ?? "answer");
+    return `Your ${field} is too long — please shorten it.`;
+  }
+  return "Some of your answers couldn't be read. Please check them.";
+}
 
 export const runtime = "nodejs";
 
@@ -32,12 +44,22 @@ const querySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  // Free upstream, but an open proxy to it is still ours to answer for.
+  const limited = checkRateLimit(request, "colors", 120, 3_600_000);
+  if (limited) return limited;
+
   const parsed = querySchema.safeParse(
     Object.fromEntries(request.nextUrl.searchParams),
   );
   if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: parsed.error.message },
+      {
+        ok: false,
+        // Zod's message is a pretty-printed JSON array of issue objects.
+        // It was rendered verbatim into the UI as a wall of braces; the
+        // only cause a user can act on is having written too much.
+        error: firstIssue(parsed.error),
+      },
       { status: 400 },
     );
   }
@@ -57,8 +79,10 @@ export async function GET(request: NextRequest) {
     // Colormind returns 5 colours — return all of them (callers slice/pad).
     return NextResponse.json({ palette: fullPalette.slice(0, 5) });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     console.error("[/api/colors/generate] failed:", error);
-    return NextResponse.json({ ok: false, error: message }, { status: 502 });
+    return NextResponse.json(
+      { ok: false, error: "Couldn't mix a new palette just now." },
+      { status: 502 },
+    );
   }
 }

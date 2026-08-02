@@ -13,19 +13,20 @@
 
 import { useRef, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
-import BriefPDF from "./BriefPDF";
+import BriefPDF, { type BriefFacts } from "./BriefPDF";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import type { BriefPins } from "./BriefDisplay";
 
-type Orientation = "portrait" | "landscape";
+type Format = "deck" | "document";
 
 type Props = {
   brief: GenerateBriefResponse;
   pins?: BriefPins;
+  facts?: BriefFacts;
 };
 
-export default function ExportPanel({ brief, pins }: Props) {
-  const [orientation, setOrientation] = useState<Orientation>("portrait");
+export default function ExportPanel({ brief, pins, facts }: Props) {
+  const [format, setFormat] = useState<Format>("deck");
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [logoName, setLogoName] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -67,19 +68,25 @@ export default function ExportPanel({ brief, pins }: Props) {
         <BriefPDF
           brief={brief}
           pins={pins}
-          orientation={orientation}
+          facts={facts}
+          format={format}
           logoDataUrl={logoDataUrl}
         />,
       ).toBlob();
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      const slug = brief.conceptLine
+      // Name it after the project, not a truncated concept line, so a client
+      // can tell what the file is from the filename alone.
+      const slug = brief.summary.projectType
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "")
-        .slice(0, 40);
-      anchor.download = `fills-brief-${slug || "design-dna"}.pdf`;
+        .split("-")
+        .slice(0, 5)
+        .join("-");
+      const date = new Date().toISOString().slice(0, 10);
+      anchor.download = `fills-brief-${slug || "design"}-${date}.pdf`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();
@@ -93,29 +100,39 @@ export default function ExportPanel({ brief, pins }: Props) {
 
   return (
     <section className="border border-bdr bg-bg-2 p-6">
-      <h2 className="mb-5 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
+      <h2 className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
         Export as PDF
       </h2>
+      <p className="mb-5 text-[13px] leading-relaxed text-txt-2">
+        A brief you can send straight to a designer or contractor: the concept,
+        colour system with applications, materials and finishes, furniture,
+        the lighting plan, layout notes, and every reference image.
+      </p>
 
       <div className="grid gap-6 sm:grid-cols-2">
-        {/* Orientation */}
+        {/* Format */}
         <div>
           <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
-            Orientation
+            Format
           </div>
           <div className="flex gap-2">
-            {(["portrait", "landscape"] as const).map((o) => (
+            {(
+              [
+                ["deck", "Presentation"],
+                ["document", "A4 document"],
+              ] as const
+            ).map(([id, label]) => (
               <button
-                key={o}
+                key={id}
                 type="button"
-                onClick={() => setOrientation(o)}
+                onClick={() => setFormat(id)}
                 className={`flex-1 border px-3 py-2 text-[12px] uppercase tracking-[0.1em] transition ${
-                  orientation === o
+                  format === id
                     ? "border-acc bg-acc text-white"
                     : "border-bdr-2 text-txt-2 hover:border-acc hover:text-acc"
                 }`}
               >
-                {o}
+                {label}
               </button>
             ))}
           </div>
@@ -171,7 +188,7 @@ export default function ExportPanel({ brief, pins }: Props) {
           disabled={busy}
           className="inline-flex items-center gap-2 bg-acc px-6 py-3 text-[12px] font-medium uppercase tracking-[0.1em] text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {busy ? "Generating…" : "↓ Download PDF"}
+          {busy ? "Building your PDF…" : "↓ Download PDF"}
         </button>
       </div>
     </section>

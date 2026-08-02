@@ -96,13 +96,18 @@ export default function PaletteStage({ state, patch }: Props) {
 
   // Re-derive the palette whenever the picked set changes (and on first
   // arrival) — so it never lags behind the images the user has selected.
+  //
+  // Locked slots survive it. Upload mode arrives with the colours read from
+  // the user's own photos, locked; without this the first vibe pick silently
+  // overwrote them and the whole point of uploading was lost.
   const pickKey = state.picks.map((p) => p.id).join("|");
+  const hasLocks = state.locks.some(Boolean);
   useEffect(() => {
     if (lastPickKey.current === pickKey) return;
     lastPickKey.current = pickKey;
     if (state.picks.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      extractInto(false);
+      extractInto(hasLocks);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickKey]);
@@ -113,15 +118,28 @@ export default function PaletteStage({ state, patch }: Props) {
     setBusy("suggesting");
     setError(null);
     try {
-      const res = await fetch(`/api/colors/generate`);
+      // Seed the generator with whatever the user locked, so the new colours
+      // are chosen to work WITH those rather than ignoring them.
+      const seed = state.palette
+        .filter((_, i) => state.locks[i])
+        .map((c) => c.hex)
+        .filter((h) => /^#[0-9a-f]{6}$/i.test(h))
+        .slice(0, 4);
+      const q = seed.length ? `?locked=${encodeURIComponent(seed.join(","))}` : "";
+      const res = await fetch(`/api/colors/generate${q}`);
       const data = (await res.json()) as
         | { palette: string[] }
         | { ok: false; error: string };
       if ("ok" in data && data.ok === false) throw new Error(data.error);
       const sug = "palette" in data ? data.palette : [];
-      const palette = state.palette.map((c, i) =>
-        state.locks[i] ? c : toEntry(sug[i] ?? c.hex),
-      );
+      // Fill only the unlocked slots, walking the suggestion list in order so
+      // no colour is reused twice.
+      let next = 0;
+      const palette = state.palette.map((c, i) => {
+        if (state.locks[i]) return c;
+        const hex = sug[next++];
+        return hex ? toEntry(hex) : c;
+      });
       patch({ palette });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -149,6 +167,7 @@ export default function PaletteStage({ state, patch }: Props) {
   }
 
   const grow = (i: number) => Math.max(state.paletteWeights[i] ?? 0.2, 0.09);
+  const lockedCount = state.locks.filter(Boolean).length;
 
   return (
     <section className="border-t border-bdr pt-10">
@@ -177,7 +196,11 @@ export default function PaletteStage({ state, patch }: Props) {
           return (
             <div
               key={i}
-              className="group relative min-w-0 border-r border-bg-2 last:border-r-0"
+              // A weight-proportional width can fall to ~28px on a phone, which
+              // is narrower than the padlock sitting on it — so the controls and
+              // the hex spill over the neighbouring colour. Floor the width on
+              // small screens; desktop keeps the pure proportional split.
+              className="group relative min-w-[46px] border-r border-bg-2 last:border-r-0 sm:min-w-0"
               style={{ flexGrow: grow(i), flexBasis: 0, backgroundColor: c.hex }}
             >
               <input
@@ -188,8 +211,13 @@ export default function PaletteStage({ state, patch }: Props) {
                 className="absolute inset-0 z-0 h-full w-full cursor-pointer opacity-0"
               />
 
-              {/* Controls */}
-              <div className="absolute right-1.5 top-1.5 z-20 flex gap-1 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+              {/* Controls — always visible. Hiding them behind :hover made them
+                  unreachable on touch and made "locked" impossible to discover. */}
+              <div
+                className={`absolute right-1.5 top-1.5 z-20 flex gap-1 transition ${
+                  locked ? "opacity-100" : "opacity-70 group-hover:opacity-100"
+                }`}
+              >
                 <button
                   type="button"
                   onClick={(e) => {
@@ -211,7 +239,9 @@ export default function PaletteStage({ state, patch }: Props) {
                       sample(i);
                     }}
                     aria-label={`Eyedropper for ${paletteRole(i)}`}
-                    className="grid h-6 w-6 place-items-center rounded-full bg-black/25 text-white"
+                    // Two buttons don't fit on a phone-width block, and no
+                    // touch browser ships the EyeDropper API anyway.
+                    className="hidden h-6 w-6 place-items-center rounded-full bg-black/25 text-white sm:grid"
                     style={{ color: text }}
                   >
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -228,10 +258,12 @@ export default function PaletteStage({ state, patch }: Props) {
                 className="pointer-events-none absolute inset-x-0 bottom-2 z-10 flex flex-col items-center gap-0.5 px-1 text-center"
                 style={{ color: text }}
               >
-                <span className="font-mono text-[9px] uppercase tracking-[0.12em] opacity-80">
+                {/* "Secondary" is wider than a phone-width block — the widths
+                    already say which colour leads, so drop the role there. */}
+                <span className="hidden font-mono text-[9px] uppercase tracking-[0.12em] opacity-80 sm:block">
                   {paletteRole(i)}
                 </span>
-                <span className="font-mono text-[10px] uppercase lg:text-[11px]">
+                <span className="max-w-full truncate font-mono text-[9px] uppercase sm:text-[10px] lg:text-[11px]">
                   {c.hex.toUpperCase()}
                 </span>
               </div>
@@ -240,15 +272,16 @@ export default function PaletteStage({ state, patch }: Props) {
         })}
       </div>
 
-      {/* Actions */}
-      <div className="mt-4 flex flex-wrap gap-2">
+      {/* Actions — plain language. "Regenerate unlocked" meant nothing when the
+          padlocks were hover-only and invisible. */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => extractInto(true)}
           disabled={busy !== "idle" || urls.length === 0}
           className="border border-bdr-2 px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-txt-2 transition hover:border-acc hover:text-acc disabled:opacity-50"
         >
-          {busy === "extracting" ? "Reading…" : "Regenerate from images"}
+          {busy === "extracting" ? "Reading…" : "Take colours from my images"}
         </button>
         <button
           type="button"
@@ -256,8 +289,13 @@ export default function PaletteStage({ state, patch }: Props) {
           disabled={busy !== "idle" || state.palette.length === 0}
           className="border border-acc px-3 py-1.5 text-[11px] font-medium uppercase tracking-[0.1em] text-acc transition hover:bg-acc hover:text-white disabled:opacity-50"
         >
-          {busy === "suggesting" ? "Generating…" : "Regenerate unlocked →"}
+          {busy === "suggesting" ? "Mixing…" : "Try different colours"}
         </button>
+        <span className="text-[11px] text-txt-3">
+          {lockedCount > 0
+            ? `${lockedCount} colour${lockedCount === 1 ? "" : "s"} locked and will be kept.`
+            : "Tap the padlock on a colour to keep it when you try others."}
+        </span>
       </div>
     </section>
   );

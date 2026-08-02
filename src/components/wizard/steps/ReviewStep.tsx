@@ -3,17 +3,32 @@
 /**
  * Step 9 — Review.
  *
- * A read-only summary of everything the user has picked across the previous
- * eight steps. Each section has an "Edit" link that jumps the wizard back
- * to that step.
+ * The last look before the brief is generated. Three jobs:
+ *
+ *   1. The project facts (space, size, palette) and the AI design check.
+ *   2. Every reference image the user picked, laid out as a MASONRY board
+ *      grouped by category — images at their natural shape, the way a designer
+ *      pins a board, instead of square crops that hide what the image is of.
+ *   3. Swapping. Clicking an image opens an inline picker of alternatives from
+ *      the same curated pool that step drew from, so one weak reference can be
+ *      replaced here rather than by walking back four steps. Replacements keep
+ *      the FULL pin shape (the brief and the PDF read `pin.imageUrl`), so a
+ *      swapped image behaves exactly like a hand-picked one.
  *
  * The big primary CTA on this page lives on the parent (WizardClient)'s nav
  * bar — when the user is on the review step, "Next →" is replaced with
- * "Generate brief →" and the AI generation pipeline takes over (in a later
- * PR). For now that CTA is wired up but disabled.
+ * "Generate brief →" and the AI generation pipeline takes over.
  */
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getIndustry } from "@/lib/space-taxonomy";
+import { buildCategoryPool } from "@/lib/select-images";
+import { usableOnly } from "@/lib/image-quality";
+import {
+  CURATED_PINS,
+  CURATED_VIBE,
+  type CuratedPin,
+} from "@/data/reference-images";
 import type { WizardState } from "@/lib/wizard-state";
 import type { WizardStepId } from "@/lib/wizard-steps";
 import type { ColorEntry, PinterestPin } from "@/db/schema";
@@ -23,9 +38,18 @@ type Props = {
   state: WizardState;
   /** Jump back to a specific step (rendered as "Edit" links in each section). */
   goToStep: (id: WizardStepId) => void;
+  /**
+   * The same patch setter every other step takes. Optional because Review was
+   * read-only before swapping existed: without it the board still renders, it
+   * just isn't editable. With it, clicking an image replaces it in place.
+   */
+  setState?: (patch: Partial<WizardState>) => void;
 };
 
-export default function ReviewStep({ state, goToStep }: Props) {
+/** How many alternatives the inline picker shows before "More options". */
+const PICKER_PAGE = 12;
+
+export default function ReviewStep({ state, goToStep, setState }: Props) {
   const industry = state.industryId ? getIndustry(state.industryId) : null;
   const spaceLabel =
     industry?.spaces.find((s) => s.id === state.spaceId)?.label ?? null;
@@ -37,11 +61,59 @@ export default function ReviewStep({ state, goToStep }: Props) {
   // so we don't show empty "pick this" category sections here.
   const isQuick = state.mode === "quick";
 
+  // Ranking input for the swap pools. Memoised so a re-render (a swap, the
+  // design check landing) doesn't rebuild an open picker's pool from scratch.
+  const paletteHexes = useMemo(
+    () => (state.palette ?? []).map((c) => c.hex),
+    [state.palette],
+  );
+
+  // Vibe swaps must come from the SAME set the Vibe step offered — the
+  // per-industry vibe board — not the generic category pool, or the
+  // alternatives would be for a different project type than the picks.
+  const vibePool = useMemo(() => {
+    const set =
+      (state.industryId && CURATED_VIBE[state.industryId]) || CURATED_PINS.vibe;
+    const clean = usableOnly(set ?? []);
+    return clean.length > 0 ? clean : set ?? [];
+  }, [state.industryId]);
+
+  const subSections = useMemo(
+    () => state.furnitureSubSections ?? [],
+    [state.furnitureSubSections],
+  );
+
+  // Every furniture pick across every sub-section: swapping inside "Bed" must
+  // not offer an image already sitting in "Wardrobe", or the brief shows the
+  // same photograph twice.
+  const allFurniturePins = useMemo(
+    () => subSections.flatMap((s) => s.pins ?? []),
+    [subSections],
+  );
+
+  /** Swap one pin for another, leaving the rest of the picks in their order. */
+  const replaceAt = (
+    pins: PinterestPin[],
+    index: number,
+    next: PinterestPin,
+  ): PinterestPin[] => pins.map((p, i) => (i === index ? next : p));
+
+  /** Build an onReplace handler for a simple single-list category. */
+  const replacer = (
+    pins: PinterestPin[],
+    write: (next: PinterestPin[]) => Partial<WizardState>,
+  ) =>
+    setState
+      ? (index: number, pin: PinterestPin) =>
+          setState(write(replaceAt(pins, index, pin)))
+      : undefined;
+
   return (
     <div className="space-y-8">
       <p className="text-[14px] text-txt-2">
-        One last look. If anything is off, jump back to that step and adjust.
-        Nothing is locked in until you generate the plan.
+        One last look, laid out the way the brief will read. Tap any image to
+        swap it for another reference — no need to go back a step. Nothing is
+        locked in until you generate the plan.
       </p>
 
       {/* AI design check — coherence reading across all picks */}
@@ -84,7 +156,18 @@ export default function ReviewStep({ state, goToStep }: Props) {
         onEdit={() => goToStep("vibe")}
         isEmpty={(state.vibePins?.length ?? 0) === 0}
       >
-        <PinThumbStrip pins={state.vibePins ?? []} />
+        <SwapBoard
+          pins={state.vibePins ?? []}
+          categoryKey="vibe"
+          curatedPool={vibePool}
+          vibe={state.vibeQuery}
+          paletteHexes={paletteHexes}
+          spaceId={state.industryId}
+          taken={state.vibePins ?? []}
+          onReplace={replacer(state.vibePins ?? [], (next) => ({
+            vibePins: next,
+          }))}
+        />
       </ReviewSection>
 
       {/* Colors */}
@@ -114,23 +197,50 @@ export default function ReviewStep({ state, goToStep }: Props) {
         </section>
       ) : (
         <>
-          {/* Furniture */}
-          <ReviewSection
-            label="Furniture"
-            onEdit={() => goToStep("furniture")}
-            isEmpty={
-              (state.furnitureSubSections ?? []).reduce(
-                (sum, s) => sum + (s.pins?.length ?? 0),
-                0,
-              ) === 0
-            }
-          >
-            <PinThumbStrip
-              pins={(state.furnitureSubSections ?? []).flatMap(
-                (s) => s.pins ?? [],
-              )}
-            />
-          </ReviewSection>
+          {/* Furniture — one board per AI sub-section, named, so the review
+              reads the way the furniture step did. */}
+          {subSections.length === 0 ? (
+            <ReviewSection
+              label="Furniture"
+              onEdit={() => goToStep("furniture")}
+              isEmpty
+            >
+              {null}
+            </ReviewSection>
+          ) : (
+            subSections.map((sub, i) => (
+              <ReviewSection
+                key={sub.name + i}
+                label={`Furniture · ${sub.name}`}
+                onEdit={() => goToStep("furniture")}
+                isEmpty={(sub.pins?.length ?? 0) === 0}
+              >
+                <SwapBoard
+                  pins={sub.pins ?? []}
+                  categoryKey="furniture"
+                  vibe={state.vibeQuery}
+                  paletteHexes={paletteHexes}
+                  spaceId={state.industryId}
+                  taken={allFurniturePins}
+                  onReplace={
+                    setState
+                      ? (index, pin) =>
+                          setState({
+                            furnitureSubSections: subSections.map((s, j) =>
+                              j === i
+                                ? {
+                                    ...s,
+                                    pins: replaceAt(s.pins ?? [], index, pin),
+                                  }
+                                : s,
+                            ),
+                          })
+                      : undefined
+                  }
+                />
+              </ReviewSection>
+            ))
+          )}
 
           {/* Lighting */}
           <ReviewSection
@@ -138,7 +248,17 @@ export default function ReviewStep({ state, goToStep }: Props) {
             onEdit={() => goToStep("lighting")}
             isEmpty={(state.lightingPins?.length ?? 0) === 0}
           >
-            <PinThumbStrip pins={state.lightingPins ?? []} />
+            <SwapBoard
+              pins={state.lightingPins ?? []}
+              categoryKey="lighting"
+              vibe={state.vibeQuery}
+              paletteHexes={paletteHexes}
+              spaceId={state.industryId}
+              taken={state.lightingPins ?? []}
+              onReplace={replacer(state.lightingPins ?? [], (next) => ({
+                lightingPins: next,
+              }))}
+            />
           </ReviewSection>
 
           {/* Flooring */}
@@ -147,7 +267,17 @@ export default function ReviewStep({ state, goToStep }: Props) {
             onEdit={() => goToStep("flooring")}
             isEmpty={(state.flooringPins?.length ?? 0) === 0}
           >
-            <PinThumbStrip pins={state.flooringPins ?? []} />
+            <SwapBoard
+              pins={state.flooringPins ?? []}
+              categoryKey="flooring"
+              vibe={state.vibeQuery}
+              paletteHexes={paletteHexes}
+              spaceId={state.industryId}
+              taken={state.flooringPins ?? []}
+              onReplace={replacer(state.flooringPins ?? [], (next) => ({
+                flooringPins: next,
+              }))}
+            />
           </ReviewSection>
 
           {/* Ceiling */}
@@ -156,7 +286,17 @@ export default function ReviewStep({ state, goToStep }: Props) {
             onEdit={() => goToStep("ceiling")}
             isEmpty={(state.ceilingPins?.length ?? 0) === 0}
           >
-            <PinThumbStrip pins={state.ceilingPins ?? []} />
+            <SwapBoard
+              pins={state.ceilingPins ?? []}
+              categoryKey="ceiling"
+              vibe={state.vibeQuery}
+              paletteHexes={paletteHexes}
+              spaceId={state.industryId}
+              taken={state.ceilingPins ?? []}
+              onReplace={replacer(state.ceilingPins ?? [], (next) => ({
+                ceilingPins: next,
+              }))}
+            />
           </ReviewSection>
 
           {/* Materials */}
@@ -165,7 +305,17 @@ export default function ReviewStep({ state, goToStep }: Props) {
             onEdit={() => goToStep("materials")}
             isEmpty={(state.materialsPins?.length ?? 0) === 0}
           >
-            <PinThumbStrip pins={state.materialsPins ?? []} />
+            <SwapBoard
+              pins={state.materialsPins ?? []}
+              categoryKey="materials"
+              vibe={state.vibeQuery}
+              paletteHexes={paletteHexes}
+              spaceId={state.industryId}
+              taken={state.materialsPins ?? []}
+              onReplace={replacer(state.materialsPins ?? [], (next) => ({
+                materialsPins: next,
+              }))}
+            />
           </ReviewSection>
         </>
       )}
@@ -202,14 +352,14 @@ function ReviewSection({
 }) {
   return (
     <section className="border-t border-bdr-2 pt-6">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           {label}
         </h2>
         {onEdit && (
           <button
             onClick={onEdit}
-            className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
+            className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
           >
             Edit →
           </button>
@@ -226,24 +376,191 @@ function ReviewSection({
   );
 }
 
-function PinThumbStrip({ pins }: { pins: PinterestPin[] }) {
-  if (pins.length === 0) return null;
+/**
+ * One category's picks as a masonry board, with click-to-swap.
+ *
+ * CSS multi-column is the whole masonry implementation — no library, no
+ * measuring pass. `break-inside-avoid` stops a tile splitting across a column
+ * boundary, and the images carry no aspect box so a tall pendant shot stays
+ * tall. Two columns on phones so nothing has to shrink below ~160px wide.
+ */
+function SwapBoard({
+  pins,
+  categoryKey,
+  curatedPool,
+  vibe,
+  paletteHexes,
+  spaceId,
+  taken,
+  onReplace,
+}: {
+  pins: PinterestPin[];
+  /** Curated pool key (vibe, furniture, lighting, flooring, ceiling, materials). */
+  categoryKey: string;
+  /** Explicit pool — wins over `categoryKey`, used by Vibe (see above). */
+  curatedPool?: CuratedPin[];
+  vibe?: string;
+  paletteHexes: string[];
+  spaceId?: string | null;
+  /** Picks that must not be offered again (this board's, plus its siblings'). */
+  taken: PinterestPin[];
+  /** Absent ≡ read-only board. */
+  onReplace?: (index: number, pin: PinterestPin) => void;
+}) {
+  // Which tile's picker is open. One at a time — a review page covered in open
+  // pickers is worse than the grid it replaced.
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [shown, setShown] = useState(PICKER_PAGE);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  // Click-away and Escape both cancel. The picker is a light-touch panel, not a
+  // modal, so it must never trap someone who opened it by accident.
+  useEffect(() => {
+    if (openIndex === null) return;
+    const onDown = (e: MouseEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpenIndex(null);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenIndex(null);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [openIndex]);
+
+  // Only built once a tile is actually open — ranking a category pool on mount
+  // for eight boards would be work nobody asked for.
+  const alternatives = useMemo(() => {
+    if (openIndex === null) return [];
+    const pool =
+      curatedPool ??
+      buildCategoryPool(categoryKey, { vibe, paletteHexes, spaceId });
+    const usedIds = new Set(taken.map((p) => p.id));
+    const usedUrls = new Set(taken.map((p) => p.imageUrl));
+    return pool.filter((c) => !usedIds.has(c.id) && !usedUrls.has(c.imageUrl));
+  }, [openIndex, curatedPool, categoryKey, vibe, paletteHexes, spaceId, taken]);
+
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-      {pins.map((pin) => (
-        <div
-          key={pin.id}
-          className="aspect-square overflow-hidden border border-bdr-2"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={pin.imageUrl}
-            alt={pin.altText || pin.title || "Pin"}
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
+    <div ref={wrapRef}>
+      <div className="columns-2 gap-3 md:columns-3">
+        {pins.map((pin, i) => {
+          const isOpen = i === openIndex;
+          const label = pin.altText || pin.title || "Reference";
+          const frame = `mb-3 block w-full break-inside-avoid overflow-hidden border transition ${
+            isOpen ? "border-acc ring-2 ring-acc" : "border-bdr-2"
+          }`;
+
+          if (!onReplace) {
+            return (
+              <div key={pin.id + i} className={frame}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={pin.imageUrl}
+                  alt={label}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full"
+                />
+              </div>
+            );
+          }
+
+          return (
+            <button
+              key={pin.id + i}
+              type="button"
+              onClick={() => {
+                setOpenIndex(isOpen ? null : i);
+                setShown(PICKER_PAGE);
+              }}
+              aria-label={`Swap ${label}`}
+              className={`group relative ${frame} hover:border-acc`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={pin.imageUrl}
+                alt={label}
+                loading="lazy"
+                decoding="async"
+                className="w-full transition group-hover:opacity-85"
+              />
+              <span
+                className={`absolute inset-x-0 bottom-0 bg-bg/85 py-1.5 text-center font-mono text-[9px] uppercase tracking-[0.14em] text-acc transition ${
+                  isOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                }`}
+              >
+                {isOpen ? "Pick below" : "Swap"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* The picker sits under the board rather than inside a column — a panel
+          spliced into a multi-column flow gets torn in half by the columns. */}
+      {onReplace && openIndex !== null && (
+        <div className="border border-acc/40 bg-bg-2 p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
+              Swap for…
+            </p>
+            <button
+              type="button"
+              onClick={() => setOpenIndex(null)}
+              className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
+            >
+              Cancel ✕
+            </button>
+          </div>
+
+          {alternatives.length === 0 ? (
+            <p className="text-[13px] italic text-txt-3">
+              Nothing else left in this set. Use Edit → to search for more.
+            </p>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {alternatives.slice(0, shown).map((c) => (
+                  <button
+                    /* The pool dedupes on URL, not id — key on both so two
+                       entries sharing an id can't collide. */
+                    key={c.id + c.imageUrl}
+                    type="button"
+                    onClick={() => {
+                      onReplace(openIndex, toPin(c));
+                      setOpenIndex(null);
+                    }}
+                    className="aspect-[3/4] overflow-hidden border border-bdr-2 transition hover:border-acc"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={thumb(c.imageUrl)}
+                      alt={c.title || "reference"}
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+              {shown < alternatives.length && (
+                <div className="mt-3 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setShown((s) => s + PICKER_PAGE)}
+                    className="border border-bdr-2 px-5 py-2 font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:border-acc hover:text-acc"
+                  >
+                    More options
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      ))}
+      )}
     </div>
   );
 }
@@ -288,6 +605,33 @@ function ColorSwatchRow({
       ))}
     </div>
   );
+}
+
+/**
+ * Curated pin → the PinterestPin shape wizard state stores. Mirrors
+ * PinterestGrid's `toPin`: the brief, the mood board and the PDF all read
+ * `pin.imageUrl`, so a swapped-in image has to carry the whole shape, not a
+ * bare URL, or it silently drops out of the export.
+ */
+function toPin(c: CuratedPin): PinterestPin {
+  return {
+    id: c.id,
+    url: "",
+    title: c.title,
+    description: "",
+    altText: c.title,
+    imageUrl: c.imageUrl,
+    imageThumbUrl: c.imageUrl,
+    dominantColor: c.dominantColor,
+    boardName: "",
+    boardUrl: "",
+  };
+}
+
+/** Smaller variant for the picker's thumbnails — the 736 original is wasted
+ *  bytes at that size. Same trick the curated picker uses. */
+function thumb(url: string): string {
+  return url.replace("/736x/", "/474x/");
 }
 
 function sizeLabel(size: NonNullable<WizardState["spaceSize"]>): string {

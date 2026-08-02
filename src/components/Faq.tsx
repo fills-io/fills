@@ -42,15 +42,39 @@ const QUESTIONS = [
   },
 ];
 
+// The lead used to say "Eight" long after a ninth question was added. Spelling
+// the count out from the array itself means it can't drift again.
+const COUNT_WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+const COUNT_WORD = COUNT_WORDS[QUESTIONS.length] ?? String(QUESTIONS.length);
+
+/**
+ * FAQPage structured data, derived from QUESTIONS so the rich result can never
+ * drift from what the page actually says. Only the answers currently written
+ * above are eligible — Google drops the whole block if the two disagree.
+ */
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: QUESTIONS.map((item) => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: { "@type": "Answer", text: item.a },
+  })),
+};
+
 export default function Faq() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   return (
     <section id="faq" className="border-b border-bdr bg-bg-2 px-6 py-[104px] sm:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }}
+      />
       <SectionHeader
         eyebrow="07 · Questions"
         headline="Things people ask."
-        lead="Eight quick answers from the people who built this."
+        lead={`${COUNT_WORD} quick answers from the people who built this.`}
       />
 
       <div className="mx-auto mt-14 max-w-3xl divide-y divide-bdr border-y border-bdr">

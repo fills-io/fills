@@ -23,6 +23,10 @@ import {
   EMPTY_WIZARD_STATE,
 } from "@/lib/wizard-state";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/wizard-storage";
+import { saveBrief } from "@/lib/save-brief";
+import { selectCategoryImages, toPin } from "@/lib/select-images";
+import type { PinterestPin } from "@/db/schema";
+import ShareBar from "@/components/wizard/ShareBar";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import WizardProgress from "@/components/wizard/WizardProgress";
 import SpaceStep from "@/components/wizard/steps/SpaceStep";
@@ -41,6 +45,63 @@ import GenerationOverlay from "@/components/wizard/GenerationOverlay";
  *  generates straight from Colours (no separate Review step). */
 const QUICK_STEP_IDS = ["vibe", "colors"] as const;
 
+/** How many references each category should carry into the brief and deck. */
+const DECK_PER_CATEGORY = 12;
+
+/**
+ * The wizard's picks, topped up to a full deck.
+ *
+ * Full Studio only ever had what the user hand-picked — around a dozen images
+ * across every category. The exported deck spends its images in page order and
+ * gives the two full-bleed spreads first refusal, so a dozen was consumed by
+ * the mood board alone and EVERY OTHER PAGE CAME OUT EMPTY. Same product, same
+ * promise, but a Quick brief arrived with 55 images and a Full Studio one — the
+ * flow that asks for ten minutes of work — arrived blank.
+ *
+ * The user's own picks always come first and are never displaced; the rest of
+ * each category is filled from the same curated pool the pickers draw from, so
+ * the additions match the project and the palette.
+ */
+function briefPins(state: WizardState) {
+  const hand = {
+    vibe: state.vibePins ?? [],
+    // Furniture is picked per sub-section; the brief shows one reference row.
+    furniture: (state.furnitureSubSections ?? []).flatMap((s) => s.pins ?? []),
+    lighting: state.lightingPins ?? [],
+    flooring: state.flooringPins ?? [],
+    ceiling: state.ceilingPins ?? [],
+    materials: state.materialsPins ?? [],
+  };
+
+  const spaceId = state.industryId ?? null;
+  const paletteHexes = (state.palette ?? [])
+    .map((c) => c.hex)
+    .filter((h) => /^#[0-9a-f]{6}$/i.test(h));
+
+  const topUp = (category: keyof typeof hand): PinterestPin[] => {
+    const picked = hand[category];
+    const seen = new Set(picked.map((p) => p.imageUrl));
+    const filler = selectCategoryImages(category, {
+      vibe: state.vibeQuery,
+      paletteHexes,
+      spaceId,
+      count: DECK_PER_CATEGORY * 2,
+    })
+      .filter((c) => !seen.has(c.imageUrl))
+      .map(toPin);
+    return [...picked, ...filler].slice(0, DECK_PER_CATEGORY);
+  };
+
+  return {
+    vibe: topUp("vibe"),
+    furniture: topUp("furniture"),
+    lighting: topUp("lighting"),
+    flooring: topUp("flooring"),
+    ceiling: topUp("ceiling"),
+    materials: topUp("materials"),
+  };
+}
+
 export default function WizardClient() {
   const [current, setCurrent] = useState<WizardStepId>("space");
   const [wizardState, setWizardState] = useState<WizardState>(EMPTY_WIZARD_STATE);
@@ -57,6 +118,7 @@ export default function WizardClient() {
   const [generatedBrief, setGeneratedBrief] =
     useState<GenerateBriefResponse | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
 
   const params = useSearchParams();
 
@@ -274,8 +336,25 @@ export default function WizardClient() {
         throw new Error(err?.error || `HTTP ${response.status}`);
       }
       const data = (await response.json()) as GenerateBriefResponse;
+      const industryLabel = wizardState.industryId
+        ? getIndustry(wizardState.industryId)?.label
+        : undefined;
       setGeneratedBrief(data);
       setGenerationStatus("done");
+
+      // Give it a permanent address. Not awaited: a failed save must not hold
+      // up a brief the user can already read.
+      saveBrief({
+        brief: data,
+        pins: briefPins(wizardState),
+        facts: { industry: industryLabel, style: wizardState.vibeQuery },
+        spaceType: industryLabel ?? "unspecified",
+        creationMode: "full",
+      }).then(setShareToken);
+
+      // The draft is spent. Leaving it behind greeted the user with "resume
+      // your in-progress plan" on a brief they had already finished.
+      clearDraft();
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setGenerationError(message);
@@ -290,6 +369,7 @@ export default function WizardClient() {
     setGenerationStatus("idle");
     setGenerationError(null);
     setResumedAt(null);
+    setShareToken(null);
     setCurrent("space");
   }
 
@@ -297,19 +377,10 @@ export default function WizardClient() {
   if (generationStatus === "done" && generatedBrief) {
     return (
       <main className="mx-auto max-w-4xl px-6 py-12 sm:px-8 sm:py-16">
+        <ShareBar token={shareToken} />
         <BriefDisplay
           brief={generatedBrief}
-          pins={{
-            vibe: wizardState.vibePins,
-            // Flatten all furniture sub-section pins into a single reference row.
-            furniture: (wizardState.furnitureSubSections ?? []).flatMap(
-              (s) => s.pins ?? [],
-            ),
-            lighting: wizardState.lightingPins,
-            flooring: wizardState.flooringPins,
-            ceiling: wizardState.ceilingPins,
-            materials: wizardState.materialsPins,
-          }}
+          pins={briefPins(wizardState)}
           onRegenerate={generateBrief}
           onStartOver={startOver}
         />
@@ -371,9 +442,11 @@ export default function WizardClient() {
           Step {String(idx).padStart(2, "0")} / {String(total).padStart(2, "0")}
         </div>
 
-        <h1 className="font-serif text-[clamp(32px,4.5vw,48px)] font-normal leading-[1.1] tracking-tight text-txt">
+        {/* A step label, not the page title — the page's h1 lives in the
+            server wrapper so crawlers see one heading, not nine. */}
+        <h2 className="font-serif text-[clamp(32px,4.5vw,48px)] font-normal leading-[1.1] tracking-tight text-txt">
           {step.label}
-        </h1>
+        </h2>
 
         <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-txt-2">
           {step.description}
@@ -449,8 +522,35 @@ export default function WizardClient() {
             <MaterialsStep state={wizardState} setState={patchState} />
           )}
           {current === "review" && (
-            <ReviewStep state={wizardState} goToStep={setCurrent} />
+            <ReviewStep
+              state={wizardState}
+              goToStep={setCurrent}
+              setState={patchState}
+            />
           )}
+        </div>
+
+        {/* The same navigation again, under the content. Every step is a tall
+            grid of images, and finishing one left the user scrolling all the
+            way back up to move on. */}
+        <div className="mt-10 flex items-center justify-between gap-4 border-t border-bdr-2 pt-6">
+          {isFirst ? (
+            <span />
+          ) : (
+            <button
+              onClick={goBack}
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:text-acc"
+            >
+              ← Back
+            </button>
+          )}
+          <button
+            onClick={isLast ? generateBrief : goNext}
+            disabled={!canAdvance() || generationStatus === "generating"}
+            className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-sm font-medium text-white transition hover:gap-3 hover:bg-acc-h disabled:cursor-not-allowed disabled:bg-bg-3 disabled:text-txt-3 disabled:opacity-70"
+          >
+            {isLast ? "Generate brief →" : "Next →"}
+          </button>
         </div>
 
       </main>

@@ -91,14 +91,21 @@ export default function SetupStage({ state, patch }: Props) {
                   onClick={() => {
                     // Changing industry invalidates everything downstream —
                     // reset picks + palette so the old industry can't leak in.
+                    //
+                    // EXCEPT a palette the user supplied themselves. Upload
+                    // mode reads colours out of their own photos and arrives
+                    // with them locked; those aren't derived from the industry,
+                    // so wiping them here threw away the entire point of
+                    // uploading before the user ever reached the palette step.
+                    const userSupplied = state.locks.some(Boolean);
                     patch({
                       industryId: i.id,
                       spec: "",
                       picks: [],
                       vibeQuery: "",
-                      palette: [],
-                      paletteWeights: [],
-                      locks: [],
+                      ...(userSupplied
+                        ? {}
+                        : { palette: [], paletteWeights: [], locks: [] }),
                     });
                     setSpecInput("");
                     setDdOpen(false);
@@ -133,6 +140,8 @@ export default function SetupStage({ state, patch }: Props) {
           </button>
         ) : (
           <input
+            // The API caps `space` at 80 — without this the user only finds out at the final click.
+            maxLength={80}
             value={specInput}
             onChange={(e) => setSpecInput(e.target.value)}
             onBlur={commitInput}
@@ -155,6 +164,48 @@ export default function SetupStage({ state, patch }: Props) {
         )}
         <span>.</span>
       </p>
+
+      {/* Project facts — the numbers a designer needs first, and the basis for
+          any later floor plan or 3D. Optional, never blocks the flow. */}
+      {state.spec && (
+        <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-bdr pt-4">
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
+            Project facts
+          </span>
+
+          <label className="flex items-center gap-2 text-[13px] text-txt-2">
+            Roughly
+            <input
+              type="number"
+              min={1}
+              inputMode="numeric"
+              value={state.areaSqm ?? ""}
+              onChange={(e) =>
+                patch({
+                  areaSqm: e.target.value ? Number(e.target.value) : undefined,
+                })
+              }
+              placeholder="—"
+              className="w-20 border-b border-dashed border-bdr-2 bg-transparent px-1 py-0.5 text-center text-[13px] text-txt outline-none focus:border-acc"
+            />
+            m² of floor area
+          </label>
+
+          <label className="flex cursor-pointer items-center gap-2 text-[13px] text-txt-2">
+            <input
+              type="checkbox"
+              checked={!!state.hasOutdoor}
+              onChange={(e) => patch({ hasOutdoor: e.target.checked })}
+              className="h-3.5 w-3.5 accent-[var(--acc)]"
+            />
+            Includes outdoor space
+          </label>
+
+          <span className="text-[11px] text-txt-3">
+            Optional, but it makes the brief far more useful.
+          </span>
+        </div>
+      )}
 
       {/* Spec suggestions */}
       {state.industryId && !state.spec && specs.length > 0 && (

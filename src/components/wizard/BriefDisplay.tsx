@@ -1,17 +1,22 @@
 "use client";
 
 /**
- * The generated Design DNA brief — the user's final artifact.
+ * The generated design brief — the user's deliverable.
  *
- * Image-forward and lean: a concise headline + one-line subtitle, a compact
- * palette bar, then LARGE reference images per category (the star of the page),
- * a short strategy block, and export. The heavy prose sections were removed on
- * feedback — the brief should read as a mood board, not an essay.
+ * Structured as a real handover document a designer or contractor can work
+ * from: what the project is, the palette with applications, big reference
+ * imagery, a materials/finishes schedule, furniture direction, a lighting
+ * plan, spatial notes, do/don't guardrails, and next steps.
+ *
+ * Image-forward and scannable: specs are laid out as lists and rows, not
+ * paragraphs. The only prose is the concept line, the intent, and one short
+ * "how it should look" note.
  */
 
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import type { PinterestPin } from "@/db/schema";
 import ExportPanel from "./ExportPanel";
+import type { BriefFacts } from "./BriefPDF";
 
 /** Pins picked across the wizard, surfaced in the brief as reference imagery. */
 export type BriefPins = {
@@ -26,18 +31,11 @@ export type BriefPins = {
 type Props = {
   brief: GenerateBriefResponse;
   pins?: BriefPins;
+  /** The project facts the user entered (area, outdoor, style). */
+  facts?: BriefFacts;
   onRegenerate: () => void;
   onStartOver: () => void;
 };
-
-const PIN_SECTIONS: { key: keyof BriefPins; label: string }[] = [
-  { key: "vibe", label: "Vibe" },
-  { key: "furniture", label: "Furniture" },
-  { key: "lighting", label: "Lighting" },
-  { key: "flooring", label: "Flooring" },
-  { key: "ceiling", label: "Ceiling" },
-  { key: "materials", label: "Materials" },
-];
 
 function textOn(hex: string): string {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -48,38 +46,126 @@ function textOn(hex: string): string {
   return lum > 150 ? "#2a2a28" : "#f4f2ec";
 }
 
-/** The first sentence of the cinematic description — a tight subtitle. */
-function firstSentence(text: string): string {
-  const m = text.trim().match(/^.*?[.!?](\s|$)/);
-  return (m ? m[0] : text).trim();
+const LABEL = "mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-acc";
+
+/**
+ * Pinterest serves the same asset at several widths off the same path. The
+ * brief can carry ~70 references, and the 736px original is many times the
+ * cell it lands in — costly on a phone. Only the <img> src is narrowed: the
+ * pin objects keep their full-resolution URL for the PDF export and the
+ * click-through.
+ */
+function thumb(url: string | undefined, width: "236x" | "474x") {
+  return url?.replace("/736x/", `/${width}/`);
 }
 
-const LABEL =
-  "mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-acc";
+/** A compact spec row: bold key, supporting detail, quiet note. */
+function SpecRow({
+  head,
+  sub,
+  note,
+}: {
+  head: string;
+  sub: string;
+  note?: string;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-1 border-t border-bdr-2 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] sm:gap-4">
+      <div className="text-[14px] leading-snug text-txt">{head}</div>
+      <div>
+        <div className="text-[13px] leading-snug text-txt-2">{sub}</div>
+        {note && (
+          <div className="mt-0.5 text-[12px] leading-snug text-txt-3">
+            {note}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Most references a single section shows on the page.
+ *
+ * Each category carries twelve so the exported deck can run five or six a
+ * spread without repeating any. On the page that reads as a wall — eight is
+ * where a section still scans in one glance. The deck keeps the full set.
+ */
+const MAX_REFS_PER_SECTION = 8;
+
+/**
+ * The reference images for one part of the brief.
+ *
+ * These used to be collected into a single block of "reference imagery" far
+ * from the words they illustrate, so the lighting shots sat nowhere near the
+ * lighting plan. Each section now carries its own.
+ */
+function Refs({
+  list,
+  size = "md",
+}: {
+  list?: PinterestPin[];
+  size?: "lg" | "md";
+}) {
+  if (!list || list.length === 0) return null;
+  const shown = list.slice(0, MAX_REFS_PER_SECTION);
+  return (
+    <div
+      className={`mb-4 grid gap-3 ${
+        size === "lg"
+          ? "grid-cols-2 sm:grid-cols-3"
+          : "grid-cols-3 sm:grid-cols-5"
+      }`}
+    >
+      {shown.map((pin) => (
+        <a
+          key={pin.id}
+          href={pin.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title={pin.title || pin.altText || "Reference"}
+          className="group overflow-hidden border border-bdr-2"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={thumb(
+              pin.imageUrl || pin.imageThumbUrl,
+              size === "lg" ? "474x" : "236x",
+            )}
+            alt={pin.altText || pin.title || "Reference image"}
+            loading="lazy"
+            decoding="async"
+            className={`w-full object-cover transition group-hover:opacity-90 ${
+              size === "lg" ? "aspect-[3/4]" : "aspect-[4/5]"
+            }`}
+          />
+        </a>
+      ))}
+    </div>
+  );
+}
 
 export default function BriefDisplay({
   brief,
   pins,
+  facts,
   onRegenerate,
   onStartOver,
 }: Props) {
-  const pinSections = pins
-    ? PIN_SECTIONS.filter(({ key }) => (pins[key]?.length ?? 0) > 0)
-    : [];
 
   return (
     <article className="space-y-10">
-      {/* Header — concise */}
+      {/* Header */}
       <header className="border-b border-bdr-2 pb-8">
         <div className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           <span className="inline-block h-px w-6 bg-acc" />
-          Your design plan · ready
+          Design brief · {brief.summary.projectType}
         </div>
         <h1 className="font-serif text-[clamp(28px,4vw,44px)] font-normal leading-[1.12] tracking-tight text-txt">
           {brief.conceptLine}
         </h1>
-        <p className="mt-4 max-w-2xl font-serif text-[16px] italic leading-relaxed text-txt-2">
-          {firstSentence(brief.cinematicDescription)}
+        <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-txt-2">
+          {brief.summary.intent}
         </p>
         <div className="mt-5 flex flex-wrap gap-1.5">
           {brief.keywords.slice(0, 10).map((kw) => (
@@ -93,9 +179,33 @@ export default function BriefDisplay({
         </div>
       </header>
 
-      {/* Palette — compact proportional bar + short names */}
+      {/* The direction — the vibe references and the one piece of real writing */}
       <section>
-        <h2 className={LABEL}>Palette</h2>
+        <h2 className={LABEL}>The direction</h2>
+        <Refs list={pins?.vibe} size="lg" />
+        <p className="font-serif text-[15px] leading-[1.7] text-txt">
+          {brief.cinematicDescription}
+        </p>
+      </section>
+
+      {/* At a glance */}
+      <section className="grid grid-cols-1 gap-px border border-bdr bg-bdr sm:grid-cols-2">
+        {[
+          ["Who it's for", brief.summary.whoItsFor],
+          ["Scope", brief.summary.scopeNotes],
+        ].map(([label, body]) => (
+          <div key={label} className="bg-bg-2 p-5">
+            <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-acc">
+              {label}
+            </div>
+            <p className="mt-2 text-[13px] leading-relaxed text-txt-2">{body}</p>
+          </div>
+        ))}
+      </section>
+
+      {/* Palette — with where each colour goes */}
+      <section>
+        <h2 className={LABEL}>Colour system</h2>
         <div className="flex h-16 w-full overflow-hidden rounded-lg border border-bdr-2 lg:h-20">
           {brief.colorSystem.map((c, i) => (
             <div
@@ -112,71 +222,130 @@ export default function BriefDisplay({
             </div>
           ))}
         </div>
-        <div className="mt-2.5 grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-4">
-          {brief.colorSystem.map((c) => (
-            <div key={c.role} className="text-[11px] leading-snug">
-              <span className="text-txt">{c.name}</span>
-              <span className="text-txt-3"> · {c.material}</span>
-            </div>
+        <div className="mt-1">
+          {brief.colorSystem.map((c, i) => (
+            <SpecRow
+              key={`${c.hex}-${i}`}
+              head={`${c.name} · ${c.hex.toUpperCase()}`}
+              sub={c.application}
+            />
           ))}
         </div>
       </section>
 
-      {/* LARGE reference images per category — the star of the page */}
-      {pinSections.map(({ key, label }) => {
-        const list = pins?.[key] ?? [];
-        return (
-          <section key={key}>
-            <h2 className={LABEL}>{label}</h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {list.map((pin) => (
-                <a
-                  key={pin.id}
-                  href={pin.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={pin.title || pin.altText || "Reference"}
-                  className="group overflow-hidden border border-bdr-2"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={pin.imageUrl || pin.imageThumbUrl}
-                    alt={pin.altText || pin.title || "Reference image"}
-                    loading="lazy"
-                    className="aspect-[4/3] w-full object-cover transition group-hover:opacity-90"
-                  />
-                </a>
-              ))}
-            </div>
-          </section>
-        );
-      })}
-
-      {/* Strategy — the one text block, kept tight */}
+      {/* Materials & finishes */}
       <section>
-        <h2 className={LABEL}>Strategy</h2>
-        <div className="grid grid-cols-1 gap-px border border-bdr bg-bdr sm:grid-cols-3">
-          {(
-            [
-              ["psychological", "Psychological"],
-              ["functional", "Functional"],
-              ["marketing", "Marketing"],
-            ] as const
-          ).map(([key, label]) => (
-            <div key={key} className="bg-bg-2 p-5">
-              <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-acc">
-                {label}
-              </div>
-              <p className="mt-2.5 text-[13px] leading-relaxed text-txt-2">
-                {brief.strategicPillars[key]}
-              </p>
-            </div>
+        <h2 className={LABEL}>Materials &amp; finishes</h2>
+        <Refs list={pins?.materials} />
+        <div className="border-b border-bdr-2">
+          {brief.materials.map((m, i) => (
+            <SpecRow key={i} head={m.material} sub={m.application} />
           ))}
         </div>
       </section>
 
-      {/* Export — PDF download with logo + orientation controls. */}
-      <ExportPanel brief={brief} pins={pins} />
+      {/* Furniture */}
+      <section>
+        <h2 className={LABEL}>Furniture</h2>
+        <Refs list={pins?.furniture} />
+        <div className="border-b border-bdr-2">
+          {brief.furniture.map((f, i) => (
+            <SpecRow key={i} head={f.item} sub={f.character} />
+          ))}
+        </div>
+      </section>
+
+      {/* Flooring & ceiling — reference only, no schedule of their own */}
+      {(pins?.flooring?.length ?? 0) > 0 && (
+        <section>
+          <h2 className={LABEL}>Flooring</h2>
+          <Refs list={pins?.flooring} />
+        </section>
+      )}
+      {(pins?.ceiling?.length ?? 0) > 0 && (
+        <section>
+          <h2 className={LABEL}>Ceiling</h2>
+          <Refs list={pins?.ceiling} />
+        </section>
+      )}
+
+      {/* Lighting plan */}
+      <section>
+        <h2 className={LABEL}>Lighting plan</h2>
+        <Refs list={pins?.lighting} />
+        <p className="text-[14px] leading-relaxed text-txt-2">
+          {brief.lighting.strategy}
+        </p>
+        <p className="mt-2 font-mono text-[11px] uppercase tracking-[0.12em] text-acc">
+          {brief.lighting.colorTemperature}
+        </p>
+        <div className="mt-3 border-b border-bdr-2">
+          {brief.lighting.layers.map((l) => (
+            <SpecRow key={l.layer} head={l.layer} sub={l.fixtures} />
+          ))}
+        </div>
+      </section>
+
+      {/* Spatial notes */}
+      <section>
+        <h2 className={LABEL}>Layout &amp; spatial notes</h2>
+        <ul className="space-y-2">
+          {brief.spatialNotes.map((n, i) => (
+            <li key={i} className="flex gap-3 text-[14px] leading-relaxed text-txt-2">
+              <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-acc" />
+              {n}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Do / Don't */}
+      <section className="grid grid-cols-1 gap-px border border-bdr bg-bdr sm:grid-cols-2">
+        <div className="bg-bg-2 p-5">
+          <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-acc">
+            Do
+          </div>
+          <ul className="mt-3 space-y-2">
+            {brief.dos.map((d, i) => (
+              <li key={i} className="flex gap-2.5 text-[13px] leading-snug text-txt-2">
+                <span className="text-acc">+</span>
+                {d}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="bg-bg-2 p-5">
+          <div className="font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
+            Don&apos;t
+          </div>
+          <ul className="mt-3 space-y-2">
+            {brief.donts.map((d, i) => (
+              <li key={i} className="flex gap-2.5 text-[13px] leading-snug text-txt-2">
+                <span className="text-txt-3">−</span>
+                {d}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* Next steps */}
+      <section>
+        <h2 className={LABEL}>Next steps</h2>
+        <ol className="space-y-2.5">
+          {brief.nextSteps.map((s, i) => (
+            <li key={i} className="flex gap-3 text-[14px] leading-relaxed text-txt-2">
+              <span className="font-mono text-[11px] text-acc">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              {s}
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* Export */}
+      <ExportPanel brief={brief} pins={pins} facts={facts} />
 
       {/* Actions */}
       <footer className="flex flex-col items-center justify-between gap-4 border-t border-bdr-2 pt-8 sm:flex-row">

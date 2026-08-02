@@ -19,7 +19,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PinterestPin } from "@/db/schema";
-import { CURATED_PINS, type CuratedPin } from "@/data/reference-images";
+import { type CuratedPin } from "@/data/reference-images";
+import { usableOnly } from "@/lib/image-quality";
+import { buildCategoryPool } from "@/lib/select-images";
 
 export type SuggestionContext = {
   step: string;
@@ -46,6 +48,11 @@ type Props = {
   /** Curated category key (vibe, lighting, flooring, ceiling, materials,
    *  furniture). When it resolves to a non-empty set, we use curated mode. */
   categoryKey?: string;
+  /** What THIS grid is for, when several grids share a category — a furniture
+   *  sub-section name like "Coffee table". Every sub-section asked for the same
+   *  generic "furniture" pool, so the Coffee table grid and the Sofa grid
+   *  showed an identical set of living rooms. Pins naming it come first. */
+  focus?: string;
   /** Explicit curated set — wins over categoryKey (used for the per-industry
    *  vibe set so the Vibe step reflects the project category). */
   curatedPins?: CuratedPin[];
@@ -56,9 +63,20 @@ type Props = {
   /** Offsets the curated slice so repeated grids (furniture sub-sections)
    *  show different references. */
   sliceSeed?: number;
+  /** space-taxonomy industry id. With a categoryKey, the grid blends in real
+   *  rooms of this project type so a hotel lobby doesn't get living-room
+   *  furniture. */
+  spaceId?: string | null;
+  /** The user's style, used to rank the curated pool. */
+  vibe?: string;
 };
 
-/** Curated pin → the PinterestPin shape the wizard state stores. */
+/** Curated images revealed per page. 12 fills the 2 / 3 / 4-column grid with
+ *  whole rows, so every "Show more" lands on a clean row. */
+const PAGE = 12;
+
+/** Curated pin → the PinterestPin shape the wizard state stores. Keeps the
+ *  full-resolution imageUrl — the PDF export renders from it. */
 function toPin(c: CuratedPin): PinterestPin {
   return {
     id: c.id,
@@ -74,15 +92,50 @@ function toPin(c: CuratedPin): PinterestPin {
   };
 }
 
-/** Slightly smaller variant for grid thumbnails — faster than the 736 original. */
+/** Slightly smaller variant for grid thumbnails — faster than the 736 original.
+ *  Display only: the selected pin keeps its full-resolution imageUrl. */
 function thumb(url: string): string {
   return url.replace("/736x/", "/474x/");
+}
+
+/** Shared by both branches so the cap the caller passes reads identically
+ *  wherever it surfaces — the count, the at-max state and the swap hint. */
+function SelectionCounter({
+  selected,
+  maxSelections,
+  minSelections,
+}: {
+  selected: number;
+  maxSelections: number;
+  minSelections?: number;
+}) {
+  const need = minSelections ?? 0;
+  const met = selected > 0 && selected >= need;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.14em]">
+      <span className={met ? "text-acc" : "text-txt-3"}>
+        {selected}
+        {need > 0 ? ` / ${need}–${maxSelections}` : ` of ${maxSelections}`} selected
+      </span>
+      {selected >= maxSelections && (
+        <span className="normal-case tracking-normal text-txt-3">
+          Tap a pick to swap it
+        </span>
+      )}
+    </div>
+  );
 }
 
 export default function PinterestGrid(props: Props) {
   const curated =
     props.curatedPins ??
-    (props.categoryKey ? CURATED_PINS[props.categoryKey] : undefined);
+    (props.categoryKey
+      ? buildCategoryPool(props.categoryKey, {
+          spaceId: props.spaceId,
+          vibe: props.vibe,
+          focus: props.focus,
+        })
+      : undefined);
   if (curated && curated.length > 0) {
     return <CuratedPicker {...props} curated={curated} />;
   }
@@ -113,12 +166,16 @@ function CuratedPicker({
   const showChips = styles.length >= 2;
 
   // Rotate the pool for repeated grids (furniture sub-sections) so each shows
-  // a different slice of the same curated set.
+  // a different slice of the same curated set. Product listings, text-overlay
+  // graphics and collages are filtered out first so they can never be picked.
   const pool = useMemo(() => {
-    if (!sliceSeed) return curated;
-    const n = curated.length;
+    const clean = usableOnly(curated);
+    const base = clean.length >= 12 ? clean : curated;
+    if (!sliceSeed) return base;
+    const n = base.length;
+    if (n === 0) return base;
     const start = ((sliceSeed * 6) % n + n) % n;
-    return [...curated.slice(start), ...curated.slice(0, start)];
+    return [...base.slice(start), ...base.slice(0, start)];
   }, [curated, sliceSeed]);
 
   // A typed query wins over the chips; otherwise the active chip filters.
@@ -147,25 +204,22 @@ function CuratedPicker({
     return [...matches, ...pool.filter((c) => !ids.has(c.id))];
   }, [pool, matches]);
 
-  // Paginate in full rows (multiples of 12 sit evenly on 2 / 3 / 4 columns).
   // Reset the page size whenever the filter changes — adjusted during render
   // (React's recommended alternative to a setState-in-effect), so a new filter
-  // never shows a stale "Load more" count for a frame.
-  const [shown, setShown] = useState(24);
+  // never shows a stale "Show more" count for a frame.
+  const [shown, setShown] = useState(PAGE);
   const filterKey = `${styleFilter ?? ""}|${query}`;
   const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
   if (filterKey !== prevFilterKey) {
     setPrevFilterKey(filterKey);
-    setShown(24);
+    setShown(PAGE);
   }
-  const capped =
-    ordered.length >= 12 ? Math.floor(ordered.length / 12) * 12 : ordered.length;
-  const display = ordered.slice(0, Math.min(shown, capped));
-  const canLoadMore = display.length < capped;
+  // The tail was previously rounded down to whole rows, which put up to 11
+  // images permanently out of reach. Variety beats a flush final row.
+  const display = ordered.slice(0, shown);
+  const remaining = ordered.length - display.length;
 
   const atMax = selectedPins.length >= maxSelections;
-  const need = minSelections ?? 0;
-  const short = selectedPins.length < need;
 
   const toggle = useCallback(
     (c: CuratedPin) => {
@@ -242,17 +296,11 @@ function CuratedPicker({
       )}
 
       {/* Counter + guidance */}
-      <div className="flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.14em]">
-        <span className={short ? "text-txt-3" : "text-acc"}>
-          {selectedPins.length}
-          {need > 0 ? ` / ${need}–${maxSelections}` : ` of ${maxSelections}`} selected
-        </span>
-        {atMax && (
-          <span className="normal-case tracking-normal text-txt-3">
-            Tap a pick to swap it
-          </span>
-        )}
-      </div>
+      <SelectionCounter
+        selected={selectedPins.length}
+        maxSelections={maxSelections}
+        minSelections={minSelections}
+      />
 
       {/* Grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -293,14 +341,15 @@ function CuratedPicker({
         })}
       </div>
 
-      {canLoadMore && (
+      {/* More of the pool, on demand — same control as the Quick flow's vibe grid. */}
+      {remaining > 0 && (
         <div className="flex justify-center">
           <button
             type="button"
-            onClick={() => setShown((s) => s + 24)}
-            className="border border-bdr-2 px-6 py-2.5 text-[12px] font-medium uppercase tracking-[0.1em] text-txt-2 transition hover:border-acc hover:text-acc"
+            onClick={() => setShown((n) => n + PAGE)}
+            className="border border-bdr-2 px-5 py-2.5 font-mono text-[10px] uppercase tracking-[0.14em] text-txt-2 transition hover:border-acc hover:text-acc"
           >
-            Load more
+            Show more ({remaining} left)
           </button>
         </div>
       )}
@@ -337,6 +386,7 @@ function Chip({
 function LiveGrid({
   initialQuery = "",
   maxSelections,
+  minSelections,
   selectedPins,
   onSelectionChange,
   helperText,
@@ -348,28 +398,46 @@ function LiveGrid({
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
 
-  const fetchPins = useCallback(async (q: string) => {
+  const fetchPins = useCallback(async (q: string, signal?: AbortSignal) => {
     setStatus("loading");
     setError(null);
     try {
       const response = await fetch(
         `/api/pinterest/search?q=${encodeURIComponent(q)}&limit=24`,
+        { signal },
       );
+      // A gateway timeout answers with an HTML error page; parsing that as
+      // JSON surfaced "Unexpected token '<'" to the user as the reason.
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body?.error || `HTTP ${response.status}`);
+      }
       const data = (await response.json()) as
         | { query: string; count: number; pins: PinterestPin[] }
         | { ok: false; error: string };
       if ("ok" in data && data.ok === false) throw new Error(data.error);
       if (!("pins" in data)) throw new Error("Unexpected response shape");
-      setPins(data.pins);
+      // Drop product listings / text-overlay graphics from live results too,
+      // but keep the raw set if filtering would leave the grid too empty.
+      const clean = usableOnly(data.pins);
+      setPins(clean.length >= 8 ? clean : data.pins);
       setStatus("idle");
     } catch (e) {
+      if ((e as Error).name === "AbortError") return;
       setStatus("error");
       setError(e instanceof Error ? e.message : String(e));
     }
   }, []);
 
   useEffect(() => {
-    if (submittedQuery.trim().length > 0) fetchPins(submittedQuery);
+    // Fetch when the submitted query changes (external system -> React).
+    // Tied to an AbortController so a slow earlier search can't land after —
+    // and overwrite — the results of the one the user is waiting on.
+    if (submittedQuery.trim().length === 0) return;
+    const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchPins(submittedQuery, controller.signal);
+    return () => controller.abort();
   }, [submittedQuery, fetchPins]);
 
   function handleSubmit(e: React.FormEvent) {
@@ -416,12 +484,11 @@ function LiveGrid({
         {helperText && <p className="text-[12px] text-txt-3">{helperText}</p>}
       </form>
 
-      <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.14em]">
-        <span className={atMax ? "text-acc" : "text-txt-3"}>
-          {selectedPins.length} of {maxSelections} selected
-        </span>
-        {atMax && <span className="text-txt-3">Tap a selected pin to swap it</span>}
-      </div>
+      <SelectionCounter
+        selected={selectedPins.length}
+        maxSelections={maxSelections}
+        minSelections={minSelections}
+      />
 
       {status === "error" && (
         <div className="border border-red-900/40 bg-red-950/30 p-4 text-[13px] text-red-200">
@@ -456,7 +523,13 @@ function LiveGrid({
                 }`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={pin.imageUrl} alt={pin.altText || pin.title || "pin"} loading="lazy" className="h-full w-full object-cover transition group-hover:scale-[1.02]" />
+                <img
+                  src={thumb(pin.imageUrl)}
+                  alt={pin.altText || pin.title || "pin"}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-full w-full object-cover transition group-hover:scale-[1.02]"
+                />
                 {isSelected && (
                   <span className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center bg-acc text-white">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">

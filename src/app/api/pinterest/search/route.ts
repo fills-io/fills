@@ -26,6 +26,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { searchPinterestPins } from "@/lib/pinterest";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -38,6 +39,10 @@ const querySchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+  // Paid Apify actor. The 24h cache only helps on repeated identical queries.
+  const limited = checkRateLimit(request, "pinterest", 60, 3_600_000);
+  if (limited) return limited;
+
   const params = Object.fromEntries(request.nextUrl.searchParams);
   const parsed = querySchema.safeParse(params);
 
@@ -64,11 +69,10 @@ export async function GET(request: NextRequest) {
       pins,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     console.error("[/api/pinterest/search] failed:", error);
 
     return NextResponse.json(
-      { ok: false, error: message },
+      { ok: false, error: "Couldn't load reference images just now." },
       { status: 500 },
     );
   }

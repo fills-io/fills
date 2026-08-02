@@ -43,11 +43,25 @@ export type TextGenerateOptions = {
    * short structured outputs to fail fast on runaway responses.
    */
   maxOutputTokens?: number;
+
+  /**
+   * How much thinking the model should do before answering (GPT-5 family).
+   *
+   * This is the main lever on LATENCY, not maxOutputTokens: reasoning tokens
+   * are generated before the first output token. The default ("high") took the
+   * brief call to 57s against a 60s serverless limit. Use "low" for structured
+   * output that is mostly recall and formatting, and reserve higher settings
+   * for genuinely open-ended writing.
+   */
+  reasoningEffort?: "minimal" | "low" | "medium" | "high";
 };
 
 export type TextGenerateResult = {
   /** The model's text response (raw string, before any schema validation). */
   text: string;
+  /** Why generation stopped — "length" means the output was truncated and the
+   *  JSON will not parse. Surfaced so callers can report it honestly. */
+  finishReason?: string;
   /** Concrete model used (e.g. "gpt-5-mini"). For logging / debugging. */
   model: string;
   /** Provider that handled this request. For logging. */

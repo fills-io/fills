@@ -119,7 +119,11 @@ export default function WizardProgress({
                 onClick={() => clickable && onJump?.(s.id)}
                 aria-current={state === "current" ? "step" : undefined}
                 title={`${stepNum}. ${s.label}`}
-                className={`relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border transition duration-200 sm:h-9 sm:w-9 ${
+                // Nine circles plus connectors already fill a 375px row, so the
+                // node can't grow — the tappable area is extended past it with
+                // an invisible 40px overlay instead (phones only; the desktop
+                // rail is wide enough that a mouse never misses).
+                className={`relative z-10 grid h-8 w-8 shrink-0 place-items-center rounded-full border transition duration-200 before:absolute before:left-1/2 before:top-1/2 before:h-10 before:w-10 before:-translate-x-1/2 before:-translate-y-1/2 before:content-[''] sm:h-9 sm:w-9 sm:before:hidden ${
                   state === "done"
                     ? "border-acc bg-acc text-white"
                     : state === "current"

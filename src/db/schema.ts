@@ -176,6 +176,21 @@ export const concepts = pgTable("concepts", {
   /** Full color system with primary/secondary/accent + supporting. */
   richColorSystem: jsonb("rich_color_system").$type<RichColorSystem>(),
 
+  // ── The brief, as generated ──────────────────────────────────────────────
+  //
+  // The columns above model the ORIGINAL brief shape (design DNA, strategic
+  // pillars, section mood lines). The brief the product actually produces now
+  // is a different document, and mapping it across a dozen legacy columns
+  // would lose the parts that don't fit. It is stored whole instead, so a
+  // saved brief always renders exactly as it did when it was generated —
+  // including after the prompt changes again.
+  /** The full GenerateBriefResponse payload. */
+  brief: jsonb("brief").$type<Record<string, unknown>>(),
+  /** The reference images chosen for each section, keyed by category. */
+  briefPins: jsonb("brief_pins").$type<Record<string, unknown>>(),
+  /** Project facts the user entered (name, area, outdoor, style). */
+  briefFacts: jsonb("brief_facts").$type<Record<string, unknown>>(),
+
   // ── Final outputs ────────────────────────────────────────────────────────
   /** Generated mood board images, one per board section. */
   images: jsonb("images").$type<GeneratedImage[]>(),

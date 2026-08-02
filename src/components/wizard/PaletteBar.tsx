@@ -105,7 +105,9 @@ export default function PaletteBar({ colors, weights, onChange }: Props) {
           return (
             <div
               key={i}
-              className="group relative min-w-0 border-r border-bg-2 last:border-r-0"
+              // Floor the width on phones so the eyedropper — now always drawn
+              // — stays inside its own block instead of over its neighbour.
+              className="group relative min-w-[42px] border-r border-bg-2 last:border-r-0 sm:min-w-0"
               style={{ flexGrow: grow(i), flexBasis: 0, backgroundColor: hex }}
             >
               {/* Tap anywhere on the block → OS colour picker */}
@@ -117,7 +119,9 @@ export default function PaletteBar({ colors, weights, onChange }: Props) {
                 className="absolute inset-0 z-0 h-full w-full cursor-pointer opacity-0"
               />
 
-              {/* Eyedropper — sample any colour on screen */}
+              {/* Eyedropper — sample any colour on screen. Always drawn, just
+                  dimmed: hiding it behind :hover left it unreachable on touch
+                  while the helper text below still told the user to use it. */}
               {supportsEyedropper && (
                 <button
                   type="button"
@@ -126,7 +130,7 @@ export default function PaletteBar({ colors, weights, onChange }: Props) {
                     sample(i);
                   }}
                   aria-label={`Pick colour ${i + 1} with the eyedropper`}
-                  className="absolute right-1.5 top-1.5 z-20 grid h-6 w-6 place-items-center rounded-full bg-black/25 opacity-0 backdrop-blur-sm transition group-hover:opacity-100 focus-visible:opacity-100"
+                  className="absolute right-1.5 top-1.5 z-20 grid h-6 w-6 place-items-center rounded-full bg-black/25 opacity-70 backdrop-blur-sm transition group-hover:opacity-100 focus-visible:opacity-100"
                   style={{ color: text }}
                 >
                   {EyedropperIcon}

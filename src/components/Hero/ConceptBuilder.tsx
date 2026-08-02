@@ -14,7 +14,8 @@
  * Theme-aware throughout (works on the cream light hero + the dark hero).
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { extractPalette } from "@/lib/extract-colors";
 import { useRouter } from "next/navigation";
 import {
   INDUSTRIES,
@@ -62,6 +63,8 @@ export default function ConceptBuilder() {
   const [spec, setSpec] = useState("");
   const [vibe, setVibe] = useState("");
   const [ddOpen, setDdOpen] = useState(false);
+  const [uploads, setUploads] = useState<File[]>([]);
+  const [reading, setReading] = useState(false);
   const diceRef = useRef<HTMLButtonElement>(null);
 
   const industry = getIndustry(industryId);
@@ -89,6 +92,30 @@ export default function ConceptBuilder() {
     }
   }
 
+  /**
+   * Pull the palette out of the dropped images and hand it to the Quick flow.
+   *
+   * Reading pixels needs the images decoded, which only the browser can do, so
+   * this runs here rather than server-side. The hexes travel in the URL — five
+   * short strings, no storage, and a link the user could even share.
+   */
+  async function readUploads() {
+    if (uploads.length === 0) return;
+    setReading(true);
+    const urls = uploads.map((f) => URL.createObjectURL(f));
+    try {
+      const palette = await extractPalette(urls, 5);
+      const hexes = palette.map((c) => c.hex).join(",");
+      const qs = new URLSearchParams({ palette: hexes });
+      if (industry?.label) qs.set("industry", industry.label);
+      if (spec.trim()) qs.set("spec", spec.trim());
+      router.push(`/concept/quick?${qs.toString()}`);
+    } finally {
+      urls.forEach((u) => URL.revokeObjectURL(u));
+      setReading(false);
+    }
+  }
+
   function build() {
     if (tab === "quick") {
       // → the Quick canvas flow, prefilled from the madlib.
@@ -99,8 +126,7 @@ export default function ConceptBuilder() {
       });
       router.push(`/concept/quick?${qs.toString()}`);
     } else if (tab === "upload") {
-      // → new QuickFlow upload path.
-      router.push("/concept/wizard");
+      readUploads();
     } else {
       // Full Studio keeps the detailed 9-step wizard. The explicit ?path=full
       // makes it open the full flow even if a "quick" draft is saved.
@@ -164,22 +190,34 @@ export default function ConceptBuilder() {
         />
       )}
       {tab === "studio" && <StudioPanel />}
-      {tab === "upload" && <UploadPanel />}
+      {tab === "upload" && (
+        <UploadPanel files={uploads} setFiles={setUploads} />
+      )}
 
       {/* ── CTAs ── */}
       <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
         <button
           onClick={build}
-          disabled={tab === "quick" && !canGenerate}
+          disabled={
+            (tab === "quick" && !canGenerate) ||
+            (tab === "upload" && (uploads.length === 0 || reading))
+          }
           className="inline-flex items-center gap-2 rounded-[2px] bg-acc px-[26px] py-[14px] text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-h active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-bdr-2 disabled:text-txt-3 disabled:opacity-70"
         >
           {tab === "quick" && "Build my brief →"}
           {tab === "studio" && "Open Full Studio →"}
-          {tab === "upload" && "Analyze images →"}
+          {tab === "upload" &&
+            (reading ? "Reading colours…" : "Analyze images →")}
         </button>
-        <button className="inline-flex items-center gap-2 rounded-[2px] border border-bdr-2 px-[22px] py-[14px] text-[13px] font-medium text-txt transition hover:border-acc hover:text-acc">
+        {/* Was a bare <button> with no handler — the one low-commitment thing
+            next to the primary CTA, and it did nothing. The samples are
+            already on this page. */}
+        <a
+          href="#samples"
+          className="inline-flex items-center gap-2 rounded-[2px] border border-bdr-2 px-[22px] py-[14px] text-[13px] font-medium text-txt transition hover:border-acc hover:text-acc"
+        >
           View samples
-        </button>
+        </a>
       </div>
 
       {/* Hint when the Quick CTA is gated — tells the user what's missing
@@ -831,25 +869,88 @@ function StudioPanel() {
 
 /* ─────────────────────────── Upload panel ─────────────────────────── */
 
-function UploadPanel() {
+/**
+ * Upload mode.
+ *
+ * This tab used to be a picture of a feature: the file input had no handler at
+ * all, so a user chose images, watched nothing happen, then clicked "Analyze
+ * images" and landed in the blank 9-step wizard with their pictures silently
+ * discarded.
+ *
+ * It now does one real thing well — it reads the COLOURS out of the images and
+ * carries them into the Quick flow as a starting palette. The copy has been
+ * cut back to that promise rather than the four it used to make.
+ *
+ * Everything happens in the browser. The images are never uploaded, which
+ * means no storage bill, no privacy question about someone's home photos, and
+ * nothing to clean up.
+ */
+function UploadPanel({
+  files,
+  setFiles,
+}: {
+  files: File[];
+  setFiles: (f: File[]) => void;
+}) {
+  const previews = useMemo(
+    () => files.map((f) => ({ name: f.name, url: URL.createObjectURL(f) })),
+    [files],
+  );
+
+  // Object URLs are a document-lifetime leak until revoked.
+  useEffect(() => {
+    return () => previews.forEach((p) => URL.revokeObjectURL(p.url));
+  }, [previews]);
+
   return (
-    <label className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 border-[1.5px] border-dashed border-bdr-2 bg-bg-2 p-10 text-center transition hover:border-acc hover:bg-[rgba(200,81,42,0.05)]">
-      <span className="mb-1 grid h-12 w-12 place-items-center border border-bdr-2 text-txt-2">
-        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-          <path d="M11 15 L11 4 M6 9 L11 4 L16 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="square" />
-          <path d="M3 14 L3 18 L19 18 L19 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="square" />
-        </svg>
-      </span>
-      <span className="font-serif text-[19px] font-medium leading-tight text-txt">
-        Drop <em className="italic text-acc">3 to 5 reference images</em>
-      </span>
-      <span className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-txt-3">
-        We read them all for: colours · materials · lighting · vibe
-      </span>
-      <span className="font-sans text-[11px] text-txt-3">
-        PNG · JPG · HEIC, screenshots or saved images, up to 10 MB each
-      </span>
-      <input type="file" accept="image/*" multiple className="hidden" />
-    </label>
+    <div>
+      <label className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 border-[1.5px] border-dashed border-bdr-2 bg-bg-2 p-10 text-center transition hover:border-acc hover:bg-[rgba(200,81,42,0.05)]">
+        <span className="mb-1 grid h-12 w-12 place-items-center border border-bdr-2 text-txt-2">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M11 15 L11 4 M6 9 L11 4 L16 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="square" />
+            <path d="M3 14 L3 18 L19 18 L19 14" stroke="currentColor" strokeWidth="1.2" strokeLinecap="square" />
+          </svg>
+        </span>
+        <span className="font-serif text-[19px] font-medium leading-tight text-txt">
+          Drop <em className="italic text-acc">3 to 5 reference images</em>
+        </span>
+        <span className="font-mono text-[10.5px] uppercase tracking-[0.06em] text-txt-3">
+          We read their colours and build your palette
+        </span>
+        <span className="font-sans text-[11px] text-txt-3">
+          PNG · JPG · HEIC. They stay on your device — nothing is uploaded.
+        </span>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) =>
+            setFiles(Array.from(e.target.files ?? []).slice(0, 5))
+          }
+        />
+      </label>
+
+      {previews.length > 0 && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {previews.map((p) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              key={p.url}
+              src={p.url}
+              alt={p.name}
+              className="h-16 w-16 border border-bdr-2 object-cover"
+            />
+          ))}
+          <button
+            type="button"
+            onClick={() => setFiles([])}
+            className="ml-1 font-mono text-[10px] uppercase tracking-[0.12em] text-txt-3 underline underline-offset-2 transition hover:text-acc"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

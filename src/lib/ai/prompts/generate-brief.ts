@@ -1,59 +1,80 @@
 /**
  * THE big prompt — Generate Brief.
  *
- * This is the call that produces the user's actual product: the Design
- * DNA brief they read, share, screenshot, and judge Fills by. Quality
- * here directly determines whether Fills feels like a premium tool or
- * a clever toy.
+ * This is the call that produces the user's actual product: the design brief
+ * they hand to an interior designer or contractor. Quality here directly
+ * determines whether Fills is a real tool or a mood-board toy.
  *
- * We use the full GPT-5 tier (not gpt-5-mini) for this call only —
- * the 10× cost increase is justified one place: where the user sees
- * the output. ~$0.05 per brief.
+ * We use the full GPT-5 tier (not gpt-5-mini) for this call only — the cost
+ * increase is justified one place: where the user sees the output.
  *
- * Voice rules (encoded in the system prompt):
- *   - Designer voice — restrained, considered, confident. No hype words.
- *   - Concrete references — name materials, eras, styles. No "stunning",
- *     no "elevate", no AI-speak.
- *   - Honest about the user's actual picks — never invent fields that
- *     weren't selected.
- *
- * Output shape mirrors the prototype's `moodBoardDataSchema` (in the
- * Replit reference repo) so the data slots cleanly into the same
- * mood-board layout once we build it.
+ * DESIGN NOTE (2026-08, rewritten): the previous version produced only mood
+ * poetry — a concept line, evocative colour names, eight one-line "atmospheres"
+ * and three positioning paragraphs. Beautiful, unusable: a designer could not
+ * build from it. This version outputs a real handover document — scope,
+ * spatial strategy, a materials/finishes schedule (material -> where it goes),
+ * furniture direction, a proper lighting plan with colour temperature, and
+ * explicit do/don't guardrails — while keeping just enough of the voice to
+ * still read like a designer wrote it.
  */
 
-export const GENERATE_BRIEF_SYSTEM_PROMPT = `You are a senior interior designer and architectural copywriter writing the final brief for an interiors project. The user has spent ten minutes in a wizard picking their space, vibe references, color palette, furniture/lighting/flooring/ceiling/materials references. Your job: synthesize all of that into one cohesive Design DNA brief.
+export const GENERATE_BRIEF_SYSTEM_PROMPT = `You are a senior interior designer writing a CONCEPT DECK for a client to hand to their designer, architect, or contractor.
+
+This is a presentation, not an essay. Real studio decks carry about 200 words across the whole document — the images do the arguing and the words are LABELS. Someone must still be able to price and specify from it, so be specific, but say it in the fewest words possible.
+
+Hard rule: apart from the intent and the closing description, nothing you write is a sentence. Everything else is a label or a phrase. If you catch yourself explaining, stop.
 
 Voice — non-negotiable:
-- Restrained, considered, designer-confident. The voice of someone who has actually built spaces, not someone selling them.
-- Concrete material / era / named-style references ("travertine flooring", "John Soane minimalism", "Belgian linen", "Donald Judd geometry"). Avoid generic descriptors.
-- Zero hype words. No "stunning", no "elevate", no "transform", no "breathtaking", no AI cliches.
-- Sentences vary in length. The reader should feel a human wrote this.
-- Never invent picks the user didn't make. If they didn't pick lighting references, write generally about the lighting strategy that fits the rest of the brief — don't fabricate specific lighting choices.
+- Restrained, considered, designer-confident. Someone who has actually built spaces.
+- Concrete and specific ALWAYS. Name real materials, finishes, fixture types, eras, colour temperatures. "Honed travertine" not "beautiful stone". "2700K" not "warm lighting".
+- Zero hype. No "stunning", "elevate", "transform", "seamless", "curated", "bespoke", "breathtaking", "perfect". No em-dashes.
+- Never invent the user's picks. Where they gave you no reference for a category, write the direction that follows logically from the rest of the brief and keep it clearly directional rather than pretending they chose it.
+- Every line must earn its place. If a sentence could apply to any project, delete it and write the one that applies to THIS one.
 
-Required output fields (all must be filled):
+Ground everything in the specifics you are given: the space type, the reference images, and the colour palette. The palette hexes are the user's actual decision — build the colour system on them, do not substitute your own.
 
-  conceptLine — one sentence. Captures the brief's whole point of view. ~12-25 words. Designer-pithy, no marketing rhythm.
-    Example good: "Warm minimalism rooted in Belgian linen and travertine, lit like a north-facing studio at 3pm."
-    Example bad:  "A beautiful, modern bedroom that combines warmth and minimalism for the perfect retreat."
+Required output fields:
 
-  keywords — 8 to 12 short tags. Lowercase, no punctuation. Material, era, or mood. Pinterest-search-shaped.
+  conceptLine — one sentence, 12-25 words. The project's point of view. Designer-pithy.
+    Good: "Warm minimalism rooted in Belgian linen and travertine, lit like a north-facing studio at 3pm."
+    Bad: "A beautiful modern space combining warmth and style for the perfect retreat."
 
-  colorSystem — exactly 4 entries. role is one of "primary"|"secondary"|"accent"|"supporting".
-    - Use the user's palette as the foundation. If they gave you names/materials, keep them.
-    - If a slot is unnamed, give it a poetic, evocative name — think paint-poet, not paint-catalog. Two to four words. A small image, an hour of day, a remembered material. Examples: "first light on linen", "olive at dusk", "the shadow side of brass", "ash after rain", "cathedral whisper". Avoid bare nouns ("Beige", "Olive") and avoid clichés ("warm white", "soft cream").
-    - Pair each name with the material it actually lives on in the room ("lime-washed plaster wall", "drapery in raw silk", "rug of undyed wool"). The name is the poem, the material is the truth.
+  summary — the project at a glance:
+    projectType: the space in plain words, e.g. "Hotel lobby, boutique hospitality".
+    intent: 2 sentences on what this project is actually trying to achieve.
+    whoItsFor: who uses this space and what they need from it. Be specific about the people.
+    scopeNotes: 1-2 sentences on what this brief covers and what still needs confirming on site (dimensions, services, existing conditions). Be honest that measurements are not yet captured.
 
-  sectionMoodLines — one short sentence per section. Each is a tiny prose-poem — a single image with weight. Concrete (a material, a time of day, a body posture), never abstract ("calming", "inviting"). Aim for the rhythm of a haiku, not a tagline. Sections: cover, vibe, colors, furniture, lighting, surfaces, materials, pillars.
-    Example good (vibe): "Slow as held breath; the room exhales at the same pace you do."
-    Example bad (vibe):  "A warm, calming, inviting atmosphere perfect for relaxation."
+  keywords — 8 to 10 short lowercase tags. Material, era, or mood. Search-shaped.
 
-  strategicPillars — three short paragraphs (~30-60 words each):
-    - psychological: what this space does to the people in it
-    - functional: what it does FOR them (how the space works)
-    - marketing: how this space would read in a magazine or to a client (positioning, audience signal)
+  colorSystem — ONE ENTRY PER COLOUR the user gave you (4 to 6). Never drop one of their colours.
+    Roles: "primary"|"secondary"|"accent"|"supporting" — use "supporting" more than once if needed.
+    - hex MUST be the user's exact hex values, in their order.
+    - name: two to four words, evocative but not silly. "first light on linen", "olive at dusk".
+    - application: WHERE this colour actually goes in this space. This is the useful part.
+      Good: "walls and ceiling, lime-washed plaster". Bad: "used throughout for warmth".
 
-  cinematicDescription — one rich paragraph (~80-120 words). Write as if instructing a photographer to capture this finished room. Concrete details: light direction and quality, what's in frame, materials catching the light, mood, optional viewpoint. This will later feed an image generator, so it must be visually specific.
+  materials — 5 to 7 entries. The finishes schedule. LABELS, not sentences.
+    material: the material and finish only, e.g. "White oak, rift-sawn, matte oil".
+    application: where it goes, in a few words, e.g. "Desk face, panelling to 1200mm".
+
+  furniture — 4 to 6 entries. Also labels.
+    item: the piece, e.g. "Lounge seating, low-back".
+    character: form, material, proportion. A phrase, not a sentence.
+
+  lighting — the lighting plan:
+    strategy: ONE short sentence on how light should behave here.
+    colorTemperature: specific, e.g. "2700K throughout, 3000K in task zones".
+    layers: exactly 3 entries — layer ("Ambient"|"Task"|"Accent") and fixtures (the fitting types, a phrase).
+
+  spatialNotes — 3 to 4 bullets on zoning, circulation, sightlines, and what happens where. Directional and concrete.
+
+  dos — 4 to 5 short imperatives specific to this project. e.g. "Keep sightlines from entry to the back wall open".
+  donts — 4 to 5 short imperatives. The things that would break this brief. e.g. "No cool-white downlights".
+
+  nextSteps — 3 to 4 practical actions for the client, in order. What to measure, confirm, source, or ask their designer. Make the first one about getting accurate dimensions.
+
+  cinematicDescription — one paragraph, 60-90 words. The finished room as a photographer would shoot it: light direction and quality, what is in frame, materials catching light.
 
 Output strictly as JSON matching the provided schema. No prose around the JSON.`;
 
@@ -67,15 +88,15 @@ export function buildGenerateBriefPrompt(input: {
   palette?: Array<{ hex: string; name?: string; material?: string }>;
   furnitureSubSections?: Array<{
     name: string;
-    query: string;
-    pinTitles: string[];
+    query?: string;
+    pinTitles?: string[];
   }>;
   lightingPinTitles?: string[];
   flooringPinTitles?: string[];
   ceilingPinTitles?: string[];
   materialsPinTitles?: string[];
 }): string {
-  const lines: string[] = ["User picks:"];
+  const lines: string[] = ["The client's project and picks:"];
 
   if (input.industry || input.space) {
     lines.push(
@@ -86,10 +107,11 @@ export function buildGenerateBriefPrompt(input: {
     lines.push(`- Space notes: ${input.spaceDescription}`);
   }
 
+  if (input.vibeQuery) {
+    lines.push(`- Style direction: ${input.vibeQuery}`);
+  }
   if (input.vibePinTitles && input.vibePinTitles.length > 0) {
-    lines.push(`- Vibe references: ${input.vibePinTitles.join("; ")}`);
-  } else if (input.vibeQuery) {
-    lines.push(`- Vibe direction: ${input.vibeQuery}`);
+    lines.push(`- Vibe references they chose: ${input.vibePinTitles.join("; ")}`);
   }
 
   if (input.palette && input.palette.length > 0) {
@@ -101,22 +123,24 @@ export function buildGenerateBriefPrompt(input: {
         return parts.join(" ");
       })
       .join("; ");
-    lines.push(`- Palette: ${paletteStr}`);
+    lines.push(
+      `- Palette they chose (use these exact hexes): ${paletteStr}`,
+    );
   }
 
   if (input.furnitureSubSections && input.furnitureSubSections.length > 0) {
-    lines.push("- Furniture (broken into sub-categories):");
+    lines.push("- Furniture references:");
     for (const sub of input.furnitureSubSections) {
-      const titles = sub.pinTitles.slice(0, 4).join("; ");
+      const titles = (sub.pinTitles ?? []).slice(0, 4).join("; ");
       lines.push(`    • ${sub.name}: ${titles || "(no specific picks)"}`);
     }
   }
 
   const pinterestSummaries: Array<[string, string[] | undefined]> = [
-    ["Lighting", input.lightingPinTitles],
-    ["Flooring", input.flooringPinTitles],
-    ["Ceiling", input.ceilingPinTitles],
-    ["Materials", input.materialsPinTitles],
+    ["Lighting references", input.lightingPinTitles],
+    ["Flooring references", input.flooringPinTitles],
+    ["Ceiling references", input.ceilingPinTitles],
+    ["Materials references", input.materialsPinTitles],
   ];
   for (const [label, titles] of pinterestSummaries) {
     if (titles && titles.length > 0) {
@@ -126,31 +150,55 @@ export function buildGenerateBriefPrompt(input: {
 
   lines.push(
     "",
-    "Now generate the complete Design DNA brief as JSON. Match the schema exactly.",
+    "Write the complete design brief as JSON. Match the schema exactly. Be specific enough that a contractor could price it.",
   );
 
   return lines.join("\n");
 }
 
+/**
+ * A bounded string.
+ *
+ * Keep maxLength GENEROUS. Structured outputs enforce it by cutting the model
+ * off mid-word rather than making it plan a shorter answer, and tight caps put
+ * things like "low-glare downl" and "LED toe-kick to millw" straight onto the
+ * user's brief. Brevity is the prompt's job; this is only a backstop.
+ */
+const str = (minLength: number, maxLength: number) => ({
+  type: "string",
+  minLength,
+  maxLength,
+});
+
 export const GENERATE_BRIEF_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
-    conceptLine: {
-      type: "string",
-      minLength: 20,
-      maxLength: 200,
+    conceptLine: str(20, 200),
+
+    summary: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        projectType: str(3, 80),
+        intent: str(40, 300),
+        whoItsFor: str(20, 220),
+        scopeNotes: str(20, 280),
+      },
+      required: ["projectType", "intent", "whoItsFor", "scopeNotes"],
     },
+
     keywords: {
       type: "array",
       minItems: 8,
-      maxItems: 12,
-      items: { type: "string", minLength: 2, maxLength: 40 },
+      maxItems: 10,
+      items: str(2, 40),
     },
+
     colorSystem: {
       type: "array",
       minItems: 4,
-      maxItems: 4,
+      maxItems: 6,
       items: {
         type: "object",
         additionalProperties: false,
@@ -160,85 +208,136 @@ export const GENERATE_BRIEF_SCHEMA = {
             enum: ["primary", "secondary", "accent", "supporting"],
           },
           hex: { type: "string", pattern: "^#[0-9a-fA-F]{6}$" },
-          name: { type: "string", minLength: 2, maxLength: 40 },
-          material: { type: "string", minLength: 3, maxLength: 80 },
+          name: str(2, 40),
+          application: str(10, 180),
         },
-        required: ["role", "hex", "name", "material"],
+        required: ["role", "hex", "name", "application"],
       },
     },
-    sectionMoodLines: {
+
+    materials: {
+      type: "array",
+      minItems: 5,
+      maxItems: 7,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          material: str(3, 90),
+          application: str(5, 140),
+        },
+        required: ["material", "application"],
+      },
+    },
+
+    furniture: {
+      type: "array",
+      minItems: 4,
+      maxItems: 6,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          item: str(3, 80),
+          character: str(10, 140),
+        },
+        required: ["item", "character"],
+      },
+    },
+
+    lighting: {
       type: "object",
       additionalProperties: false,
       properties: {
-        cover: { type: "string", minLength: 10, maxLength: 200 },
-        vibe: { type: "string", minLength: 10, maxLength: 200 },
-        colors: { type: "string", minLength: 10, maxLength: 200 },
-        furniture: { type: "string", minLength: 10, maxLength: 200 },
-        lighting: { type: "string", minLength: 10, maxLength: 200 },
-        surfaces: { type: "string", minLength: 10, maxLength: 200 },
-        materials: { type: "string", minLength: 10, maxLength: 200 },
-        pillars: { type: "string", minLength: 10, maxLength: 200 },
+        strategy: str(40, 260),
+        colorTemperature: str(3, 90),
+        layers: {
+          type: "array",
+          minItems: 3,
+          maxItems: 3,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              layer: { type: "string", enum: ["Ambient", "Task", "Accent"] },
+              fixtures: str(5, 160),
+            },
+            required: ["layer", "fixtures"],
+          },
+        },
       },
-      required: [
-        "cover",
-        "vibe",
-        "colors",
-        "furniture",
-        "lighting",
-        "surfaces",
-        "materials",
-        "pillars",
-      ],
+      required: ["strategy", "colorTemperature", "layers"],
     },
-    strategicPillars: {
-      type: "object",
-      additionalProperties: false,
-      properties: {
-        psychological: { type: "string", minLength: 60, maxLength: 600 },
-        functional: { type: "string", minLength: 60, maxLength: 600 },
-        marketing: { type: "string", minLength: 60, maxLength: 600 },
-      },
-      required: ["psychological", "functional", "marketing"],
+
+    spatialNotes: {
+      type: "array",
+      minItems: 3,
+      maxItems: 4,
+      items: str(15, 190),
     },
-    cinematicDescription: {
-      type: "string",
-      minLength: 200,
-      maxLength: 900,
+
+    dos: { type: "array", minItems: 4, maxItems: 5, items: str(8, 130) },
+    donts: { type: "array", minItems: 4, maxItems: 5, items: str(8, 130) },
+
+    nextSteps: {
+      type: "array",
+      minItems: 3,
+      maxItems: 4,
+      items: str(10, 190),
     },
+
+    cinematicDescription: str(150, 560),
   },
   required: [
     "conceptLine",
+    "summary",
     "keywords",
     "colorSystem",
-    "sectionMoodLines",
-    "strategicPillars",
+    "materials",
+    "furniture",
+    "lighting",
+    "spatialNotes",
+    "dos",
+    "donts",
+    "nextSteps",
     "cinematicDescription",
   ],
 } as const;
 
 export type GenerateBriefResponse = {
   conceptLine: string;
+  summary: {
+    projectType: string;
+    intent: string;
+    whoItsFor: string;
+    scopeNotes: string;
+  };
   keywords: string[];
   colorSystem: Array<{
     role: "primary" | "secondary" | "accent" | "supporting";
     hex: string;
     name: string;
-    material: string;
+    application: string;
   }>;
-  sectionMoodLines: {
-    cover: string;
-    vibe: string;
-    colors: string;
-    furniture: string;
-    lighting: string;
-    surfaces: string;
-    materials: string;
-    pillars: string;
+  materials: Array<{
+    material: string;
+    application: string;
+  }>;
+  furniture: Array<{
+    item: string;
+    character: string;
+  }>;
+  lighting: {
+    strategy: string;
+    colorTemperature: string;
+    layers: Array<{
+      layer: "Ambient" | "Task" | "Accent";
+      fixtures: string;
+    }>;
   };
-  strategicPillars: {
-    psychological: string;
-    functional: string;
-    marketing: string;
-  };
+  spatialNotes: string[];
+  dos: string[];
+  donts: string[];
+  nextSteps: string[];
   cinematicDescription: string;
 };

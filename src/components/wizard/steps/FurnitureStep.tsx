@@ -24,9 +24,109 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-const MAX_PINS_PER_SUBSECTION = 3;
+const MAX_PINS_PER_SUBSECTION = 6;
+
+/** How many categories the step carries. */
+const CATEGORY_COUNT = 3;
+
+/**
+ * Categories worth offering beyond whatever the AI suggested.
+ *
+ * Broad enough to cover most projects, and deliberately including the pieces
+ * the model rarely proposes on its own — shelving, rugs, screens — because
+ * those are exactly what a user reaches for when the suggestion is wrong.
+ */
+const CATEGORY_LIBRARY = [
+  "Sofa", "Lounge seating", "Dining chairs", "Dining table", "Coffee table",
+  "Side tables", "Bed", "Nightstands", "Wardrobe", "Shelving", "Storage",
+  "Desk", "Work chair", "Bar stools", "Banquette", "Rugs", "Screens",
+  "Reception desk", "Display units", "Outdoor seating",
+];
 
 type Status = "idle" | "loading" | "ready" | "error";
+
+/**
+ * Let the user choose which three categories this project is actually about.
+ *
+ * The AI's split is a good starting guess, but it is only a guess: it proposes
+ * a sofa for a room whose point is the shelving, and there was no way to say
+ * so. Swapping a category keeps any pins already picked for the ones that stay.
+ */
+function CategoryChooser({
+  spaceLabel,
+  sections,
+  onChange,
+}: {
+  spaceLabel: string;
+  sections: FurnitureSubSection[];
+  onChange: (next: FurnitureSubSection[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const chosen = sections.map((s) => s.name);
+
+  function toggle(name: string) {
+    const already = chosen.indexOf(name);
+    if (already >= 0) {
+      if (sections.length <= 1) return; // never leave the step with nothing
+      onChange(sections.filter((_, i) => i !== already));
+      return;
+    }
+    const next: FurnitureSubSection = {
+      name,
+      query: `${name.toLowerCase()} ${spaceLabel.toLowerCase()}`,
+      pins: [],
+    };
+    // At the cap, the newest choice replaces the oldest untouched one so the
+    // user is never told "unpick something first".
+    if (sections.length >= CATEGORY_COUNT) {
+      const idx = sections.findIndex((s) => (s.pins?.length ?? 0) === 0);
+      const dropAt = idx >= 0 ? idx : 0;
+      onChange(sections.map((s, i) => (i === dropAt ? next : s)));
+      return;
+    }
+    onChange([...sections, next]);
+  }
+
+  return (
+    <div className="mt-4">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="font-mono text-[10px] uppercase tracking-[0.14em] text-acc transition hover:opacity-70"
+      >
+        {open ? "− Done choosing" : "+ Choose your categories"}
+      </button>
+
+      {open && (
+        <>
+          <p className="mt-3 text-[13px] text-txt-2">
+            Which {CATEGORY_COUNT} matter most for this project? Tap to swap one
+            in — anything you have already picked is kept.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {[...new Set([...chosen, ...CATEGORY_LIBRARY])].map((name) => {
+              const on = chosen.includes(name);
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => toggle(name)}
+                  className={`rounded-full border px-3 py-1.5 text-[12px] transition ${
+                    on
+                      ? "border-acc bg-acc text-white"
+                      : "border-bdr-2 text-txt-2 hover:border-acc hover:text-acc"
+                  }`}
+                >
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function FurnitureStep({ state, setState }: Props) {
   const industry = state.industryId ? getIndustry(state.industryId) : null;
@@ -131,17 +231,24 @@ export default function FurnitureStep({ state, setState }: Props) {
 
   return (
     <div className="space-y-12">
-      {/* Re-categorize action */}
-      <div className="flex items-center justify-between gap-4 border-b border-bdr-2 pb-4">
-        <p className="text-[13px] text-txt-2">
-          Pick up to {MAX_PINS_PER_SUBSECTION} pins per category.
-        </p>
-        <button
-          onClick={() => fetchSubSections()}
-          className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
-        >
-          ↻ Re-categorize
-        </button>
+      {/* Which categories this project is actually about */}
+      <div className="border-b border-bdr-2 pb-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-[13px] text-txt-2">
+            Pick up to {MAX_PINS_PER_SUBSECTION} pins per category.
+          </p>
+          <button
+            onClick={() => fetchSubSections()}
+            className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
+          >
+            ↻ Re-categorize
+          </button>
+        </div>
+        <CategoryChooser
+          spaceLabel={spaceLabel}
+          sections={existing}
+          onChange={(next) => setState({ furnitureSubSections: next })}
+        />
       </div>
 
       {/* One grid per sub-section */}
@@ -158,6 +265,9 @@ export default function FurnitureStep({ state, setState }: Props) {
           <PinterestGrid
             initialQuery={subSection.query}
             categoryKey="furniture"
+            focus={subSection.name}
+            spaceId={state.industryId}
+            vibe={state.vibeQuery}
             sliceSeed={i + 1}
             maxSelections={MAX_PINS_PER_SUBSECTION}
             selectedPins={subSection.pins}

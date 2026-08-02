@@ -19,12 +19,24 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { aiText } from "@/lib/ai";
+import { checkRateLimit } from "@/lib/rate-limit";
+
 import {
   DESIGN_CHECK_SYSTEM_PROMPT,
   DESIGN_CHECK_SCHEMA,
   buildDesignCheckPrompt,
   type DesignCheckResponse,
 } from "@/lib/ai/prompts/design-check";
+
+/** A single sentence a user can act on, instead of Zod's JSON dump. */
+function firstIssue(error: z.ZodError): string {
+  const issue = error.issues[0];
+  if (issue?.code === "too_big") {
+    const field = String(issue.path[0] ?? "answer");
+    return `Your ${field} is too long — please shorten it.`;
+  }
+  return "Some of your answers couldn't be read. Please check them.";
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -51,6 +63,10 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // One model call per check, and the button can be clicked repeatedly.
+  const limited = checkRateLimit(request, "design-check", 30, 3_600_000);
+  if (limited) return limited;
+
   let parsed;
   try {
     const body = await request.json();
@@ -63,7 +79,13 @@ export async function POST(request: NextRequest) {
   }
   if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: parsed.error.message },
+      {
+        ok: false,
+        // Zod's message is a pretty-printed JSON array of issue objects.
+        // It was rendered verbatim into the UI as a wall of braces; the
+        // only cause a user can act on is having written too much.
+        error: firstIssue(parsed.error),
+      },
       { status: 400 },
     );
   }
@@ -75,7 +97,10 @@ export async function POST(request: NextRequest) {
       tier: "mini",
       schema: DESIGN_CHECK_SCHEMA,
       schemaName: "design_check",
-      maxOutputTokens: 2000,
+      // Reasoning tokens come out of this budget before any output does — the
+      // sibling furniture route was failing outright for exactly this reason.
+      maxOutputTokens: 8000,
+      reasoningEffort: "low",
     });
 
     let payload: DesignCheckResponse;
@@ -91,10 +116,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(payload);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     console.error("[/api/ai/design-check] AI call failed:", error);
     return NextResponse.json(
-      { ok: false, error: message },
+      { ok: false, error: "Couldn't run the design check just now." },
       { status: 500 },
     );
   }

@@ -80,6 +80,12 @@ export const openaiProvider: TextProvider = {
       request.temperature = opts.temperature;
     }
 
+    // Reasoning tokens are produced BEFORE any output, so this is what
+    // actually decides whether a call fits inside the serverless timeout.
+    if (isGpt5Family && opts.reasoningEffort) {
+      request.reasoning_effort = opts.reasoningEffort;
+    }
+
     if (opts.schema) {
       request.response_format = {
         type: "json_schema",
@@ -92,10 +98,12 @@ export const openaiProvider: TextProvider = {
     }
 
     const response = await getClient().chat.completions.create(request);
-    const text = response.choices[0]?.message?.content ?? "";
+    const choice = response.choices[0];
+    const text = choice?.message?.content ?? "";
 
     return {
       text,
+      finishReason: choice?.finish_reason,
       model,
       provider: "openai",
       latencyMs: Date.now() - startedAt,

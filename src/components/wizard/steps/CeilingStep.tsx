@@ -16,7 +16,7 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-const MAX_PINS = 2;
+const MAX_PINS = 6;
 
 export default function CeilingStep({ state, setState }: Props) {
   const industry = state.industryId ? getIndustry(state.industryId) : null;
@@ -28,6 +28,8 @@ export default function CeilingStep({ state, setState }: Props) {
     <PinterestStepWrapper
       spaceLabel={spaceLabel}
       industryLabel={industry?.label}
+      spaceId={state.industryId}
+      vibe={state.vibeQuery}
       suggestionStep="ceiling"
       category="ceiling treatment"
       categoryKey="ceiling"

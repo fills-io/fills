@@ -21,12 +21,24 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { aiText } from "@/lib/ai";
+import { checkRateLimit } from "@/lib/rate-limit";
+
 import {
   GENERATE_BRIEF_SYSTEM_PROMPT,
   GENERATE_BRIEF_SCHEMA,
   buildGenerateBriefPrompt,
   type GenerateBriefResponse,
 } from "@/lib/ai/prompts/generate-brief";
+
+/** A single sentence a user can act on, instead of Zod's JSON dump. */
+function firstIssue(error: z.ZodError): string {
+  const issue = error.issues[0];
+  if (issue?.code === "too_big") {
+    const field = String(issue.path[0] ?? "answer");
+    return `Your ${field} is too long — please shorten it.`;
+  }
+  return "Some of your answers couldn't be read. Please check them.";
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,6 +61,19 @@ const bodySchema = z.object({
   palette: z.array(paletteEntrySchema).max(8).optional(),
   furnitureQuery: z.string().max(200).optional(),
   furniturePinTitles: z.array(z.string().max(200)).max(10).optional(),
+  // Full Studio splits furniture into AI-named sub-sections (Sofa / Chairs /
+  // Coffee table). Without this key Zod stripped the whole furniture
+  // selection before it ever reached the prompt.
+  furnitureSubSections: z
+    .array(
+      z.object({
+        name: z.string().max(80),
+        query: z.string().max(200).optional(),
+        pinTitles: z.array(z.string().max(200)).max(10).optional(),
+      }),
+    )
+    .max(6)
+    .optional(),
   lightingPinTitles: z.array(z.string().max(200)).max(10).optional(),
   flooringPinTitles: z.array(z.string().max(200)).max(10).optional(),
   ceilingPinTitles: z.array(z.string().max(200)).max(10).optional(),
@@ -56,6 +81,10 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // GPT-5 at roughly $0.05 a call — the most expensive thing we run.
+  const limited = checkRateLimit(request, "brief", 10, 3_600_000);
+  if (limited) return limited;
+
   let parsed;
   try {
     const body = await request.json();
@@ -68,7 +97,13 @@ export async function POST(request: NextRequest) {
   }
   if (!parsed.success) {
     return NextResponse.json(
-      { ok: false, error: parsed.error.message },
+      {
+        ok: false,
+        // Zod's message is a pretty-printed JSON array of issue objects.
+        // It was rendered verbatim into the UI as a wall of braces; the
+        // only cause a user can act on is having written too much.
+        error: firstIssue(parsed.error),
+      },
       { status: 400 },
     );
   }
@@ -81,18 +116,58 @@ export async function POST(request: NextRequest) {
       tier: "full",
       schema: GENERATE_BRIEF_SCHEMA,
       schemaName: "design_dna_brief",
-      // Headroom for the full brief: ~8 fields × ~150 words each plus
-      // reasoning overhead. 8192 is comfortable.
-      maxOutputTokens: 8192,
+      // GPT-5 spends reasoning tokens from the same budget as the output, and
+      // 8192 truncated the JSON mid-object.
+      maxOutputTokens: 24000,
+      // The single most important setting on this route. At the default
+      // effort the call took 57s against a 60s serverless limit, so briefs
+      // intermittently died on a Vercel timeout rather than any error we
+      // could show. The output is a schema-constrained deck of labels — it
+      // needs recall and taste, not long deliberation — so "low" costs
+      // nothing in quality and brings the call back inside the budget.
+      reasoningEffort: "low",
     });
+
+    if (!result.text.trim()) {
+      console.error(
+        `[/api/ai/generate-brief] empty response (finish_reason=${result.finishReason})`,
+      );
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `The model returned nothing (finish_reason=${result.finishReason ?? "unknown"}).`,
+        },
+        { status: 502 },
+      );
+    }
+
+    if (result.finishReason === "length") {
+      console.error(
+        "[/api/ai/generate-brief] output truncated (finish_reason=length)",
+      );
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "The brief was cut off before it finished. Please try again.",
+        },
+        { status: 502 },
+      );
+    }
 
     let payload: GenerateBriefResponse;
     try {
       payload = JSON.parse(result.text);
     } catch {
-      console.error("[/api/ai/generate-brief] malformed JSON:", result.text);
+      console.error(
+        `[/api/ai/generate-brief] malformed JSON (finish_reason=${result.finishReason}, ${result.text.length} chars):`,
+        result.text.slice(0, 2000),
+      );
       return NextResponse.json(
-        { ok: false, error: "Model returned malformed JSON" },
+        {
+          ok: false,
+          error: `Model returned malformed JSON (finish_reason=${result.finishReason ?? "unknown"})`,
+        },
         { status: 502 },
       );
     }
@@ -102,10 +177,9 @@ export async function POST(request: NextRequest) {
     );
     return NextResponse.json(payload);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     console.error("[/api/ai/generate-brief] AI call failed:", error);
     return NextResponse.json(
-      { ok: false, error: message },
+      { ok: false, error: "Couldn't generate the brief just now. Please try again." },
       { status: 500 },
     );
   }
