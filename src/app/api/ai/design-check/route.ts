@@ -21,6 +21,13 @@ import { z } from "zod";
 import { aiText } from "@/lib/ai";
 import { checkRateLimit } from "@/lib/rate-limit";
 
+import {
+  DESIGN_CHECK_SYSTEM_PROMPT,
+  DESIGN_CHECK_SCHEMA,
+  buildDesignCheckPrompt,
+  type DesignCheckResponse,
+} from "@/lib/ai/prompts/design-check";
+
 /** A single sentence a user can act on, instead of Zod's JSON dump. */
 function firstIssue(error: z.ZodError): string {
   const issue = error.issues[0];
@@ -30,12 +37,6 @@ function firstIssue(error: z.ZodError): string {
   }
   return "Some of your answers couldn't be read. Please check them.";
 }
-import {
-  DESIGN_CHECK_SYSTEM_PROMPT,
-  DESIGN_CHECK_SCHEMA,
-  buildDesignCheckPrompt,
-  type DesignCheckResponse,
-} from "@/lib/ai/prompts/design-check";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -96,7 +97,10 @@ export async function POST(request: NextRequest) {
       tier: "mini",
       schema: DESIGN_CHECK_SCHEMA,
       schemaName: "design_check",
-      maxOutputTokens: 2000,
+      // Reasoning tokens come out of this budget before any output does — the
+      // sibling furniture route was failing outright for exactly this reason.
+      maxOutputTokens: 8000,
+      reasoningEffort: "low",
     });
 
     let payload: DesignCheckResponse;
@@ -111,7 +115,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(payload);
-  } catch (error) {    console.error("[/api/ai/design-check] AI call failed:", error);
+  } catch (error) {
+    console.error("[/api/ai/design-check] AI call failed:", error);
     return NextResponse.json(
       { ok: false, error: "Couldn't run the design check just now." },
       { status: 500 },

@@ -68,7 +68,8 @@ export async function GET(request: NextRequest) {
       count: pins.length,
       pins,
     });
-  } catch (error) {    console.error("[/api/pinterest/search] failed:", error);
+  } catch (error) {
+    console.error("[/api/pinterest/search] failed:", error);
 
     return NextResponse.json(
       { ok: false, error: "Couldn't load reference images just now." },

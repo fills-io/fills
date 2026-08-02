@@ -23,6 +23,13 @@ import { z } from "zod";
 import { aiText } from "@/lib/ai";
 import { checkRateLimit } from "@/lib/rate-limit";
 
+import {
+  GENERATE_BRIEF_SYSTEM_PROMPT,
+  GENERATE_BRIEF_SCHEMA,
+  buildGenerateBriefPrompt,
+  type GenerateBriefResponse,
+} from "@/lib/ai/prompts/generate-brief";
+
 /** A single sentence a user can act on, instead of Zod's JSON dump. */
 function firstIssue(error: z.ZodError): string {
   const issue = error.issues[0];
@@ -32,12 +39,6 @@ function firstIssue(error: z.ZodError): string {
   }
   return "Some of your answers couldn't be read. Please check them.";
 }
-import {
-  GENERATE_BRIEF_SYSTEM_PROMPT,
-  GENERATE_BRIEF_SCHEMA,
-  buildGenerateBriefPrompt,
-  type GenerateBriefResponse,
-} from "@/lib/ai/prompts/generate-brief";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -175,7 +176,8 @@ export async function POST(request: NextRequest) {
       `[/api/ai/generate-brief] generated brief in ${result.latencyMs}ms with ${result.model}`,
     );
     return NextResponse.json(payload);
-  } catch (error) {    console.error("[/api/ai/generate-brief] AI call failed:", error);
+  } catch (error) {
+    console.error("[/api/ai/generate-brief] AI call failed:", error);
     return NextResponse.json(
       { ok: false, error: "Couldn't generate the brief just now. Please try again." },
       { status: 500 },

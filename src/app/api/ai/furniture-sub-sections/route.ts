@@ -23,6 +23,13 @@ import { z } from "zod";
 import { aiText } from "@/lib/ai";
 import { checkRateLimit } from "@/lib/rate-limit";
 
+import {
+  FURNITURE_SUB_SECTIONS_SYSTEM_PROMPT,
+  FURNITURE_SUB_SECTIONS_SCHEMA,
+  buildFurnitureSubSectionsPrompt,
+  type FurnitureSubSectionsResponse,
+} from "@/lib/ai/prompts/furniture-sub-sections";
+
 /** A single sentence a user can act on, instead of Zod's JSON dump. */
 function firstIssue(error: z.ZodError): string {
   const issue = error.issues[0];
@@ -32,12 +39,6 @@ function firstIssue(error: z.ZodError): string {
   }
   return "Some of your answers couldn't be read. Please check them.";
 }
-import {
-  FURNITURE_SUB_SECTIONS_SYSTEM_PROMPT,
-  FURNITURE_SUB_SECTIONS_SCHEMA,
-  buildFurnitureSubSectionsPrompt,
-  type FurnitureSubSectionsResponse,
-} from "@/lib/ai/prompts/furniture-sub-sections";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -83,7 +84,13 @@ export async function POST(request: NextRequest) {
       tier: "mini",
       schema: FURNITURE_SUB_SECTIONS_SCHEMA,
       schemaName: "furniture_sub_sections",
-      maxOutputTokens: 800,
+      // GPT-5 spends reasoning tokens from this same budget BEFORE it writes
+      // a single character of output. At 800 the whole allowance went on
+      // thinking, the model returned an empty string, and the Furniture step
+      // failed with "Model returned malformed JSON" every time.
+      maxOutputTokens: 6000,
+      // A short list of furniture categories needs recall, not deliberation.
+      reasoningEffort: "low",
     });
 
     let payload: FurnitureSubSectionsResponse;
@@ -105,7 +112,11 @@ export async function POST(request: NextRequest) {
         "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=3600",
       },
     });
-  } catch (error) {    console.error("[/api/ai/furniture-sub-sections] AI call failed:", error);
-    return NextResponse.json({ ok: false, error: "Couldn't work out the furniture sections just now." }, { status: 500 });
+  } catch (error) {
+    console.error("[/api/ai/furniture-sub-sections] AI call failed:", error);
+    return NextResponse.json(
+      { ok: false, error: "Couldn't work out the furniture sections just now." },
+      { status: 500 },
+    );
   }
 }

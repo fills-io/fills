@@ -80,6 +80,40 @@ function MobileActionBar({ action }: { action: PrimaryAction | null }) {
   );
 }
 
+/**
+ * Proof that the uploaded images did something.
+ *
+ * Upload mode reads a palette out of the user's own photos and sends them
+ * here. The palette step is gated behind project type and vibe, so without
+ * this the user landed on an empty "choose industry" sentence with no sign
+ * their images had been read at all — which is indistinguishable from the
+ * feature being broken.
+ */
+function SeededPalette({ hexes }: { hexes: string[] }) {
+  if (hexes.length === 0) return null;
+  return (
+    <div className="mb-8 flex flex-wrap items-center gap-3 border border-bdr-2 bg-bg-2 px-4 py-3">
+      <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-acc">
+        From your images
+      </span>
+      <div className="flex overflow-hidden rounded-sm border border-bdr-2">
+        {hexes.map((hex) => (
+          <span
+            key={hex}
+            title={hex.toUpperCase()}
+            className="h-7 w-9"
+            style={{ backgroundColor: hex }}
+          />
+        ))}
+      </div>
+      <p className="min-w-0 flex-1 text-[13px] text-txt-2">
+        We read these colours from your photos. Tell us about the project and
+        they carry through to your brief.
+      </p>
+    </div>
+  );
+}
+
 export default function QuickCanvas() {
   const params = useSearchParams();
 
@@ -329,6 +363,8 @@ export default function QuickCanvas() {
       {status === "generating" && <GenerationOverlay />}
 
       <main className="mx-auto max-w-[1240px] px-6 pb-32 pt-10 sm:px-8">
+        {status === "idle" && <SeededPalette hexes={seededPalette} />}
+
         {resumedAge && status === "idle" && (
           <div className="mb-8 flex flex-wrap items-center gap-3 border border-bdr-2 bg-bg-2 px-4 py-3">
             <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-acc">

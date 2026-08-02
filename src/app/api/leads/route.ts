@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
   try {
     parsed = bodySchema.safeParse(await request.json());
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid JSON" },
+      { status: 400 },
+    );
   }
   if (!parsed.success) {
     return NextResponse.json(
@@ -57,7 +60,11 @@ export async function POST(request: NextRequest) {
       source: parsed.data.source || null,
     });
     return NextResponse.json({ ok: true });
-  } catch (error) {    console.error("[/api/leads] insert failed:", error);
-    return NextResponse.json({ ok: false, error: "Couldn't send your message just now." }, { status: 500 });
+  } catch (error) {
+    console.error("[/api/leads] insert failed:", error);
+    return NextResponse.json(
+      { ok: false, error: "Couldn't send your message just now." },
+      { status: 500 },
+    );
   }
 }

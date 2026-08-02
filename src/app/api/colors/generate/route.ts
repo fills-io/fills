@@ -20,6 +20,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { checkRateLimit } from "@/lib/rate-limit";
 
+import {
+  fetchColormindPalette,
+  hexToRgb,
+  type ColormindInputColor,
+} from "@/lib/colormind";
+
 /** A single sentence a user can act on, instead of Zod's JSON dump. */
 function firstIssue(error: z.ZodError): string {
   const issue = error.issues[0];
@@ -29,11 +35,6 @@ function firstIssue(error: z.ZodError): string {
   }
   return "Some of your answers couldn't be read. Please check them.";
 }
-import {
-  fetchColormindPalette,
-  hexToRgb,
-  type ColormindInputColor,
-} from "@/lib/colormind";
 
 export const runtime = "nodejs";
 
@@ -77,7 +78,11 @@ export async function GET(request: NextRequest) {
     const fullPalette = await fetchColormindPalette(input);
     // Colormind returns 5 colours — return all of them (callers slice/pad).
     return NextResponse.json({ palette: fullPalette.slice(0, 5) });
-  } catch (error) {    console.error("[/api/colors/generate] failed:", error);
-    return NextResponse.json({ ok: false, error: "Couldn't mix a new palette just now." }, { status: 502 });
+  } catch (error) {
+    console.error("[/api/colors/generate] failed:", error);
+    return NextResponse.json(
+      { ok: false, error: "Couldn't mix a new palette just now." },
+      { status: 502 },
+    );
   }
 }

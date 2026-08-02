@@ -96,13 +96,18 @@ export default function PaletteStage({ state, patch }: Props) {
 
   // Re-derive the palette whenever the picked set changes (and on first
   // arrival) — so it never lags behind the images the user has selected.
+  //
+  // Locked slots survive it. Upload mode arrives with the colours read from
+  // the user's own photos, locked; without this the first vibe pick silently
+  // overwrote them and the whole point of uploading was lost.
   const pickKey = state.picks.map((p) => p.id).join("|");
+  const hasLocks = state.locks.some(Boolean);
   useEffect(() => {
     if (lastPickKey.current === pickKey) return;
     lastPickKey.current = pickKey;
     if (state.picks.length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      extractInto(false);
+      extractInto(hasLocks);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickKey]);
