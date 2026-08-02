@@ -236,8 +236,9 @@ export default function QuickCanvas() {
           vibe: state.vibeQuery,
           paletteHexes,
           spaceId,
-          // The deck spends ~52 images across ten spreads and never repeats
-          // one, so each category has to supply more than it shows.
+          // The deck spends ~55 images across ten spreads and never repeats
+          // one, so each category supplies more than any single section shows.
+          // BriefDisplay caps what the PAGE renders at eight per section.
           count: 12,
         }),
       }));

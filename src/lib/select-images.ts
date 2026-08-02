@@ -24,6 +24,7 @@
 
 import { CURATED_PINS, CURATED_VIBE, type CuratedPin } from "@/data/reference-images";
 import { categoryAffinity, isUsableReference } from "@/lib/image-quality";
+import type { PinterestPin } from "@/db/schema";
 
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -52,6 +53,81 @@ function styleMatches(pinStyle: string | undefined, vibe: string): number {
 }
 
 type Scored = { pin: CuratedPin; score: number };
+
+/** Words that carry no signal about what a picture shows. */
+const FOCUS_STOPWORDS = new Set([
+  "the", "a", "an", "and", "or", "for", "with", "of", "in", "on",
+  "design", "designs", "idea", "ideas", "modern", "luxury", "style",
+]);
+
+/**
+ * Words a category is also known by, where the obvious one doesn't appear in
+ * the pins. "Shelving" matched nothing at all; people photograph bookshelves.
+ */
+const FOCUS_SYNONYMS: Record<string, string[]> = {
+  shelving: ["shelf", "shelves", "bookshelf", "bookcase", "shelving"],
+  storage: ["storage", "cabinet", "cupboard", "sideboard", "credenza"],
+  screens: ["screen", "partition", "divider", "room divider"],
+  nightstands: ["nightstand", "bedside"],
+  wardrobe: ["wardrobe", "closet", "armoire"],
+  banquette: ["banquette", "booth", "bench seating"],
+  seating: ["seating", "sofa", "chair", "settee"],
+  rugs: ["rug", "carpet"],
+};
+
+/**
+ * Build one matcher per meaningful word in a sub-section name.
+ *
+ * Matching is on WORD BOUNDARIES, not substrings: a plain `includes("table")`
+ * scored "Cotton sofa suitable for living room" as a coffee table, which is
+ * how the picker ended up offering sofas on the Coffee table step.
+ */
+function focusMatchers(focus: string | undefined): RegExp[] {
+  if (!focus) return [];
+  const words = focus
+    .toLowerCase()
+    .split(/[^a-z]+/)
+    .filter((w) => w.length > 2 && !FOCUS_STOPWORDS.has(w));
+
+  return words.map((w) => {
+    const alts = FOCUS_SYNONYMS[w] ?? [w.replace(/s$/, "")];
+    const escaped = alts.map((a) => a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+    // Allow a plural on any alternative: chair -> chair/chairs.
+    return new RegExp(`\\b(?:${escaped.join("|")})(?:s|es)?\\b`, "i");
+  });
+}
+
+/** How many of the focus words this pin's text actually names. */
+function focusScore(pin: CuratedPin, matchers: RegExp[]): number {
+  if (matchers.length === 0) return 0;
+  const hay = `${pin.title ?? ""} ${pin.style ?? ""}`;
+  let hits = 0;
+  for (const m of matchers) if (m.test(hay)) hits++;
+  return hits;
+}
+
+/**
+ * Narrow a pool to what a sub-section is actually about.
+ *
+ * Every furniture sub-section asked for the same generic "furniture" pool, so
+ * the Coffee table step and the Sofa step showed the identical set of living
+ * rooms — the picker was asking the user to choose a coffee table from photos
+ * that mostly had none. Pins naming the thing come first; if too few name it,
+ * the rest of the pool follows rather than leaving the grid empty.
+ */
+function applyFocus(pool: CuratedPin[], focus: string | undefined): CuratedPin[] {
+  const matchers = focusMatchers(focus);
+  if (matchers.length === 0) return pool;
+  // Pins naming every word beat pins naming one; the remainder keeps its
+  // existing (already project- and palette-ranked) order behind them.
+  const scored = pool.map((pin) => ({ pin, hits: focusScore(pin, matchers) }));
+  const named = scored
+    .filter((s) => s.hits > 0)
+    .sort((a, b) => b.hits - a.hits)
+    .map((s) => s.pin);
+  const rest = scored.filter((s) => s.hits === 0).map((s) => s.pin);
+  return [...named, ...rest];
+}
 
 /** Rank a pool: higher is better. Colour is the tie-breaker, not the driver. */
 function rank(
@@ -88,7 +164,14 @@ function rank(
  */
 export function buildCategoryPool(
   category: string,
-  opts: { vibe?: string; paletteHexes?: string[]; spaceId?: string | null },
+  opts: {
+    vibe?: string;
+    paletteHexes?: string[];
+    spaceId?: string | null;
+    /** What this particular grid is for, e.g. a furniture sub-section name
+     *  like "Coffee table". Pins that name it are shown first. */
+    focus?: string;
+  },
 ): CuratedPin[] {
   const vibe = (opts.vibe ?? "").trim().toLowerCase();
   const paletteRgb = (opts.paletteHexes ?? [])
@@ -127,7 +210,9 @@ export function buildCategoryPool(
   }
   // If the blend produced nothing, fall back to the category pool — still
   // FILTERED. Falling back to the raw pool was how ad pins reached the picker.
-  return out.length > 0 ? out : (CURATED_PINS[category] ?? []).filter(isUsableReference);
+  const blended =
+    out.length > 0 ? out : (CURATED_PINS[category] ?? []).filter(isUsableReference);
+  return applyFocus(blended, opts.focus);
 }
 
 export type SelectOptions = {
@@ -139,6 +224,8 @@ export type SelectOptions = {
   spaceId?: string | null;
   /** How many images to return. */
   count?: number;
+  /** Narrow the result to a sub-topic, e.g. "Coffee table". */
+  focus?: string;
 };
 
 /**
@@ -177,6 +264,13 @@ export function selectCategoryImages(
     useAffinity: true,
   });
 
+  // Pins that name the sub-topic come first within each source, so a focused
+  // request ("Coffee table") is answered with coffee tables where they exist.
+  const focused = (list: Scored[]) =>
+    applyFocus(list.map((x) => x.pin), opts.focus);
+  const focusedCategory = focused(rankedCategory);
+  const focusedIndustry = focused(rankedIndustry);
+
   // Interleave: detail, context, detail, context… so the sheet reads varied.
   const out: CuratedPin[] = [];
   const seen = new Set<string>();
@@ -188,12 +282,12 @@ export function selectCategoryImages(
 
   let i = 0;
   let j = 0;
-  while (out.length < count && (i < rankedCategory.length || j < rankedIndustry.length)) {
+  while (out.length < count && (i < focusedCategory.length || j < focusedIndustry.length)) {
     const before = out.length;
-    push(rankedCategory[i++]?.pin);
-    push(rankedIndustry[j++]?.pin);
+    push(focusedCategory[i++]);
+    push(focusedIndustry[j++]);
     // Both sources exhausted of new material — stop rather than spin.
-    if (out.length === before && i >= rankedCategory.length && j >= rankedIndustry.length) {
+    if (out.length === before && i >= focusedCategory.length && j >= focusedIndustry.length) {
       break;
     }
   }
@@ -220,6 +314,28 @@ export function selectCategoryImages(
   }
 
   return out;
+}
+
+/**
+ * A curated reference in the shape the rest of the app stores picks in.
+ *
+ * Curated pins have no source page, so the image itself is the link — that is
+ * what the brief's thumbnails open. Keep `imageUrl` at full resolution: the PDF
+ * export reads it directly and needs the large original, not a thumbnail.
+ */
+export function toPin(c: CuratedPin): PinterestPin {
+  return {
+    id: c.id,
+    url: c.imageUrl,
+    title: c.title,
+    description: "",
+    altText: c.title,
+    imageUrl: c.imageUrl,
+    imageThumbUrl: c.imageUrl,
+    dominantColor: c.dominantColor,
+    boardName: "",
+    boardUrl: "",
+  };
 }
 
 /** The categories Quick auto-curates (Full Studio picks these by hand). */

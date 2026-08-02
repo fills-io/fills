@@ -85,6 +85,15 @@ function SpecRow({
 }
 
 /**
+ * Most references a single section shows on the page.
+ *
+ * Each category carries twelve so the exported deck can run five or six a
+ * spread without repeating any. On the page that reads as a wall — eight is
+ * where a section still scans in one glance. The deck keeps the full set.
+ */
+const MAX_REFS_PER_SECTION = 8;
+
+/**
  * The reference images for one part of the brief.
  *
  * These used to be collected into a single block of "reference imagery" far
@@ -99,6 +108,7 @@ function Refs({
   size?: "lg" | "md";
 }) {
   if (!list || list.length === 0) return null;
+  const shown = list.slice(0, MAX_REFS_PER_SECTION);
   return (
     <div
       className={`mb-4 grid gap-3 ${
@@ -107,7 +117,7 @@ function Refs({
           : "grid-cols-3 sm:grid-cols-5"
       }`}
     >
-      {list.map((pin) => (
+      {shown.map((pin) => (
         <a
           key={pin.id}
           href={pin.url}

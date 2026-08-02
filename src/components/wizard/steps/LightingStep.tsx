@@ -17,7 +17,7 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-const MAX_PINS = 3;
+const MAX_PINS = 6;
 
 export default function LightingStep({ state, setState }: Props) {
   const industry = state.industryId ? getIndustry(state.industryId) : null;

@@ -16,7 +16,7 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-const MAX_PINS = 2;
+const MAX_PINS = 6;
 
 export default function CeilingStep({ state, setState }: Props) {
   const industry = state.industryId ? getIndustry(state.industryId) : null;

@@ -16,7 +16,7 @@ type Props = {
   setState: (patch: Partial<WizardState>) => void;
 };
 
-const MAX_PINS = 4;
+const MAX_PINS = 6;
 
 export default function MaterialsStep({ state, setState }: Props) {
   const industry = state.industryId ? getIndustry(state.industryId) : null;
