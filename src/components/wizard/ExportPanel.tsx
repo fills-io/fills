@@ -13,19 +13,20 @@
 
 import { useRef, useState } from "react";
 import { pdf } from "@react-pdf/renderer";
-import BriefPDF from "./BriefPDF";
+import BriefPDF, { type BriefFacts } from "./BriefPDF";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import type { BriefPins } from "./BriefDisplay";
 
-type Orientation = "portrait" | "landscape";
+type Format = "deck" | "document";
 
 type Props = {
   brief: GenerateBriefResponse;
   pins?: BriefPins;
+  facts?: BriefFacts;
 };
 
-export default function ExportPanel({ brief, pins }: Props) {
-  const [orientation, setOrientation] = useState<Orientation>("portrait");
+export default function ExportPanel({ brief, pins, facts }: Props) {
+  const [format, setFormat] = useState<Format>("deck");
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [logoName, setLogoName] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -67,7 +68,8 @@ export default function ExportPanel({ brief, pins }: Props) {
         <BriefPDF
           brief={brief}
           pins={pins}
-          orientation={orientation}
+          facts={facts}
+          format={format}
           logoDataUrl={logoDataUrl}
         />,
       ).toBlob();
@@ -108,24 +110,29 @@ export default function ExportPanel({ brief, pins }: Props) {
       </p>
 
       <div className="grid gap-6 sm:grid-cols-2">
-        {/* Orientation */}
+        {/* Format */}
         <div>
           <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
-            Orientation
+            Format
           </div>
           <div className="flex gap-2">
-            {(["portrait", "landscape"] as const).map((o) => (
+            {(
+              [
+                ["deck", "Presentation"],
+                ["document", "A4 document"],
+              ] as const
+            ).map(([id, label]) => (
               <button
-                key={o}
+                key={id}
                 type="button"
-                onClick={() => setOrientation(o)}
+                onClick={() => setFormat(id)}
                 className={`flex-1 border px-3 py-2 text-[12px] uppercase tracking-[0.1em] transition ${
-                  orientation === o
+                  format === id
                     ? "border-acc bg-acc text-white"
                     : "border-bdr-2 text-txt-2 hover:border-acc hover:text-acc"
                 }`}
               >
-                {o}
+                {label}
               </button>
             ))}
           </div>

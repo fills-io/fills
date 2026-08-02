@@ -134,6 +134,12 @@ export default function QuickCanvas() {
         industry: ind?.label,
         space: state.spec || undefined,
         spaceDescription: state.spec || undefined,
+        spaceSize: [
+          state.areaSqm ? `${state.areaSqm} m² floor area` : null,
+          state.hasOutdoor ? "includes outdoor space" : null,
+        ]
+          .filter(Boolean)
+          .join(", ") || undefined,
         vibeQuery: state.vibeQuery || undefined,
         vibePinTitles: state.picks
           .map((p) => p.title?.trim())
@@ -172,6 +178,15 @@ export default function QuickCanvas() {
       <main className="mx-auto max-w-4xl px-6 py-12 sm:px-8 sm:py-16">
         <BriefDisplay
           brief={brief}
+          facts={{
+            projectName: state.spec
+              ? state.spec.charAt(0).toUpperCase() + state.spec.slice(1)
+              : undefined,
+            industry: getIndustry(state.industryId)?.label,
+            areaSqm: state.areaSqm,
+            hasOutdoor: state.hasOutdoor,
+            style: state.vibeQuery || undefined,
+          }}
           pins={{
             // The user's own vibe picks, then the AI-selected reference images
             // per category (curated pins carry no source URL → link the image).

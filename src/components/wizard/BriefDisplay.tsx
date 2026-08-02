@@ -16,6 +16,7 @@
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import type { PinterestPin } from "@/db/schema";
 import ExportPanel from "./ExportPanel";
+import type { BriefFacts } from "./BriefPDF";
 
 /** Pins picked across the wizard, surfaced in the brief as reference imagery. */
 export type BriefPins = {
@@ -30,6 +31,8 @@ export type BriefPins = {
 type Props = {
   brief: GenerateBriefResponse;
   pins?: BriefPins;
+  /** The project facts the user entered (area, outdoor, style). */
+  facts?: BriefFacts;
   onRegenerate: () => void;
   onStartOver: () => void;
 };
@@ -82,6 +85,7 @@ function SpecRow({
 export default function BriefDisplay({
   brief,
   pins,
+  facts,
   onRegenerate,
   onStartOver,
 }: Props) {
@@ -303,7 +307,7 @@ export default function BriefDisplay({
       </section>
 
       {/* Export */}
-      <ExportPanel brief={brief} pins={pins} />
+      <ExportPanel brief={brief} pins={pins} facts={facts} />
 
       {/* Actions */}
       <footer className="flex flex-col items-center justify-between gap-4 border-t border-bdr-2 pt-8 sm:flex-row">

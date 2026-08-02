@@ -14,6 +14,11 @@ export type QuickState = {
   industryId: string | null;
   /** The specific space, free text (e.g. "dental clinic"). */
   spec: string;
+  /** Approximate floor area in m². Optional, but it is the one number a
+   *  designer needs first and the basis for any later floor plan or 3D. */
+  areaSqm?: number;
+  /** Whether the project includes outdoor space (terrace, garden, courtyard). */
+  hasOutdoor?: boolean;
   /** The vibe label / last search term, shown in the sentence + live brief. */
   vibeQuery: string;
   /** 3–5 reference images the user picked. */
