@@ -6,6 +6,7 @@
  * `leads` table doesn't exist yet or the DB is unreachable.
  */
 
+import Link from "next/link";
 import { desc } from "drizzle-orm";
 import { db, leads, type Lead } from "@/db";
 
@@ -46,6 +47,20 @@ export default async function AdminPage() {
             <h1 className="mt-2 font-serif text-[32px] font-medium text-txt">
               Early-access leads
             </h1>
+            <div className="mt-3 flex gap-4">
+              <Link
+                href="/admin/blog"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
+              >
+                Blog →
+              </Link>
+              <Link
+                href="/admin/setup"
+                className="font-mono text-[10px] uppercase tracking-[0.14em] text-txt-3 transition hover:text-acc"
+              >
+                Database setup →
+              </Link>
+            </div>
           </div>
           <div className="text-right">
             <div className="font-serif text-[40px] leading-none text-acc">
