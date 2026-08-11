@@ -17,8 +17,12 @@ export const config = {
 };
 
 export function middleware(request: NextRequest) {
-  const user = process.env.ADMIN_USER;
-  const pass = process.env.ADMIN_PASSWORD;
+  // Trimmed because these are typed into a web form: a value pasted into the
+  // Vercel dashboard picks up a trailing space or newline easily, and the
+  // resulting failure is indistinguishable from a wrong password — the browser
+  // just asks again, forever, with nothing to debug.
+  const user = process.env.ADMIN_USER?.trim();
+  const pass = process.env.ADMIN_PASSWORD?.trim();
 
   const unauthorized = () =>
     new NextResponse("Authentication required.", {
