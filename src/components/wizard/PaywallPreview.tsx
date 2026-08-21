@@ -88,7 +88,10 @@ export default function PaywallPreview({ brief, pins, briefToken }: Props) {
           <img
             src={pinAtOrUndefined(cover, 1200)}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover opacity-60"
+            // The one full-resolution file on a locked page. Dragging it out
+            // of the tab would hand over the best image in the deck for free.
+            draggable={false}
+            className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover opacity-60"
           />
         )}
         <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-10">
