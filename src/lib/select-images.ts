@@ -242,6 +242,69 @@ export function buildCategoryPool(
   return applyFocus(blended, opts.focus);
 }
 
+/**
+ * Candidates for a SWAP picker, ordered best first.
+ *
+ * Wider than `buildCategoryPool` on purpose. A finished brief already holds
+ * the best twelve of a pool that is only seven to twenty-three deep, so the
+ * narrow blend leaves nothing to offer: measured, it returns ZERO flooring
+ * alternatives in ten of eleven industries once the brief's own picks are
+ * excluded, and an empty panel is a worse answer than a broad one.
+ *
+ * So this widens in tiers, and the ORDER is the honest part. Tier 1 is
+ * everything the pickers already offer, so the top of the panel is exactly as
+ * on-topic as before. Tier 2 is the rest of the project type's own rooms,
+ * ranked by how much they are about this category. Tier 3 is other categories'
+ * clean close-ups, which is the point at which we are frankly offering a
+ * photograph of something else — it is last for that reason, and it exists so
+ * the panel is never empty rather than because it is a good answer. The real
+ * fix is more reference images; this is the honest interim.
+ */
+export function buildSwapPool(
+  category: string,
+  opts: {
+    vibe?: string;
+    paletteHexes?: string[];
+    spaceId?: string | null;
+  },
+): CuratedPin[] {
+  const vibe = (opts.vibe ?? "").trim().toLowerCase();
+  const paletteRgb = (opts.paletteHexes ?? [])
+    .map(hexToRgb)
+    .filter((c): c is [number, number, number] => c !== null);
+
+  const out: CuratedPin[] = [];
+  const seen = new Set<string>();
+  const push = (p?: CuratedPin) => {
+    if (!p || seen.has(p.imageUrl)) return;
+    seen.add(p.imageUrl);
+    out.push(p);
+  };
+
+  for (const p of buildCategoryPool(category, opts)) push(p);
+
+  const board = (opts.spaceId ? CURATED_VIBE[opts.spaceId] ?? [] : []).filter(
+    isUsableReference,
+  );
+  for (const scored of rank(board, {
+    vibe,
+    paletteRgb,
+    category,
+    useAffinity: true,
+  })) {
+    push(scored.pin);
+  }
+
+  for (const key of Object.keys(CURATED_PINS)) {
+    if (key === category) continue;
+    for (const p of CURATED_PINS[key] ?? []) {
+      if (isUsableReference(p)) push(p);
+    }
+  }
+
+  return out;
+}
+
 export type SelectOptions = {
   /** Style the user chose, e.g. "contemporary". */
   vibe?: string;

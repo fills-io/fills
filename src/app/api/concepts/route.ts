@@ -66,17 +66,21 @@ export async function POST(request: NextRequest) {
   }
 
   const shareToken = makeShareToken();
+  // Returned to the creating browser only, never rendered into the share page.
+  // See the note on concepts.editToken in src/db/schema.ts.
+  const editToken = makeShareToken();
   try {
     await db.insert(concepts).values({
       status: "ready",
       creationMode: parsed.data.creationMode ?? "quick",
       shareToken,
+      editToken,
       spaceType: parsed.data.spaceType || "unspecified",
       brief: parsed.data.brief,
       briefPins: parsed.data.pins ?? null,
       briefFacts: parsed.data.facts ?? null,
     });
-    return NextResponse.json({ ok: true, shareToken });
+    return NextResponse.json({ ok: true, shareToken, editToken });
   } catch (error) {
     // Never hand a raw Postgres error to the browser — it names tables and
     // columns to anyone who asks.

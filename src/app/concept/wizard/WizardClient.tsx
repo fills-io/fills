@@ -351,7 +351,7 @@ export default function WizardClient() {
         facts: { industry: industryLabel, style: wizardState.vibeQuery },
         spaceType: industryLabel ?? "unspecified",
         creationMode: "full",
-      }).then(setShareToken);
+      }).then(({ shareToken }) => setShareToken(shareToken));
 
       // The draft is spent. Leaving it behind greeted the user with "resume
       // your in-progress plan" on a brief they had already finished.

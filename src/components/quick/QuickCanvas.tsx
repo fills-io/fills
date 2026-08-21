@@ -26,7 +26,13 @@ import {
   quickDraftAge,
   saveQuickDraft,
 } from "@/lib/quick-storage";
-import { selectCategoryImages, AUTO_CATEGORIES } from "@/lib/select-images";
+import {
+  selectCategoryImages,
+  buildSwapPool,
+  toPin,
+  AUTO_CATEGORIES,
+} from "@/lib/select-images";
+import { useSwapPins } from "@/lib/use-swap-pins";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import type { PinterestPin } from "@/db/schema";
 import SetupStage from "./SetupStage";
@@ -163,6 +169,12 @@ export default function QuickCanvas() {
   const [categoryPins, setCategoryPins] = useState<BriefPins>({});
   const [genError, setGenError] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
+  // Write capability for THIS browser, so the person who made the brief can
+  // re-pick its images. Never rendered, never put in the share link.
+  const [editToken, setEditToken] = useState<string | null>(null);
+  // The industry id behind the label, kept so the swap picker can rank
+  // alternatives against the same project type the brief was built from.
+  const [spaceId, setSpaceId] = useState<string | null>(null);
 
   // Seed the uploaded palette once the query string is actually readable.
   //
@@ -230,6 +242,7 @@ export default function QuickCanvas() {
       //    materials and fittings the user will see next to its words. (Doing
       //    this after the call left the text and the pictures unrelated.)
       const spaceId = ind ? findIndustryByLabel(ind.label)?.id ?? null : null;
+      setSpaceId(spaceId);
       const selected = AUTO_CATEGORIES.map((cat) => ({
         cat,
         pins: selectCategoryImages(cat, {
@@ -330,7 +343,10 @@ export default function QuickCanvas() {
         },
         spaceType: ind?.label ?? state.spec ?? "unspecified",
         creationMode: "quick",
-      }).then(setShareToken);
+      }).then(({ shareToken, editToken }) => {
+        setShareToken(shareToken);
+        setEditToken(editToken);
+      });
 
       // The draft has served its purpose; keeping it would greet the user with
       // "resume your plan" on a brief they already finished.
@@ -349,9 +365,43 @@ export default function QuickCanvas() {
     setStatus("idle");
     setGenError(null);
     setShareToken(null);
+    setEditToken(null);
+    setSpaceId(null);
     clearQuickDraft();
     window.scrollTo({ top: 0 });
   }
+
+  // Re-picking the brief's reference images.
+  //
+  // These are hooks, so they must run on every render and cannot move inside
+  // the `status === "done"` branch below. The hook seeds from categoryPins,
+  // which is empty until generation finishes, and adopts the real set when it
+  // arrives.
+  const swapState = useSwapPins(categoryPins, shareToken, editToken);
+
+  const swapCandidates = useCallback(
+    (category: keyof BriefPins) => {
+      const stored = swapState.pins[category] ?? [];
+      // Twelve are stored, eight are shown, and all twelve reach the deck. So
+      // the first offer is the four already in the deck but below the fold:
+      // choosing one exchanges the two slots rather than replacing anything,
+      // which costs nothing and changes which spread each image lands on.
+      const visible = new Set(stored.slice(0, 8).map((p) => p.imageUrl));
+      const alsoInDeck = stored.filter((p) => !visible.has(p.imageUrl));
+      const used = new Set(stored.map((p) => p.imageUrl));
+      const fresh = buildSwapPool(category, {
+        vibe: state.vibeQuery,
+        paletteHexes: state.palette
+          .map((c) => c.hex)
+          .filter((h) => /^#[0-9a-f]{6}$/i.test(h)),
+        spaceId,
+      })
+        .filter((c) => !used.has(c.imageUrl))
+        .map(toPin);
+      return [...alsoInDeck, ...fresh];
+    },
+    [swapState.pins, state.vibeQuery, state.palette, spaceId],
+  );
 
   // Finished brief replaces the canvas.
   if (status === "done" && brief) {
@@ -371,7 +421,8 @@ export default function QuickCanvas() {
           }}
           // Exactly what was saved, vibe picks included. Merging anything extra
           // in here is what made the live brief and the shared link differ.
-          pins={categoryPins}
+          pins={swapState.pins}
+          swap={{ candidates: swapCandidates, onSwap: swapState.onSwap }}
           onRegenerate={generate}
           onStartOver={startOver}
         />

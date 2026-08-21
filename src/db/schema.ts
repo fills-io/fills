@@ -144,6 +144,18 @@ export const concepts = pgTable("concepts", {
   /** Random opaque token used in /brief/[shareToken] URLs. NULL until shared. */
   shareToken: text("share_token").unique(),
 
+  /**
+   * Write capability for the brief's own creator, so they can re-pick its
+   * reference images after it is generated.
+   *
+   * Separate from shareToken and NEVER rendered into /brief/[token]. The share
+   * link is a bearer credential we actively tell people to hand to their
+   * designer or contractor; if it also authorised writes, the contractor could
+   * silently rewrite the client's brief, and the deck they already downloaded.
+   * Read and write are two different permissions, so they get two tokens.
+   */
+  editToken: text("edit_token"),
+
   // ── User inputs ──────────────────────────────────────────────────────────
   /** Top-level space type, e.g. "residential", "commercial". */
   spaceType: text("space_type").notNull(),

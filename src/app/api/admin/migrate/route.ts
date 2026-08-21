@@ -53,6 +53,12 @@ const EXPECTED_COLUMNS: Array<{
     type: "jsonb",
     why: "Project facts the user entered (name, area, outdoor, style).",
   },
+  {
+    table: "concepts",
+    column: "edit_token",
+    type: "text",
+    why: "Lets a brief’s own creator re-pick its images. Never in the share link.",
+  },
 ];
 
 /**

@@ -629,7 +629,12 @@ function ColorSwatchRow({
 function toPin(c: CuratedPin): PinterestPin {
   return {
     id: c.id,
-    url: "",
+    // Curated references have no source page, so the image itself IS the link.
+    // This was an empty string, which BriefDisplay rendered as href="" with
+    // target="_blank": clicking a reference opened a blank copy of the brief
+    // in a new tab. The canonical toPin in select-images.ts always had this
+    // right; these two copies did not.
+    url: c.imageUrl,
     title: c.title,
     description: "",
     altText: c.title,
