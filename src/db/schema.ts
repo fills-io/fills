@@ -288,6 +288,58 @@ export const leads = pgTable("leads", {
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
 
+// ─── purchases ───────────────────────────────────────────────────────────────
+
+/** What someone bought. */
+export const purchaseKindEnum = pgEnum("purchase_kind", [
+  "brief", // one deck, unlocked forever
+  "pass", // every brief for a window
+]);
+
+/**
+ * A completed purchase — the only thing that unlocks a download.
+ *
+ * Keyed on EMAIL, not a user id, on purpose. The buyer is someone doing their
+ * own flat once; asking them to invent a password for a $9 purchase is
+ * homework in the middle of a checkout. The payment provider already collects
+ * an email, so that is the identity, and a magic link brings them back.
+ *
+ * Append-only. A refund writes `refundedAt` rather than deleting the row, so
+ * the history of what someone was sold survives.
+ */
+export const purchases = pgTable("purchases", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  kind: purchaseKindEnum("kind").notNull(),
+  /** For "brief": the concept.shareToken it unlocks. Null for a pass. */
+  briefToken: text("brief_token"),
+  /** When a pass stops granting new downloads. Null for a single brief,
+   *  which never expires — they bought that deck outright. */
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  /** Minor units, so 900 = $9.00. Stored because prices change and a receipt
+   *  should say what was actually paid. */
+  amountMinor: text("amount_minor"),
+  currency: text("currency"),
+  /**
+   * The payment provider's ids. Null while the placeholder provider is in
+   * use — Stripe UAE needs a trade licence, so the flow is built and dark
+   * until that exists. `providerEventId` is UNIQUE: webhooks are delivered
+   * at least once, and this is what stops a retry granting a second purchase.
+   */
+  provider: text("provider"),
+  providerSessionId: text("provider_session_id"),
+  providerEventId: text("provider_event_id").unique(),
+  refundedAt: timestamp("refunded_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type Purchase = typeof purchases.$inferSelect;
+export type NewPurchase = typeof purchases.$inferInsert;
+
 // ─── posts ───────────────────────────────────────────────────────────────────
 // Blog posts authored from the /admin Blog manager. Body is stored as light
 // markdown (headings, lists, bold, links). Cover + inline images land in a

@@ -12,11 +12,13 @@
  * document themselves, and a saved brief's PDF can be re-downloaded from its
  * link months later.
  *
- * ENTITLEMENT IS NOT ENFORCED YET. `mayDownload()` below is the single place
- * it will be, and it currently returns true for everyone — turning it on
- * before checkout exists would just stop people downloading anything. Wire it
- * to the purchases table when Stripe lands, and delete the client-side
- * generation in ExportPanel at the same time, or this route protects nothing.
+ * THE PAYWALL IS BUILT BUT SWITCHED OFF. checkEntitlement() is the single
+ * place the decision lives; it lets everyone through until PAYWALL_ENABLED is
+ * true AND a payment provider is live. Enforcing before checkout exists would
+ * only stop people downloading what they can currently have.
+ *
+ * When it is switched on, DELETE the client-side generation in ExportPanel at
+ * the same time, or this route protects nothing.
  *
  * Response:
  *   200 — application/pdf
@@ -29,6 +31,7 @@ import { eq } from "drizzle-orm";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { db, concepts } from "@/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { checkEntitlement } from "@/lib/entitlements";
 import BriefPDF, { type BriefFacts } from "@/components/wizard/BriefPDF";
 import type { BriefPins } from "@/components/wizard/BriefDisplay";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
@@ -37,18 +40,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 // Fetching and embedding ~55 images takes appreciably longer than a page render.
 export const maxDuration = 60;
-
-/**
- * The paywall, in one function.
- *
- * Everything else in this route is machinery; this is the decision. When
- * checkout ships it becomes: has anyone bought THIS brief, or does the buyer
- * hold an unexpired project pass?
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function mayDownload(token: string): Promise<boolean> {
-  return true;
-}
 
 function filename(projectType: string): string {
   const slug = projectType
@@ -91,7 +82,21 @@ export async function GET(
     return NextResponse.json({ ok: false, error: "Not found." }, { status: 404 });
   }
 
-  if (!(await mayDownload(token))) {
+  // The paywall. Off until PAYWALL_ENABLED=true and a payment provider is
+  // live — see src/lib/entitlements.ts.
+  let entitled;
+  try {
+    entitled = await checkEntitlement(
+      token,
+      request.nextUrl.searchParams.get("email"),
+    );
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Couldn't check that purchase." },
+      { status: 500 },
+    );
+  }
+  if (!entitled.allowed) {
     return NextResponse.json(
       { ok: false, error: "This brief hasn't been unlocked yet." },
       { status: 402 },
