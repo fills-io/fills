@@ -478,12 +478,21 @@ export default function BriefPDF({
           </View>
         </View>
 
-        <View style={{ flexDirection: "row", gap: 28, marginTop: 26 }}>
-          <View style={{ width: "32%" }}>
+        {/* The deck sets the intent beside the references; A4 stacks them.
+            A 32% text column on a 467pt sheet is a 150pt newspaper gutter,
+            and it left the three images 87pt wide apiece. */}
+        <View
+          style={
+            doc
+              ? { marginTop: 22 }
+              : { flexDirection: "row", gap: 28, marginTop: 26 }
+          }
+        >
+          <View style={doc ? {} : { width: "32%" }}>
             <Text style={s.lead}>{brief.summary.intent}</Text>
           </View>
-          <View style={[s.row, s.fill]}>
-            {p.project.map((src, i) => (
+          <View style={[s.row, s.fill, doc ? { marginTop: 18 } : {}]}>
+            {p.project.slice(0, G.project).map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
               <Image key={i} src={src} style={img(R.tall)} />
             ))}
