@@ -57,7 +57,7 @@ export default function Navbar() {
             Talk to a designer
           </Link>
           <Link
-            href="/concept/wizard"
+            href="/concept/quick"
             className="flex h-[60px] items-center whitespace-nowrap border-l border-bdr bg-acc px-4 text-xs font-medium text-white transition hover:bg-acc-d sm:px-6"
           >
             Get started →

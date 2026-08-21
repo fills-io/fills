@@ -9,7 +9,7 @@ const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
       { label: "Mood board & colours", href: "/#output" },
       { label: "Examples", href: "/#samples" },
       { label: "Free brief template", href: "/interior-design-brief-template" },
-      { label: "Start a plan", href: "/concept/wizard" },
+      { label: "Start a plan", href: "/concept/quick" },
     ],
   },
   {
