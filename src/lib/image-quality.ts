@@ -165,41 +165,81 @@ export function usableOnly<
 /**
  * Category keyword sets — used to tell whether a pin from a broad industry pool
  * is actually ABOUT this step (a lighting shot vs a generic room shot).
+ *
+ * "vibe" is deliberately absent rather than empty. Every pin in an industry
+ * pool is already a room of that project type, which is exactly what the mood
+ * board wants, so there is nothing to narrow — see `hasCategoryKeywords`.
  */
 export const CATEGORY_KEYWORDS: Record<string, string[]> = {
   furniture: [
     "furniture", "sofa", "chair", "seating", "table", "desk", "bench",
     "armchair", "stool", "cabinet", "shelving", "banquette", "lounge",
+    "sideboard", "credenza", "ottoman", "banquettes", "millwork",
   ],
   lighting: [
     "lighting", "light", "lamp", "pendant", "chandelier", "sconce",
-    "luminaire", "cove", "backlit", "illumination",
+    "luminaire", "cove", "backlit", "illumination", "downlight", "uplight",
+    "spotlight", "lantern",
   ],
   flooring: [
     "floor", "flooring", "tile", "terrazzo", "parquet", "herringbone",
-    "carpet", "rug", "concrete floor", "hardwood",
+    "carpet", "rug", "hardwood", "screed", "vinyl", "lvt", "underfoot",
+    "chevron", "mosaic",
   ],
   ceiling: [
     "ceiling", "soffit", "beam", "coffered", "slat", "canopy", "vault",
+    "bulkhead", "gypsum", "cornice", "baffle", "rafter",
   ],
   materials: [
     "material", "texture", "finish", "marble", "travertine", "oak", "walnut",
     "stone", "plaster", "brass", "timber", "veneer", "concrete", "linen",
+    "microcement", "rattan", "boucle", "limestone", "terracotta",
   ],
-  vibe: [],
 };
 
-/** How well a pin's title matches a category's vocabulary (0 = no match). */
+/** True when a category narrows an industry pool at all. See the note above. */
+export function hasCategoryKeywords(category: string): boolean {
+  return (CATEGORY_KEYWORDS[category] ?? []).length > 0;
+}
+
+/**
+ * One matcher per keyword, on WORD BOUNDARIES.
+ *
+ * This used to be `hay.includes(word)`, which is why "Day-LIGHT" and
+ * "Wall-COVE-rings" counted as lighting, "comfor-TABLE" and "Prin-TABLE" as
+ * furniture, and "OAK-ham Shop" as a material — 29% of everything the lighting
+ * step admitted from an industry pool. `focusMatchers` in select-images.ts had
+ * already solved this the right way; this is the same idea, back-ported.
+ *
+ * Built once at module load, not per call: `categoryAffinity` runs over a few
+ * thousand pins on every pick.
+ */
+const CATEGORY_MATCHERS: Record<string, RegExp[]> = Object.fromEntries(
+  Object.entries(CATEGORY_KEYWORDS).map(([category, words]) => [
+    category,
+    words.map(
+      (w) =>
+        new RegExp(
+          `\\b${w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:s|es|ing)?\\b`,
+          "i",
+        ),
+    ),
+  ]),
+);
+
+/** How well a pin's text matches a category's vocabulary (0 = no match). */
 export function categoryAffinity(
-  pin: { title?: string; style?: string },
+  pin: { title?: string; style?: string; subject?: string },
   category: string,
 ): number {
-  const words = CATEGORY_KEYWORDS[category];
-  if (!words || words.length === 0) return 0;
-  const hay = `${pin.title ?? ""} ${pin.style ?? ""}`.toLowerCase();
+  const matchers = CATEGORY_MATCHERS[category];
+  if (!matchers || matchers.length === 0) return 0;
+  // `subject` is what the scrape ASKED for. Roughly 44% of usable pins carry
+  // no title at all, and for those it is the only signal there will ever be.
+  const hay = `${pin.title ?? ""} ${pin.style ?? ""} ${pin.subject ?? ""}`;
   let score = 0;
-  for (const w of words) {
-    if (hay.includes(w)) score += 1;
+  for (const re of matchers) {
+    if (re.test(hay)) score += 1;
   }
   return score;
 }

@@ -105,13 +105,22 @@ export async function GET(
 
   const brief = row.brief as unknown as GenerateBriefResponse;
 
+  // 16:9 slides by default, A4 portrait on request. This used to be hardcoded
+  // to "deck", which meant the page size the FAQ advertises did not exist on
+  // the server at all — and this route is due to replace the browser-side
+  // export entirely, so that would have quietly deleted A4 from the product.
+  const format =
+    request.nextUrl.searchParams.get("format") === "document"
+      ? ("document" as const)
+      : ("deck" as const);
+
   try {
     const buffer = await renderToBuffer(
       BriefPDF({
         brief,
         pins: (row.briefPins ?? undefined) as BriefPins | undefined,
         facts: (row.briefFacts ?? undefined) as BriefFacts | undefined,
-        format: "deck",
+        format,
         // Absolute, because @react-pdf resolves every image itself and has no
         // page context to resolve a relative path against.
         baseUrl: request.nextUrl.origin,
@@ -122,7 +131,9 @@ export async function GET(
       headers: {
         "content-type": "application/pdf",
         "content-disposition": `attachment; filename="${filename(brief.summary.projectType)}"`,
-        // A saved brief never changes, so let the browser keep it.
+        // Safe to cache per URL: ?format= is part of the cache key, so the two
+        // page sizes never collide. Revisit if briefs become editable — a
+        // cached deck would then hand back the pre-edit file.
         "cache-control": "private, max-age=3600",
       },
     });
