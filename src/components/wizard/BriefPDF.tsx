@@ -1,7 +1,10 @@
-"use client";
-
 /**
  * BriefPDF — the design deck.
+ *
+ * Deliberately NOT a client component. It holds no state and touches no
+ * browser API beyond one guarded window check, and the paywall requires it to
+ * render on the server — a `"use client"` module reaches server code as a
+ * reference, not a function, and cannot be executed there.
  *
  * Modelled on how studios actually present a concept (see the Turtle / Emaar
  * Beachfront reference deck): a 16:9 presentation, roughly five or six images
@@ -48,6 +51,9 @@ type Props = {
   /** "deck" = 16:9 presentation (default). "document" = A4 portrait. */
   format: "deck" | "document";
   logoDataUrl?: string | null;
+  /** Absolute origin for the image proxy. Required when rendering on the
+   *  server, where there is no window to read it from. */
+  baseUrl?: string;
 };
 
 const ACC = "#c8512a";
@@ -71,17 +77,24 @@ function hiRes(url: string): string {
   return url.replace(/\/(\d+)x\//, (m, w) => (Number(w) < 1200 ? "/1200x/" : m));
 }
 
-function pdfSrc(url?: string): string | null {
+/**
+ * Where /api/img lives, as an ABSOLUTE url.
+ *
+ * In the browser that's just this origin. On the server there is no window,
+ * and @react-pdf cannot fetch a relative path — so the caller passes it in.
+ */
+function resolveBase(baseUrl?: string): string {
+  if (baseUrl) return baseUrl.replace(/\/$/, "");
+  return typeof window !== "undefined" ? window.location.origin : "";
+}
+
+function pdfSrc(url: string | undefined, base: string): string | null {
   if (!url) return null;
   if (url.startsWith("data:")) return url;
   try {
-    const u = new URL(
-      hiRes(url),
-      typeof window !== "undefined" ? window.location.href : undefined,
-    );
+    const u = new URL(hiRes(url), base || undefined);
     if (u.hostname === "pinimg.com" || u.hostname.endsWith(".pinimg.com")) {
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      return `${origin}/api/img?url=${encodeURIComponent(u.toString())}`;
+      return `${base}/api/img?url=${encodeURIComponent(u.toString())}`;
     }
     return u.toString();
   } catch {
@@ -241,7 +254,9 @@ export default function BriefPDF({
   facts,
   format,
   logoDataUrl,
+  baseUrl,
 }: Props) {
+  const base = resolveBase(baseUrl);
   const size = format === "deck" ? DECK : "A4";
   const orientation = format === "deck" ? undefined : "portrait";
   const today = new Date().toISOString().slice(0, 10);
@@ -260,7 +275,7 @@ export default function BriefPDF({
   const queues: Partial<Record<keyof BriefPins, string[]>> = {};
   for (const k of CATS) {
     queues[k] = (pins?.[k] ?? [])
-      .map((p) => pdfSrc(p.imageUrl || p.imageThumbUrl))
+      .map((p) => pdfSrc(p.imageUrl || p.imageThumbUrl, base))
       .filter((x): x is string => !!x);
   }
   const used = new Set<string>();
