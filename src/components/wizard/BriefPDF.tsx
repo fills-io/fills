@@ -500,12 +500,17 @@ export default function BriefPDF({
         <Text style={[s.lead, { maxWidth: cap(900), marginBottom: 24 }]}>
           {brief.cinematicDescription}
         </Text>
-        <View style={s.row}>
-          {p.inspiration.map((src, i) => (
-            // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={img(R.med)} />
-          ))}
-        </View>
+        {rowsOf(p.inspiration, G.inspiration).map((row, r) => (
+          <View
+            key={r}
+            style={[s.row, r === 0 ? {} : { marginTop: 14 }]}
+          >
+            {row.map((src, i) => (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image key={i} src={src} style={img(R.med)} />
+            ))}
+          </View>
+        ))}
       </Page>
 
       {/* 4 — Mood board. Full bleed, not one word. Ten images across two rows
@@ -545,23 +550,33 @@ export default function BriefPDF({
             </View>
           ))}
         </View>
-        <View style={[s.row, { marginTop: 18 }]}>
-          {p.colour.map((src, i) => (
-            // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={img(R.med)} />
-          ))}
-        </View>
+        {rowsOf(p.colour, G.colour).map((row, r) => (
+          <View
+            key={r}
+            style={[s.row, { marginTop: 18 }, r === 0 ? {} : { marginTop: 14 }]}
+          >
+            {row.map((src, i) => (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image key={i} src={src} style={img(R.med)} />
+            ))}
+          </View>
+        ))}
       </Page>
 
       {/* 6 — Materials & finishes: images + schedule */}
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Materials & finishes" name={name} date={today} />
-        <View style={[s.row, { marginBottom: 22 }]}>
-          {p.materials.map((src, i) => (
-            // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={img(R.spec)} />
-          ))}
-        </View>
+        {rowsOf(p.materials, G.materials).map((row, r) => (
+          <View
+            key={r}
+            style={[s.row, { marginBottom: 22 }, r === 0 ? {} : { marginTop: 14 }]}
+          >
+            {row.map((src, i) => (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image key={i} src={src} style={img(R.spec)} />
+            ))}
+          </View>
+        ))}
         <Schedule
           rows={brief.materials.map((m) => [m.material, m.application])}
           columns={doc ? 1 : 2}
@@ -601,19 +616,29 @@ export default function BriefPDF({
       <Page size={size} orientation={orientation} style={s.page}>
         <Head label="Surfaces" name={name} date={today} />
         <Text style={s.caption}>FLOORING</Text>
-        <View style={[s.row, { marginTop: 6 }]}>
-          {p.flooring.map((src, i) => (
-            // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={img(R.sq)} />
-          ))}
-        </View>
+        {rowsOf(p.flooring, G.sq).map((row, r) => (
+          <View
+            key={r}
+            style={[s.row, { marginTop: 6 }, r === 0 ? {} : { marginTop: 14 }]}
+          >
+            {row.map((src, i) => (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image key={i} src={src} style={img(R.sq)} />
+            ))}
+          </View>
+        ))}
         <Text style={[s.caption, { marginTop: 18 }]}>CEILING</Text>
-        <View style={[s.row, { marginTop: 6 }]}>
-          {p.ceiling.map((src, i) => (
-            // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={img(R.sq)} />
-          ))}
-        </View>
+        {rowsOf(p.ceiling, G.sq).map((row, r) => (
+          <View
+            key={r}
+            style={[s.row, { marginTop: 6 }, r === 0 ? {} : { marginTop: 14 }]}
+          >
+            {row.map((src, i) => (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image key={i} src={src} style={img(R.sq)} />
+            ))}
+          </View>
+        ))}
       </Page>
 
       {/* 10 — Closing: the direction in ten words, over three references. */}
@@ -622,12 +647,17 @@ export default function BriefPDF({
         <Text style={[s.h1, { fontSize: display(40), marginBottom: 26, maxWidth: cap(1100) }]}>
           {brief.keywords.join("  ·  ")}
         </Text>
-        <View style={s.row}>
-          {p.closing.map((src, i) => (
-            // eslint-disable-next-line jsx-a11y/alt-text
-            <Image key={i} src={src} style={img(R.tall)} />
-          ))}
-        </View>
+        {rowsOf(p.closing, G.closing).map((row, r) => (
+          <View
+            key={r}
+            style={[s.row, r === 0 ? {} : { marginTop: 14 }]}
+          >
+            {row.map((src, i) => (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image key={i} src={src} style={img(R.tall)} />
+            ))}
+          </View>
+        ))}
       </Page>
 
     </Document>
