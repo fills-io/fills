@@ -16,6 +16,7 @@ import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { db, concepts } from "@/db";
+import { checkEntitlement } from "@/lib/entitlements";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import type { BriefFacts } from "@/components/wizard/BriefPDF";
 import type { BriefPins } from "@/components/wizard/BriefDisplay";
@@ -61,10 +62,13 @@ function isRenderable(brief: unknown): brief is GenerateBriefResponse {
 
 export default async function SavedBriefPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { token } = await params;
+  const sp = await searchParams;
 
   let row: Awaited<ReturnType<typeof loadBrief>> | null = null;
   try {
@@ -97,12 +101,30 @@ export default async function SavedBriefPage({
     );
   }
 
+  // Has this visitor unlocked this deck? While the paywall is off this is
+  // always true, so the locked view never appears in normal use.
+  //
+  // `?locked=1` forces it on regardless, so the screen can be reviewed and
+  // designed before payments exist. It only ever ADDS the paywall — it can
+  // never remove one — so there is nothing here to abuse.
+  const email = typeof sp.email === "string" ? sp.email : null;
+  let locked = sp.locked === "1";
+  if (!locked) {
+    try {
+      locked = !(await checkEntitlement(token, email)).allowed;
+    } catch {
+      locked = false;
+    }
+  }
+
   return (
     <SavedBrief
       brief={row.brief as unknown as GenerateBriefResponse}
       pins={(row.briefPins ?? undefined) as BriefPins | undefined}
       facts={(row.briefFacts ?? undefined) as BriefFacts | undefined}
       savedAt={row.createdAt.toISOString()}
+      token={token}
+      locked={locked}
     />
   );
 }

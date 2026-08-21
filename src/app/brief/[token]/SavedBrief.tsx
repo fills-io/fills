@@ -12,6 +12,7 @@
 
 import { useRouter } from "next/navigation";
 import BriefDisplay, { type BriefPins } from "@/components/wizard/BriefDisplay";
+import PaywallPreview from "@/components/wizard/PaywallPreview";
 import type { BriefFacts } from "@/components/wizard/BriefPDF";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 
@@ -20,11 +21,16 @@ export default function SavedBrief({
   pins,
   facts,
   savedAt,
+  token,
+  locked,
 }: {
   brief: GenerateBriefResponse;
   pins?: BriefPins;
   facts?: BriefFacts;
   savedAt: string;
+  token: string;
+  /** True when this visitor hasn't unlocked this deck. */
+  locked: boolean;
 }) {
   const router = useRouter();
   const startNew = () => router.push("/concept/quick");
@@ -46,6 +52,12 @@ export default function SavedBrief({
           designer or contractor.
         </p>
       </div>
+
+      {locked && (
+        <div className="mb-10">
+          <PaywallPreview brief={brief} pins={pins} briefToken={token} />
+        </div>
+      )}
 
       <BriefDisplay
         brief={brief}
