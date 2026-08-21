@@ -165,13 +165,18 @@ const s = StyleSheet.create({
   row: { flexDirection: "row", gap: 14 },
   fill: { flex: 1 },
   caption: { fontSize: 7.5, color: TXT_3, letterSpacing: 1.6, marginTop: 6 },
-  moodFill: { flex: 1, objectFit: "cover" },
 
-  // Full-bleed mood board: no padding, two rows of five, edge to edge.
-  // The rows share the page height between them so the board always fills the
-  // sheet, whatever its shape.
+  // Full-bleed mood board: no padding, edge to edge. Five across in two rows
+  // on the deck, three across in three rows on A4.
+  //
+  // The rows must NOT be `flex: 1`. An <Image> with no ratio and no height
+  // reports its INTRINSIC size — a 1200x1600 reference measures 1600pt tall —
+  // so the rows grew to fit their content, overflowed, and react-pdf pushed
+  // each one onto a page of its own where it then took the full height. That
+  // is how a ten-page export became fourteen, with three mood images stretched
+  // to 193 x 834. The cell ratio below sizes them instead.
   moodPage: { backgroundColor: INK, padding: 0 },
-  moodRow: { flexDirection: "row", gap: 8, flex: 1 },
+  moodRow: { flexDirection: "row", gap: 8 },
 
   // palette
   band: { flexDirection: "row", height: 210 },
@@ -291,8 +296,17 @@ export default function BriefPDF({
   /** An image that keeps its crop shape on any page size. */
   const img = (ratio: number) => [s.fill, { aspectRatio: ratio, objectFit: "cover" as const }];
 
-  /** Mood board: 5x2 on the deck, 3x3 on A4. */
+  /**
+   * Mood board: 5x2 on the deck, 3x3 on A4.
+   *
+   * The cell ratio is derived so the grid fills the sheet with a hair to
+   * spare — a fraction over and the last row is pushed to a page of its own.
+   *   deck: (1440 - 4x8)/5 = 281.6 wide, (810 - 8)/2 = 401 tall  -> 0.702
+   *   A4:   (595.28 - 2x8)/3 = 193.1,    (841.89 - 2x8)/3 = 275.3 -> 0.701
+   * Rounding both to 0.705 leaves ~3pt of slack on the deck and ~4pt on A4.
+   */
   const moodCount = format === "deck" ? 10 : 9;
+  const moodFill = [s.fill, { aspectRatio: 0.705, objectFit: "cover" as const }];
 
   /**
    * Display type, and the width it is allowed to run to.
@@ -510,7 +524,7 @@ export default function BriefPDF({
                   .slice(r * G.moodCols, (r + 1) * G.moodCols)
                   .map((src, i) => (
                     // eslint-disable-next-line jsx-a11y/alt-text
-                    <Image key={i} src={src} style={s.moodFill} />
+                    <Image key={i} src={src} style={moodFill} />
                   ))}
               </View>
             ),
