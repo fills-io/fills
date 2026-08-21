@@ -25,9 +25,43 @@ import SavedBrief from "./SavedBrief";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  robots: { index: false, follow: false },
-};
+/**
+ * The tab, and the card that appears when the link is pasted somewhere.
+ *
+ * A saved brief used to inherit the site-wide title, so every shared link read
+ * "Interior Design Brief Generator & AI Mood Board Tool | Fills" — identical
+ * for every brief, useless to someone holding three of them open. It carries
+ * the scheme's own name now.
+ *
+ * Still noindex: naming a brief is not the same as publishing it. Nothing here
+ * reveals more than the link already does, and the link is the permission.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}): Promise<Metadata> {
+  const robots = { index: false, follow: false } as const;
+  try {
+    const { token } = await params;
+    const row = await loadBrief(token);
+    const brief = row?.brief as GenerateBriefResponse | undefined;
+    if (!brief) return { title: { absolute: "Saved brief | Fills" }, robots };
+
+    const name = brief.title?.trim() || brief.summary?.projectType?.trim();
+    const title = name ? `${name} | Fills` : "Saved brief | Fills";
+    return {
+      title: { absolute: title },
+      description: brief.conceptLine,
+      robots,
+      openGraph: { type: "article", title, description: brief.conceptLine },
+    };
+  } catch {
+    // The page itself handles a missing or unreadable brief. Metadata failing
+    // must never be the reason someone sees an error instead of their work.
+    return { title: { absolute: "Saved brief | Fills" }, robots };
+  }
+}
 
 async function loadBrief(token: string) {
   const rows = await db

@@ -204,7 +204,10 @@ export default function BriefDisplay({
       <header className="border-b border-bdr-2 pb-8">
         <div className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           <span className="inline-block h-px w-6 bg-acc" />
-          {brief.title?.trim() || "Design brief"} · {brief.summary.projectType}
+          {brief.title?.trim() || "Design brief"} ·{" "}
+          {/* The model often ends projectType with a full stop, which reads as
+              a typo inside a letter-spaced uppercase eyebrow. */}
+          {brief.summary.projectType.replace(/[.,;:\s]+$/, "")}
         </div>
         <h1 className="font-serif text-[clamp(28px,4vw,44px)] font-normal leading-[1.12] tracking-tight text-txt">
           {brief.conceptLine}

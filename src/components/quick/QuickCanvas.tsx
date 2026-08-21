@@ -257,6 +257,34 @@ export default function QuickCanvas() {
           url: p.imageUrl,
         })) as unknown as PinterestPin[];
       }
+
+      // The user's own vibe picks belong in here too.
+      //
+      // They used to be merged in at render time only, so the live screen had
+      // them and the SAVED brief did not: a shared link opened with "The
+      // direction" empty, and the server-rendered deck lost the images its
+      // cover and mood board are built from. Whatever we save has to be what
+      // we show.
+      //
+      // Their picks come first and are never displaced; the rest is filled
+      // from the same curated pool, because three picks cannot carry a
+      // ten-image mood board on their own. Full Studio does the same thing in
+      // WizardClient's briefPins().
+      const ownVibe = state.picks.map((p) => ({
+        ...p,
+        url: p.imageUrl,
+      })) as unknown as PinterestPin[];
+      const seenVibe = new Set(ownVibe.map((p) => p.imageUrl));
+      const vibeFiller = selectCategoryImages("vibe", {
+        vibe: state.vibeQuery,
+        paletteHexes,
+        spaceId,
+        count: 24,
+      })
+        .filter((c) => !seenVibe.has(c.imageUrl))
+        .map((p) => ({ ...p, url: p.imageUrl })) as unknown as PinterestPin[];
+      pins.vibe = [...ownVibe, ...vibeFiller].slice(0, 12);
+
       setCategoryPins(pins);
 
       // 2. Generate the brief against those exact references.
@@ -341,15 +369,9 @@ export default function QuickCanvas() {
             hasOutdoor: state.hasOutdoor,
             style: state.vibeQuery || undefined,
           }}
-          pins={{
-            // The user's own vibe picks, then the AI-selected reference images
-            // per category (curated pins carry no source URL → link the image).
-            vibe: state.picks.map((p) => ({
-              ...p,
-              url: p.imageUrl,
-            })) as unknown as PinterestPin[],
-            ...categoryPins,
-          }}
+          // Exactly what was saved, vibe picks included. Merging anything extra
+          // in here is what made the live brief and the shared link differ.
+          pins={categoryPins}
           onRegenerate={generate}
           onStartOver={startOver}
         />
