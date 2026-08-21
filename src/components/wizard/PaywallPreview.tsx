@@ -18,6 +18,7 @@
 
 import { useState } from "react";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
+import { pinAtOrUndefined } from "@/lib/pin-image";
 import type { BriefPins } from "./BriefDisplay";
 
 type Props = {
@@ -25,11 +26,6 @@ type Props = {
   pins?: BriefPins;
   briefToken: string;
 };
-
-/** Pinterest serves the same asset at several widths off the same path. */
-function thumb(url: string | undefined, width: "236x" | "474x") {
-  return url?.replace(/\/\d+x\//, `/${width}/`);
-}
 
 function Watermark() {
   return (
@@ -86,16 +82,18 @@ export default function PaywallPreview({ brief, pins, briefToken }: Props) {
       {/* The cover, sharp — this is the part that has to earn the money */}
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-[#1a1714]">
         {cover && (
+          // The one sharp image on the page: a 16:9 hero up to ~900 CSS px on a
+          // laptop, more on retina, so it takes the CDN's largest variant.
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={thumb(cover, "474x")}
+            src={pinAtOrUndefined(cover, 1200)}
             alt=""
             className="absolute inset-0 h-full w-full object-cover opacity-60"
           />
         )}
         <div className="absolute inset-0 flex flex-col justify-end p-6 sm:p-10">
           <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-white/70">
-            {brief.summary.projectType}
+            {brief.title?.trim() || brief.summary.projectType}
           </div>
           <h2 className="mt-3 max-w-[18ch] font-serif text-[clamp(24px,4.5vw,44px)] font-normal leading-[1.05] text-white">
             {brief.conceptLine}
@@ -107,10 +105,13 @@ export default function PaywallPreview({ brief, pins, briefToken }: Props) {
       <div className="relative border-t border-bdr-2 p-4 sm:p-6">
         <div className="grid grid-cols-3 gap-2 sm:gap-3">
           {spreads.map((pin, i) => (
+            // Deliberately unreadable, so the smallest variant is both enough
+            // and faster, and there is no full-size file sitting in the page.
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={`${pin.id}-${i}`}
-              src={thumb(pin.imageUrl || pin.imageThumbUrl, "236x")}
+              src={pinAtOrUndefined(pin.imageUrl || pin.imageThumbUrl, 236)}
+              draggable={false}
               alt=""
               aria-hidden="true"
               loading="lazy"

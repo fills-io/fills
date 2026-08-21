@@ -1,3 +1,4 @@
+import Link from "next/link";
 import FillsLogo from "./FillsLogo";
 
 const COLUMNS: { title: string; links: { label: string; href: string }[] }[] = [
@@ -75,11 +76,19 @@ export default function Footer() {
         ))}
       </div>
 
-      <div className="mx-auto mt-16 flex max-w-6xl items-center justify-between gap-4 border-t border-bdr pt-6 text-[11.5px] text-txt-3">
+      <div className="mx-auto mt-16 flex max-w-6xl flex-col items-start justify-between gap-3 border-t border-bdr pt-6 text-[11.5px] text-txt-3 sm:flex-row sm:items-center sm:gap-4">
         <span>© 2026 Fills Ltd. All rights reserved.</span>
-        <a href="/blog" className="transition hover:text-acc">
-          Blog
-        </a>
+        <div className="flex items-center gap-5">
+          <Link href="/privacy" className="transition hover:text-acc">
+            Privacy
+          </Link>
+          <Link href="/terms" className="transition hover:text-acc">
+            Terms
+          </Link>
+          <Link href="/blog" className="transition hover:text-acc">
+            Blog
+          </Link>
+        </div>
       </div>
     </footer>
   );

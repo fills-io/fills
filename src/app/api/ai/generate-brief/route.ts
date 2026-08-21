@@ -35,7 +35,7 @@ function firstIssue(error: z.ZodError): string {
   const issue = error.issues[0];
   if (issue?.code === "too_big") {
     const field = String(issue.path[0] ?? "answer");
-    return `Your ${field} is too long — please shorten it.`;
+    return `Your ${field} is too long. Please shorten it.`;
   }
   return "Some of your answers couldn't be read. Please check them.";
 }
@@ -81,7 +81,10 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  // GPT-5 at roughly $0.05 a call — the most expensive thing we run.
+  // The most expensive thing we run, though not by much: measured at about
+  // $0.014 a brief in Quick and $0.019 in Full Studio, not the $0.05 this
+  // comment used to guess. Rate-limited because it is the one route where a
+  // loop costs real money, not because a single call is expensive.
   const limited = checkRateLimit(request, "brief", 10, 3_600_000);
   if (limited) return limited;
 

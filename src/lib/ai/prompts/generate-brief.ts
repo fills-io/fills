@@ -39,11 +39,21 @@ Required output fields:
     Good: "Warm minimalism rooted in Belgian linen and travertine, lit like a north-facing studio at 3pm."
     Bad: "A beautiful modern space combining warmth and style for the perfect retreat."
 
-  summary — the project at a glance:
+  title — NAME the scheme, the way a studio names one on a deck cover. Two to
+    four words, drawn from the material, the light, or the feeling.
+    Good: "Dune House". "The Quiet Lobby". "Copper and Ash".
+    Bad: "Hotel Lobby Design". "Modern Restaurant Interior". A keyword string is
+    not a title, and never just repeat the space type back.
+
+  summary — the project at a glance. EACH OF THESE IS ONE SENTENCE. They sit
+  above the images and are read in a glance by someone deciding whether to keep
+  going. Long is wrong here.
     projectType: the space in plain words, e.g. "Hotel lobby, boutique hospitality".
-    intent: 2 sentences on what this project is actually trying to achieve.
-    whoItsFor: who uses this space and what they need from it. Be specific about the people.
-    scopeNotes: 1-2 sentences on what this brief covers and what still needs confirming on site (dimensions, services, existing conditions). Be honest that measurements are not yet captured.
+    intent: ONE sentence on what this project is trying to achieve.
+    whoItsFor: ONE short sentence. The people who use it and what they need from
+      it — not a description of the room.
+    scopeNotes: ONE short sentence on what still has to be confirmed on site.
+      Be honest that measurements are not yet captured.
 
   keywords — 8 to 10 short lowercase tags. Material, era, or mood. Search-shaped.
 
@@ -74,7 +84,10 @@ Required output fields:
 
   nextSteps — 3 to 4 practical actions for the client, in order. What to measure, confirm, source, or ask their designer. Make the first one about getting accurate dimensions.
 
-  cinematicDescription — one paragraph, 60-90 words. The finished room as a photographer would shoot it: light direction and quality, what is in frame, materials catching light.
+  cinematicDescription — 40 to 55 words. Not a paragraph, a single shot: the
+    finished room as a photographer would frame it. Light direction, one or two
+    materials catching it, what is in frame. Stop before you have described
+    everything in the room.
 
 Output strictly as JSON matching the provided schema. No prose around the JSON.`;
 
@@ -174,6 +187,7 @@ export const GENERATE_BRIEF_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
+    title: str(3, 60),
     conceptLine: str(20, 200),
 
     summary: {
@@ -181,9 +195,9 @@ export const GENERATE_BRIEF_SCHEMA = {
       additionalProperties: false,
       properties: {
         projectType: str(3, 80),
-        intent: str(40, 300),
-        whoItsFor: str(20, 220),
-        scopeNotes: str(20, 280),
+        intent: str(40, 200),
+        whoItsFor: str(20, 130),
+        scopeNotes: str(20, 150),
       },
       required: ["projectType", "intent", "whoItsFor", "scopeNotes"],
     },
@@ -286,9 +300,10 @@ export const GENERATE_BRIEF_SCHEMA = {
       items: str(10, 190),
     },
 
-    cinematicDescription: str(150, 560),
+    cinematicDescription: str(120, 340),
   },
   required: [
+    "title",
     "conceptLine",
     "summary",
     "keywords",
@@ -305,6 +320,10 @@ export const GENERATE_BRIEF_SCHEMA = {
 } as const;
 
 export type GenerateBriefResponse = {
+  /** The scheme's name, the way a studio names one on a deck cover. Optional
+   *  only because briefs saved before this field existed carry none — every
+   *  caller falls back to the project type. */
+  title?: string;
   conceptLine: string;
   summary: {
     projectType: string;

@@ -141,6 +141,10 @@ export default function FurnitureStep({ state, setState }: Props) {
   // Fetch sub-categories from the AI. Persists to wizard state so the
   // call only happens once per session (or when the user re-categorizes).
   const fetchSubSections = useCallback(
+    // The compiler can't prove this callback is stable, because it sets state
+    // it doesn't read. That's fine here: the mount effect has empty deps and
+    // the two retry buttons are click handlers, so nothing re-runs on identity.
+    // eslint-disable-next-line react-hooks/preserve-manual-memoization
     async (signal?: AbortSignal) => {
       setStatus("loading");
       setError(null);
@@ -181,6 +185,8 @@ export default function FurnitureStep({ state, setState }: Props) {
   // First-load: if no sub-sections in state yet, fetch them.
   useEffect(() => {
     if (existing && existing.length > 0) {
+      // Restored from a draft: mark ready instead of re-asking the model.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStatus("ready");
       return;
     }

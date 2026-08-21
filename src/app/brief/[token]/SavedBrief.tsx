@@ -12,7 +12,6 @@
 
 import { useRouter } from "next/navigation";
 import BriefDisplay, { type BriefPins } from "@/components/wizard/BriefDisplay";
-import PaywallPreview from "@/components/wizard/PaywallPreview";
 import type { BriefFacts } from "@/components/wizard/BriefPDF";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 
@@ -48,23 +47,21 @@ export default function SavedBrief({
           Saved brief
         </span>
         <p className="min-w-0 flex-1 text-[13px] text-txt-2">
-          Generated {saved}. This link is permanent — share it with your
+          Generated {saved}. This link is permanent. Share it with your
           designer or contractor.
         </p>
       </div>
 
-      {locked && (
-        <div className="mb-10">
-          <PaywallPreview brief={brief} pins={pins} briefToken={token} />
-        </div>
-      )}
-
+      {/* Locked, the paywall lives INSIDE the brief, where the download panel
+          would otherwise be. Sitting above it, it was a lock on an open door:
+          the export panel below still built the full deck in the browser. */}
       <BriefDisplay
         brief={brief}
         pins={pins}
         facts={facts}
         onRegenerate={startNew}
         onStartOver={startNew}
+        paywall={locked ? { briefToken: token } : undefined}
       />
     </main>
   );

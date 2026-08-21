@@ -15,6 +15,7 @@ import {
   type CuratedPin,
 } from "@/data/reference-images";
 import { usableOnly } from "@/lib/image-quality";
+import { pinAt } from "@/lib/pin-image";
 import type { QuickState } from "@/lib/quick-state";
 
 type Props = {
@@ -149,7 +150,7 @@ export default function VibeStage({ state, patch }: Props) {
       </h2>
       <p className="mt-3 max-w-xl font-serif text-[16px] italic leading-relaxed text-txt-2">
         Search by keyword or browse the suggestions. Pick 3 to 5 images that
-        capture the direction — each pick gives the AI more signal.
+        capture the direction. Each pick gives the AI more signal.
       </p>
 
       {/* Search */}
@@ -176,7 +177,7 @@ export default function VibeStage({ state, patch }: Props) {
             disabled={searchLocked}
             placeholder={
               searchLocked
-                ? "Search limit reached — pick from what you found."
+                ? "Search limit reached. Pick from what you found."
                 : `Try "moody hotel lounge", "warm minimal cafe"…`
             }
             className="min-w-0 flex-1 bg-transparent px-3.5 py-3.5 text-[14px] text-txt outline-none placeholder:italic placeholder:text-txt-3 disabled:cursor-not-allowed"
@@ -206,7 +207,7 @@ export default function VibeStage({ state, patch }: Props) {
       {/* Search budget — small, secondary. */}
       <p className="mt-2 font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
         {searchLocked
-          ? "Free searches used — browsing by style is still unlimited"
+          ? "Free searches used · browsing by style is still unlimited"
           : `${MAX_SEARCHES - searchCount} of ${MAX_SEARCHES} free searches left · browsing by style is free`}
       </p>
 
@@ -249,7 +250,7 @@ export default function VibeStage({ state, patch }: Props) {
         <div className="mt-5 border border-bdr bg-bg-2 p-4 text-[13px] leading-relaxed text-txt-2">
           Nothing matched{" "}
           <b className="text-txt">“{submitted || style}”</b> in{" "}
-          {ind?.label ?? "this category"} — showing everything else instead.
+          {ind?.label ?? "this category"}. Showing everything else instead.
         </div>
       )}
       {(submitted || style) && exactCount > 0 && (
@@ -276,11 +277,14 @@ export default function VibeStage({ state, patch }: Props) {
                   : "border-bdr hover:-translate-y-1"
               }`}
             >
+              {/* ~195px per column on desktop, ~157px on a phone — both want
+                  474 once the screen is retina, so one variant covers it. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={p.imageUrl.replace("/736x/", "/474x/")}
+                src={pinAt(p.imageUrl, 474)}
                 alt={p.title || ""}
                 loading="lazy"
+                decoding="async"
                 className="w-full object-cover"
               />
               <span
@@ -326,10 +330,15 @@ export default function VibeStage({ state, patch }: Props) {
                 key={p.id || i}
                 className="h-8 w-8 overflow-hidden border border-bdr"
               >
+                {/* 236 would fit a 32px chip, but the grid above already has
+                    the 474 in cache — reusing it costs nothing, a second
+                    variant would be a fresh request per pick. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={p.imageUrl.replace("/736x/", "/236x/")}
+                  src={pinAt(p.imageUrl, 474)}
                   alt=""
+                  loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover"
                 />
               </div>

@@ -21,6 +21,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PinterestPin } from "@/db/schema";
 import { type CuratedPin } from "@/data/reference-images";
 import { usableOnly } from "@/lib/image-quality";
+import { pinAt } from "@/lib/pin-image";
 import { buildCategoryPool } from "@/lib/select-images";
 
 export type SuggestionContext = {
@@ -43,7 +44,10 @@ type Props = {
   onSelectionChange: (pins: PinterestPin[]) => void;
   /** Optional copy under the header. */
   helperText?: string;
-  /** When provided (live mode), AI-suggested alternative searches appear. */
+  /** Was going to drive AI-suggested alternative searches. Nothing reads it
+   *  today: three steps still build one, and the grid ignores it. Kept on the
+   *  Props type so those callers keep type-checking, deliberately not
+   *  destructured below so it does not read as live. */
   suggestionContext?: SuggestionContext;
   /** Curated category key (vibe, lighting, flooring, ceiling, materials,
    *  furniture). When it resolves to a non-empty set, we use curated mode. */
@@ -92,10 +96,16 @@ function toPin(c: CuratedPin): PinterestPin {
   };
 }
 
-/** Slightly smaller variant for grid thumbnails — faster than the 736 original.
- *  Display only: the selected pin keeps its full-resolution imageUrl. */
+/**
+ * Grid thumbnails. The cell is ~199px wide at the 832px desktop column and
+ * ~157px in the two-column phone layout, so both ends want 474 on a retina
+ * screen — one variant covers the whole range, no srcset needed.
+ *
+ * Display only: the selected pin keeps its stored imageUrl, which is what the
+ * PDF export renders from.
+ */
 function thumb(url: string): string {
-  return url.replace("/736x/", "/474x/");
+  return pinAt(url, 474);
 }
 
 /** Shared by both branches so the cap the caller passes reads identically
@@ -390,7 +400,6 @@ function LiveGrid({
   selectedPins,
   onSelectionChange,
   helperText,
-  suggestionContext,
 }: Props) {
   const [query, setQuery] = useState(initialQuery);
   const [submittedQuery, setSubmittedQuery] = useState(initialQuery);

@@ -24,15 +24,20 @@ import {
 /**
  * Grants the purchase immediately, without charging anyone.
  *
- * DEVELOPMENT AND PREVIEW ONLY. If this ever answered in production it would
- * be handing away the product, so it refuses.
+ * DEVELOPMENT AND PREVIEW ONLY. Handing the product away on the live site
+ * would be indefensible, so it refuses there.
+ *
+ * The check is on VERCEL_ENV, not NODE_ENV: every Vercel deployment builds
+ * with NODE_ENV=production, preview ones included, so gating on that would
+ * refuse everywhere and leave the flow untestable outside localhost.
+ * VERCEL_ENV is "production" only on the real domain.
  */
 const placeholderProvider: PaymentProvider = {
   name: "placeholder",
   live: false,
 
   async createCheckout(req: CheckoutRequest): Promise<CheckoutResult> {
-    if (process.env.NODE_ENV === "production") {
+    if (process.env.VERCEL_ENV === "production") {
       return {
         ok: false,
         error: "Payments aren't switched on yet.",

@@ -24,19 +24,19 @@ const ROWS: { label: string; dur: number }[] = [
 const TIPS: { eyebrow: string; text: string }[] = [
   {
     eyebrow: "Did you know",
-    text: "Add more spaces to a project and your palette plus vibe stay <b>consistent across all of them</b> — a full apartment or a hotel's eight zones.",
+    text: "Add more spaces to a project and your palette plus vibe stay <b>consistent across all of them</b>, whether that is a full apartment or a hotel's eight zones.",
   },
   {
-    eyebrow: "Available from here",
-    text: "<b>A working architect can review your brief</b> over a video call, develop 2D drawings, or take it through to a full 3D design.",
+    eyebrow: "When you want a human eye",
+    text: "<b>A working architect can review your brief</b> over a video call, develop 2D drawings, or take it through to a full 3D design. Ask on the Talk to a designer page.",
   },
   {
     eyebrow: "Tip",
-    text: "Export as a PDF or shareable link, <b>white-labelled with your studio's logo</b> when you send it to clients.",
+    text: "Export as a PDF deck or a shareable link, with <b>your studio's logo on the cover</b> when you send it to clients.",
   },
   {
     eyebrow: "Designed by an architect",
-    text: "Every brief is trained on how senior studios actually <b>scope a project</b> — not on random design content.",
+    text: "Every brief is trained on how senior studios actually <b>scope a project</b>, not on random design content.",
   },
 ];
 

@@ -124,7 +124,7 @@ export default function OpengraphImage() {
               whiteSpace: "nowrap",
             }}
           >
-            Palette, materials, lighting and furniture — one page, five minutes.
+            Palette, materials, lighting and furniture. One page, five minutes.
           </div>
         </div>
 

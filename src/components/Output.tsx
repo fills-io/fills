@@ -5,7 +5,7 @@ const OUTPUT_CARDS = [
   {
     num: "01",
     title: "Colours",
-    desc: "A six-color palette with notes on where each one goes: walls, accents, and soft furnishings.",
+    desc: "A working palette with notes on where each colour goes: walls, accents, and soft furnishings.",
     visual: (
       <svg viewBox="0 0 220 44" width="100%" height="44" preserveAspectRatio="xMidYMid meet">
         <rect x="0" y="0" width="35" height="44" fill="#E8DCC8" />
@@ -72,7 +72,7 @@ const OUTPUT_CARDS = [
   {
     num: "05",
     title: "Spatial notes",
-    desc: "Flow, proportion, and sight lines when you upload a layout.",
+    desc: "Flow, proportion, and sight lines, written for the space you describe.",
     visual: (
       <svg viewBox="0 0 200 100" width="100%" height="44" stroke="currentColor" fill="none" strokeWidth="1" strokeLinejoin="round" className="text-txt-3">
         <rect x="10" y="20" width="100" height="70" />

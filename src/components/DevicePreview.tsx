@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Device preview switcher (temporary testing tool — lives in the header).
+ * Device preview switcher: our testing tool, in the header.
  *
  * Pick a device and the current page renders inside a real, device-width
  * iframe, so genuine responsive breakpoints fire (an iframe has its own
@@ -9,6 +9,12 @@
  *
  * The iframe loads the same route with `?deviceframe=1`; inside that frame this
  * component renders nothing, so there's no nested switcher and no recursion.
+ *
+ * NOT SHIPPED TO CUSTOMERS. It sits next to the theme toggle, so on fills.io a
+ * visitor would find a developer tool in the primary nav. Hidden on production
+ * only, which leaves it working locally and on every preview deploy, where it
+ * is actually used. NEXT_PUBLIC_ is required for the value to exist in the
+ * browser bundle at all, and Vercel inlines it at build time.
  */
 
 import { useEffect, useState } from "react";
@@ -32,13 +38,18 @@ const DevicesIcon = (
   </svg>
 );
 
+const IS_PRODUCTION = process.env.NEXT_PUBLIC_VERCEL_ENV === "production";
+
 export default function DevicePreview() {
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [device, setDevice] = useState<Device | null>(null);
   const [path, setPath] = useState("/");
 
+  // Reading window during render would disagree with the server-rendered
+  // markup, so both values land in an effect. One pass, on mount, never again.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     setPath(window.location.pathname);
   }, []);
@@ -46,7 +57,7 @@ export default function DevicePreview() {
   // Rendered inside the preview iframe → show nothing (no switcher, no loop).
   const inFrame =
     mounted && new URLSearchParams(window.location.search).has("deviceframe");
-  if (!mounted || inFrame) return null;
+  if (IS_PRODUCTION || !mounted || inFrame) return null;
 
   return (
     <div className="relative hidden sm:block">

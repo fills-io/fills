@@ -1,19 +1,14 @@
 /**
- * /concept/wizard — the 9-step brief builder.
+ * /concept/wizard — Full Studio, the nine-step brief builder.
  *
- * This page only renders the shell:
- *   - Top navbar
- *   - Progress strip across all 9 steps
- *   - The active step's placeholder card
- *   - Back / Next navigation
+ * The page itself is only the shell: navbar, then WizardClient, which owns the
+ * progress strip, the active step, and Back / Next. Every step is real (space,
+ * vibe, colours, materials, lighting, furniture, flooring, ceiling, review) and
+ * ends in a generated brief.
  *
- * The individual steps (Pinterest grids, color builder, AI helpers) get
- * built in follow-up PRs. For now each step is an empty card so you can
- * walk the navigation end-to-end and see the progress bar advance.
- *
- * Wizard state lives in-memory on the client for this first PR. We'll
- * persist to the concepts table in a follow-up — at that point the URL
- * will include a brief ID and refreshing will restore the work.
+ * Work in progress is kept in the browser, not the database: a draft survives a
+ * refresh via wizard-storage, and only the finished brief is saved server-side,
+ * behind the share token in /brief/[token].
  */
 
 import type { Metadata } from "next";
@@ -57,7 +52,7 @@ export default function WizardPage() {
       {/* The wizard's own headings are per-step, and the shell is all a crawler
           ever sees, so the page needs one stable h1 that isn't visible chrome. */}
       <h1 className="sr-only">
-        Interior design brief generator — the nine-step studio flow
+        Interior design brief generator: the nine-step studio flow
       </h1>
       <Suspense
         fallback={

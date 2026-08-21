@@ -45,7 +45,7 @@ export default function QuickConceptPage() {
       {/* The canvas is a working surface, so it has no visible headline. Crawlers
           and screen readers still need one, and exactly one. */}
       <h1 className="sr-only">
-        Quick mood board maker — build an interior design brief in five minutes
+        Quick mood board maker: build an interior design brief in five minutes
       </h1>
       <Suspense
         fallback={

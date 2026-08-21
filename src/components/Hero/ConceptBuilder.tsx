@@ -27,6 +27,7 @@ import {
   VIBE_BY_IND,
 } from "@/lib/concept-taxonomy";
 import { REFERENCE_IMAGES } from "@/data/reference-images";
+import { pinAt } from "@/lib/pin-image";
 
 type Tab = "quick" | "upload" | "studio";
 
@@ -66,6 +67,19 @@ export default function ConceptBuilder() {
   const [uploads, setUploads] = useState<File[]>([]);
   const [reading, setReading] = useState(false);
   const diceRef = useRef<HTMLButtonElement>(null);
+
+  // "/#upload" (the Upload door in "Pick your door") has to land on the Upload
+  // tab, not the default Quick one, or the door is a dead end. Read on mount
+  // and on hashchange, so it works from another page and from this one.
+  useEffect(() => {
+    const openFromHash = () => {
+      const h = window.location.hash.replace("#", "");
+      if (h === "upload" || h === "studio" || h === "quick") setTab(h as Tab);
+    };
+    openFromHash();
+    window.addEventListener("hashchange", openFromHash);
+    return () => window.removeEventListener("hashchange", openFromHash);
+  }, []);
 
   const industry = getIndustry(industryId);
   const specSuggestions = getSpecSuggestions(industryId);
@@ -135,7 +149,7 @@ export default function ConceptBuilder() {
   }
 
   return (
-    <div className="w-full max-w-[700px]">
+    <div id="upload" className="w-full max-w-[700px] scroll-mt-24">
       {/* ── Pill tabs ── */}
       <div className="mb-[18px] flex w-full gap-0.5 rounded-sm border border-bdr-2 bg-bg p-1 sm:inline-flex sm:w-auto">
         {(
@@ -648,6 +662,10 @@ function DemoCursor({ left, top }: { left: number; top: number }) {
 /**
  * Category image-picking demo: the cursor glides to two references and they
  * turn red (selected). Remounted per step so it replays for each category.
+ *
+ * A cell is ~99px at the panel's full 700px width, so 236 covers it even on a
+ * retina screen. Worth being exact about: the panel walks eight categories on
+ * a timer, so this is six images every 2.8s on the homepage.
  */
 function ImagePickDemo({ images }: { images: string[] }) {
   const [phase, setPhase] = useState(0);
@@ -672,7 +690,7 @@ function ImagePickDemo({ images }: { images: string[] }) {
               {src ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={src.replace("/736x/", "/236x/")}
+                  src={pinAt(src, 236)}
                   alt=""
                   loading="lazy"
                   decoding="async"
@@ -918,7 +936,7 @@ function UploadPanel({
           We read their colours and build your palette
         </span>
         <span className="font-sans text-[11px] text-txt-3">
-          PNG · JPG · HEIC. They stay on your device — nothing is uploaded.
+          PNG · JPG · HEIC. They stay on your device. Nothing is uploaded.
         </span>
         <input
           type="file"

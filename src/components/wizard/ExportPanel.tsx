@@ -3,8 +3,10 @@
 /**
  * ExportPanel — PDF download controls shown on the generated brief page.
  *
- * Lets the user pick orientation (portrait/landscape), optionally upload
- * a logo to brand the cover page, then download a magazine-style PDF.
+ * Lets the user pick a page size (16:9 presentation or A4 portrait),
+ * optionally add a logo to the cover, then download the image-led deck.
+ * Both sizes render the SAME ten pages: the deck is images, and the written
+ * specification stays on the brief page (see BriefPDF's header).
  *
  * PDF generation is fully client-side via @react-pdf/renderer.pdf().
  * The blob is materialized and triggered as a browser download — no
@@ -104,22 +106,23 @@ export default function ExportPanel({ brief, pins, facts }: Props) {
         Export as PDF
       </h2>
       <p className="mb-5 text-[13px] leading-relaxed text-txt-2">
-        A brief you can send straight to a designer or contractor: the concept,
-        colour system with applications, materials and finishes, furniture,
-        the lighting plan, layout notes, and every reference image.
+        A slide deck you can send straight to a designer or contractor: the
+        concept, a mood board, your palette, materials and finishes, furniture,
+        lighting, and surfaces, told in reference images. The written
+        specification stays on this page, ready to share as a link.
       </p>
 
       <div className="grid gap-6 sm:grid-cols-2">
         {/* Format */}
         <div>
           <div className="mb-2 font-mono text-[9px] uppercase tracking-[0.14em] text-txt-3">
-            Format
+            Page size
           </div>
           <div className="flex gap-2">
             {(
               [
-                ["deck", "Presentation"],
-                ["document", "A4 document"],
+                ["deck", "16:9 slides"],
+                ["document", "A4 portrait"],
               ] as const
             ).map(([id, label]) => (
               <button

@@ -68,7 +68,7 @@ export default async function BlogIndex() {
             </h2>
             <p className="mt-2 max-w-lg text-[14px] leading-[1.7] font-light text-txt-2">
               A clean, printable one-pager that walks through every section of a
-              good brief. Free to download and keep.
+              good brief. Fill it in on screen, then print it or save it as a PDF.
             </p>
             <span className="mt-4 inline-block font-mono text-[11px] uppercase tracking-[0.1em] text-txt transition group-hover:text-acc">
               Get the template →

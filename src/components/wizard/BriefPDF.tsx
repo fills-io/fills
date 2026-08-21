@@ -327,7 +327,11 @@ export default function BriefPDF({
     ceiling: take("ceiling", 4),
   };
 
-  const name = facts?.projectName?.trim() || brief.summary.projectType;
+  // The cover wants a NAME, not a category. "Dune House" reads as a scheme;
+  // "Hotel lobby, boutique hospitality" reads as a search query. Briefs saved
+  // before the model was asked for a title fall back to what they have.
+  const name =
+    facts?.projectName?.trim() || brief.title?.trim() || brief.summary.projectType;
 
   return (
     <Document title={`${name} — design brief`} author="Fills" subject={brief.conceptLine}>
