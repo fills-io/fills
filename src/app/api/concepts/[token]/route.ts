@@ -13,7 +13,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, concepts, purchases } from "@/db";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -60,6 +60,23 @@ const bodySchema = z.object({
   ),
 });
 
+/** Postgres 42703, unwrapped through drizzle's error chain. */
+function isUndefinedColumn(error: unknown): boolean {
+  for (let e: unknown = error, depth = 0; e && depth < 4; depth++) {
+    if (typeof e !== "object") break;
+    const o = e as { code?: unknown; message?: unknown; cause?: unknown };
+    if (o.code === "42703") return true;
+    if (
+      typeof o.message === "string" &&
+      /column .*edit_token.* does not exist/i.test(o.message)
+    ) {
+      return true;
+    }
+    e = o.cause;
+  }
+  return false;
+}
+
 /** Constant-time compare, so the token can't be probed a character at a time. */
 function tokenMatches(given: string, expected: string | null): boolean {
   if (!expected) return false;
@@ -94,17 +111,33 @@ export async function PATCH(
   }
 
   try {
-    const rows = await db
-      .select({ id: concepts.id, editToken: concepts.editToken })
-      .from(concepts)
-      .where(eq(concepts.shareToken, token))
-      .limit(1);
-    const row = rows[0];
+    // Raw SQL: `edit_token` is deliberately not on the drizzle table, because
+    // declaring it there makes drizzle name it in every SELECT and INSERT and
+    // takes saved briefs offline against a database that has not had migration
+    // 0006 applied. See the note in src/db/schema.ts.
+    let row: { id: string; edit_token: string | null } | undefined;
+    try {
+      const rows = (await db.execute(
+        sql`SELECT id, edit_token FROM concepts WHERE share_token = ${token} LIMIT 1`,
+      )) as unknown as Array<{ id: string; edit_token: string | null }>;
+      row = rows[0];
+    } catch (error) {
+      if (isUndefinedColumn(error)) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "Re-picking images isn't switched on yet.",
+          },
+          { status: 503 },
+        );
+      }
+      throw error;
+    }
     if (!row) {
       return NextResponse.json({ ok: false, error: "Not found." }, { status: 404 });
     }
 
-    if (!tokenMatches(parsed.data.editToken, row.editToken)) {
+    if (!tokenMatches(parsed.data.editToken, row.edit_token)) {
       // Deliberately the same shape as a 404 to anyone probing: holding the
       // share link tells you nothing about whether the edit token was close.
       return NextResponse.json(

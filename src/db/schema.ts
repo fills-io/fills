@@ -145,16 +145,29 @@ export const concepts = pgTable("concepts", {
   shareToken: text("share_token").unique(),
 
   /**
-   * Write capability for the brief's own creator, so they can re-pick its
-   * reference images after it is generated.
+   * NOTE: `concepts.edit_token` also exists in the database (migration 0006)
+   * but is DELIBERATELY ABSENT from this table definition.
    *
-   * Separate from shareToken and NEVER rendered into /brief/[token]. The share
-   * link is a bearer credential we actively tell people to hand to their
-   * designer or contractor; if it also authorised writes, the contractor could
-   * silently rewrite the client's brief, and the deck they already downloaded.
-   * Read and write are two different permissions, so they get two tokens.
+   * It is write capability for the brief's own creator, so they can re-pick
+   * their reference images. Separate from shareToken and never rendered into
+   * /brief/[token]: the share link is a bearer credential we actively tell
+   * people to hand to their designer, and if it also authorised writes that
+   * contractor could silently rewrite the client's brief and the deck they had
+   * already downloaded. Read and write are two different permissions.
+   *
+   * It is out of this definition because drizzle emits EVERY column of a table
+   * in both its INSERT and its SELECT. Declaring it here made every read and
+   * every write of `concepts` fail with 42703 against a database that had not
+   * had the migration applied yet — and migrations here are a button a person
+   * presses in /admin/setup, so there is always a window where the two are out
+   * of step. Adding a column would have taken saved briefs offline, which is
+   * not a thing a new optional feature is allowed to do.
+   *
+   * So it is read and written by raw SQL in the two routes that need it
+   * (src/app/api/concepts/route.ts and .../concepts/[token]/route.ts), each of
+   * which treats a missing column as "this feature is not switched on yet".
+   * Re-pick then starts working on its own the moment the button is pressed.
    */
-  editToken: text("edit_token"),
 
   // ── User inputs ──────────────────────────────────────────────────────────
   /** Top-level space type, e.g. "residential", "commercial". */

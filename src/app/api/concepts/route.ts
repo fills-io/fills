@@ -106,48 +106,11 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    await db.insert(concepts).values({ ...row, editToken });
-    return NextResponse.json({ ok: true, shareToken, editToken });
+    await db.insert(concepts).values(row);
   } catch (error) {
-    // A deploy can reach a database that has not had its migration applied
-    // yet — schema changes here are a button in /admin/setup, pressed by a
-    // person, so code and database are briefly out of step by design.
-    //
-    // Saving the brief matters far more than the edit token does. If the
-    // column is missing, save without it: the user keeps their work and their
-    // share link, and only re-picking images is unavailable until the button
-    // is pressed. Losing a finished brief over an optional feature would be
-    // the wrong trade.
-    if (isUndefinedColumn(error)) {
-      console.error(
-        "[/api/concepts] concepts.edit_token is missing — saving without it. " +
-          "Apply the pending migration from /admin/setup.",
-      );
-      try {
-        // RAW SQL, not db.insert(). Drizzle builds its INSERT from the table
-        // schema rather than from the values you pass, so it names every
-        // column including edit_token — dropping the field from `values`
-        // changes nothing and the retry fails identically. Naming the columns
-        // by hand is the only way to leave one out.
-        await db.execute(sql`
-          INSERT INTO concepts
-            (status, creation_mode, share_token, space_type,
-             brief, brief_pins, brief_facts)
-          VALUES
-            (${row.status}, ${row.creationMode}, ${row.shareToken},
-             ${row.spaceType}, ${JSON.stringify(row.brief)}::jsonb,
-             ${row.briefPins ? JSON.stringify(row.briefPins) : null}::jsonb,
-             ${row.briefFacts ? JSON.stringify(row.briefFacts) : null}::jsonb)
-        `);
-        return NextResponse.json({ ok: true, shareToken, editToken: null });
-      } catch (retryError) {
-        console.error("[/api/concepts] fallback insert failed:", retryError);
-      }
-    } else {
-      // Never hand a raw Postgres error to the browser — it names tables and
-      // columns to anyone who asks.
-      console.error("[/api/concepts] insert failed:", error);
-    }
+    // Never hand a raw Postgres error to the browser — it names tables and
+    // columns to anyone who asks.
+    console.error("[/api/concepts] insert failed:", error);
     return NextResponse.json(
       {
         ok: false,
@@ -160,6 +123,24 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 },
     );
+  }
+
+  // Stamp the edit token separately, in raw SQL, because `edit_token` is
+  // deliberately not on the drizzle table — see the long note in schema.ts.
+  // The brief is already saved by this point, so a database that has not had
+  // migration 0006 applied simply means re-picking images is not switched on
+  // yet. It starts working by itself once the button in /admin/setup is
+  // pressed; nothing here needs to change.
+  try {
+    await db.execute(
+      sql`UPDATE concepts SET edit_token = ${editToken} WHERE share_token = ${shareToken}`,
+    );
+    return NextResponse.json({ ok: true, shareToken, editToken });
+  } catch (error) {
+    if (!isUndefinedColumn(error)) {
+      console.error("[/api/concepts] edit-token stamp failed:", error);
+    }
+    return NextResponse.json({ ok: true, shareToken, editToken: null });
   }
 }
 
