@@ -134,8 +134,29 @@ export async function POST(request: NextRequest) {
       console.error("[/api/concepts] insert failed:", error);
     }
     return NextResponse.json(
-      { ok: false, error: "Couldn't save the brief." },
+      {
+        ok: false,
+        error: "Couldn't save the brief.",
+        // Off production only. A save failing here costs someone a finished
+        // brief, and diagnosing it from the outside was otherwise guesswork.
+        ...(process.env.VERCEL_ENV !== "production"
+          ? { reason: describe(error) }
+          : {}),
+      },
       { status: 500 },
     );
   }
+}
+
+/** A short, non-sensitive description of a database error, for previews. */
+function describe(error: unknown): string {
+  const parts: string[] = [];
+  for (let e: unknown = error, depth = 0; e && depth < 4; depth++) {
+    if (typeof e !== "object") break;
+    const o = e as { code?: unknown; message?: unknown; cause?: unknown };
+    if (o.code) parts.push(`code=${String(o.code)}`);
+    if (typeof o.message === "string") parts.push(o.message.slice(0, 160));
+    e = o.cause;
+  }
+  return parts.join(" | ").slice(0, 400) || "unknown";
 }
