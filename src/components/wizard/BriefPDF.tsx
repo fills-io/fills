@@ -293,8 +293,22 @@ export default function BriefPDF({
       ? { project: 3, inspiration: 5, colour: 5, materials: 5, quad: 4, sq: 4, closing: 3, moodCols: 5 }
       : { project: 2, inspiration: 3, colour: 3, materials: 3, quad: 2, sq: 2, closing: 3, moodCols: 3 };
 
-  /** An image that keeps its crop shape on any page size. */
-  const img = (ratio: number) => [s.fill, { aspectRatio: ratio, objectFit: "cover" as const }];
+  /**
+   * An image that keeps its crop shape on any page size.
+   *
+   * `across` is the row's PLANNED width, not how many images it actually got.
+   * With plain `flex: 1` a category that came up short — and they do now that
+   * a labelled spread refuses to borrow from another one — spread two images
+   * across the full row at 649x612 apiece, which then overflowed onto an
+   * eleventh page. Sizing from the plan leaves a gap instead, which is the
+   * right way for a short row to look.
+   */
+  const img = (ratio: number, across: number) => ({
+    flexBasis: `${100 / across}%`,
+    flexGrow: 0,
+    aspectRatio: ratio,
+    objectFit: "cover" as const,
+  });
 
   /**
    * Mood board: 5x2 on the deck, 3x3 on A4.
@@ -494,7 +508,7 @@ export default function BriefPDF({
           <View style={[s.row, s.fill, doc ? { marginTop: 18 } : {}]}>
             {p.project.slice(0, G.project).map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
-              <Image key={i} src={src} style={img(R.tall)} />
+              <Image key={i} src={src} style={img(R.tall, G.project)} />
             ))}
           </View>
         </View>
@@ -516,7 +530,7 @@ export default function BriefPDF({
           >
             {row.map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
-              <Image key={i} src={src} style={img(R.med)} />
+              <Image key={i} src={src} style={img(R.med, G.inspiration)} />
             ))}
           </View>
         ))}
@@ -566,7 +580,7 @@ export default function BriefPDF({
           >
             {row.map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
-              <Image key={i} src={src} style={img(R.med)} />
+              <Image key={i} src={src} style={img(R.med, G.colour)} />
             ))}
           </View>
         ))}
@@ -582,7 +596,7 @@ export default function BriefPDF({
           >
             {row.map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
-              <Image key={i} src={src} style={img(R.spec)} />
+              <Image key={i} src={src} style={img(R.spec, G.materials)} />
             ))}
           </View>
         ))}
@@ -599,7 +613,7 @@ export default function BriefPDF({
           <View key={r} style={[s.row, r === 0 ? {} : { marginTop: 14 }]}>
             {row.map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
-              <Image key={i} src={src} style={img(R.quad)} />
+              <Image key={i} src={src} style={img(R.quad, G.quad)} />
             ))}
           </View>
         ))}
@@ -615,7 +629,7 @@ export default function BriefPDF({
           <View key={r} style={[s.row, r === 0 ? {} : { marginTop: 14 }]}>
             {row.map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
-              <Image key={i} src={src} style={img(R.quad)} />
+              <Image key={i} src={src} style={img(R.quad, G.quad)} />
             ))}
           </View>
         ))}
@@ -632,7 +646,7 @@ export default function BriefPDF({
           >
             {row.map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
-              <Image key={i} src={src} style={img(R.sq)} />
+              <Image key={i} src={src} style={img(R.sq, G.sq)} />
             ))}
           </View>
         ))}
@@ -644,7 +658,7 @@ export default function BriefPDF({
           >
             {row.map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
-              <Image key={i} src={src} style={img(R.sq)} />
+              <Image key={i} src={src} style={img(R.sq, G.sq)} />
             ))}
           </View>
         ))}
@@ -663,7 +677,7 @@ export default function BriefPDF({
           >
             {row.map((src, i) => (
               // eslint-disable-next-line jsx-a11y/alt-text
-              <Image key={i} src={src} style={img(R.tall)} />
+              <Image key={i} src={src} style={img(R.tall, G.closing)} />
             ))}
           </View>
         ))}
