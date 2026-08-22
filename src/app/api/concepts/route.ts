@@ -47,6 +47,16 @@ function makeShareToken(): string {
   return randomBytes(9).toString("base64url");
 }
 
+/** Postgres 42703: the statement named a column the table does not have. */
+function isUndefinedColumn(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "42703"
+  );
+}
+
 export async function POST(request: NextRequest) {
   // One row per saved brief; bounded so the table can't be flooded.
   const limited = checkRateLimit(request, "concepts", 30, 3600000);
@@ -69,22 +79,46 @@ export async function POST(request: NextRequest) {
   // Returned to the creating browser only, never rendered into the share page.
   // See the note on concepts.editToken in src/db/schema.ts.
   const editToken = makeShareToken();
+
+  const row = {
+    status: "ready" as const,
+    creationMode: parsed.data.creationMode ?? ("quick" as const),
+    shareToken,
+    spaceType: parsed.data.spaceType || "unspecified",
+    brief: parsed.data.brief,
+    briefPins: parsed.data.pins ?? null,
+    briefFacts: parsed.data.facts ?? null,
+  };
+
   try {
-    await db.insert(concepts).values({
-      status: "ready",
-      creationMode: parsed.data.creationMode ?? "quick",
-      shareToken,
-      editToken,
-      spaceType: parsed.data.spaceType || "unspecified",
-      brief: parsed.data.brief,
-      briefPins: parsed.data.pins ?? null,
-      briefFacts: parsed.data.facts ?? null,
-    });
+    await db.insert(concepts).values({ ...row, editToken });
     return NextResponse.json({ ok: true, shareToken, editToken });
   } catch (error) {
-    // Never hand a raw Postgres error to the browser — it names tables and
-    // columns to anyone who asks.
-    console.error("[/api/concepts] insert failed:", error);
+    // A deploy can reach a database that has not had its migration applied
+    // yet — schema changes here are a button in /admin/setup, pressed by a
+    // person, so code and database are briefly out of step by design.
+    //
+    // Saving the brief matters far more than the edit token does. If the
+    // column is missing, save without it: the user keeps their work and their
+    // share link, and only re-picking images is unavailable until the button
+    // is pressed. Losing a finished brief over an optional feature would be
+    // the wrong trade.
+    if (isUndefinedColumn(error)) {
+      console.error(
+        "[/api/concepts] concepts.edit_token is missing — saved without it. " +
+          "Apply the pending migration from /admin/setup.",
+      );
+      try {
+        await db.insert(concepts).values(row);
+        return NextResponse.json({ ok: true, shareToken, editToken: null });
+      } catch (retryError) {
+        console.error("[/api/concepts] insert failed:", retryError);
+      }
+    } else {
+      // Never hand a raw Postgres error to the browser — it names tables and
+      // columns to anyone who asks.
+      console.error("[/api/concepts] insert failed:", error);
+    }
     return NextResponse.json(
       { ok: false, error: "Couldn't save the brief." },
       { status: 500 },

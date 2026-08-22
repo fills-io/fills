@@ -43,6 +43,13 @@
       "when": 1787325462098,
       "tag": "0005_bizarre_doomsday",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787404390741,
+      "tag": "0006_add_edit_token",
+      "breakpoints": true
     }
   ]
 }
