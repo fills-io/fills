@@ -26,6 +26,7 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { db, concepts } from "@/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -119,14 +120,28 @@ export async function POST(request: NextRequest) {
     // the wrong trade.
     if (isUndefinedColumn(error)) {
       console.error(
-        "[/api/concepts] concepts.edit_token is missing — saved without it. " +
+        "[/api/concepts] concepts.edit_token is missing — saving without it. " +
           "Apply the pending migration from /admin/setup.",
       );
       try {
-        await db.insert(concepts).values(row);
+        // RAW SQL, not db.insert(). Drizzle builds its INSERT from the table
+        // schema rather than from the values you pass, so it names every
+        // column including edit_token — dropping the field from `values`
+        // changes nothing and the retry fails identically. Naming the columns
+        // by hand is the only way to leave one out.
+        await db.execute(sql`
+          INSERT INTO concepts
+            (status, creation_mode, share_token, space_type,
+             brief, brief_pins, brief_facts)
+          VALUES
+            (${row.status}, ${row.creationMode}, ${row.shareToken},
+             ${row.spaceType}, ${JSON.stringify(row.brief)}::jsonb,
+             ${row.briefPins ? JSON.stringify(row.briefPins) : null}::jsonb,
+             ${row.briefFacts ? JSON.stringify(row.briefFacts) : null}::jsonb)
+        `);
         return NextResponse.json({ ok: true, shareToken, editToken: null });
       } catch (retryError) {
-        console.error("[/api/concepts] insert failed:", retryError);
+        console.error("[/api/concepts] fallback insert failed:", retryError);
       }
     } else {
       // Never hand a raw Postgres error to the browser — it names tables and
