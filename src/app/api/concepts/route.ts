@@ -47,14 +47,28 @@ function makeShareToken(): string {
   return randomBytes(9).toString("base64url");
 }
 
-/** Postgres 42703: the statement named a column the table does not have. */
+/**
+ * Postgres 42703: the statement named a column the table does not have.
+ *
+ * Drizzle wraps the driver's error, so the code can be one or two `cause`
+ * levels down rather than on the object it hands back. The message is checked
+ * as well because that nesting is an implementation detail of a library we do
+ * not control, and getting this wrong means a saved brief is lost.
+ */
 function isUndefinedColumn(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "42703"
-  );
+  for (let e: unknown = error, depth = 0; e && depth < 4; depth++) {
+    if (typeof e !== "object") break;
+    const o = e as { code?: unknown; message?: unknown; cause?: unknown };
+    if (o.code === "42703") return true;
+    if (
+      typeof o.message === "string" &&
+      /column .*edit_token.* does not exist/i.test(o.message)
+    ) {
+      return true;
+    }
+    e = o.cause;
+  }
+  return false;
 }
 
 export async function POST(request: NextRequest) {
