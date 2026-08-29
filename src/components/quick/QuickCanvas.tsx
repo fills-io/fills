@@ -27,7 +27,7 @@ import {
   saveQuickDraft,
 } from "@/lib/quick-storage";
 import {
-  selectCategoryImages,
+  selectBriefImages,
   buildSwapPool,
   toPin,
   AUTO_CATEGORIES,
@@ -243,17 +243,27 @@ export default function QuickCanvas() {
       //    this after the call left the text and the pictures unrelated.)
       const spaceId = ind ? findIndustryByLabel(ind.label)?.id ?? null : null;
       setSpaceId(spaceId);
+
+      // One call for the whole brief, so no image lands in two sections. The
+      // user's own vibe picks are declared spent up front: they are already in
+      // the brief, and a category that took one of them would have shown the
+      // same photograph twice.
+      const chosen = selectBriefImages({
+        vibe: state.vibeQuery,
+        paletteHexes,
+        spaceId,
+        // The deck spends ~55 images across ten spreads and never repeats one,
+        // so each category supplies more than any single section shows.
+        // BriefDisplay caps what the PAGE renders at eight per section.
+        count: 12,
+        // Chosen once per brief and then stored, so two briefs for the same
+        // kind of space are not near-copies of each other.
+        variety: 1,
+        alreadyUsed: state.picks.map((p) => p.imageUrl),
+      });
       const selected = AUTO_CATEGORIES.map((cat) => ({
         cat,
-        pins: selectCategoryImages(cat, {
-          vibe: state.vibeQuery,
-          paletteHexes,
-          spaceId,
-          // The deck spends ~55 images across ten spreads and never repeats
-          // one, so each category supplies more than any single section shows.
-          // BriefDisplay caps what the PAGE renders at eight per section.
-          count: 12,
-        }),
+        pins: chosen[cat] ?? [],
       }));
 
       const titles = (cat: string) =>
@@ -287,15 +297,10 @@ export default function QuickCanvas() {
         ...p,
         url: p.imageUrl,
       })) as unknown as PinterestPin[];
-      const seenVibe = new Set(ownVibe.map((p) => p.imageUrl));
-      const vibeFiller = selectCategoryImages("vibe", {
-        vibe: state.vibeQuery,
-        paletteHexes,
-        spaceId,
-        count: 24,
-      })
-        .filter((c) => !seenVibe.has(c.imageUrl))
-        .map((p) => ({ ...p, url: p.imageUrl })) as unknown as PinterestPin[];
+      const vibeFiller = (chosen.vibe ?? []).map((p) => ({
+        ...p,
+        url: p.imageUrl,
+      })) as unknown as PinterestPin[];
       pins.vibe = [...ownVibe, ...vibeFiller].slice(0, 12);
 
       setCategoryPins(pins);

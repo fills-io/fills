@@ -79,27 +79,40 @@ function briefPins(state: WizardState) {
     .map((c) => c.hex)
     .filter((h) => /^#[0-9a-f]{6}$/i.test(h));
 
+  // One shared ledger for the whole brief, seeded with everything the user
+  // picked by hand, so no photograph can appear under two headings. Topping
+  // each category up on its own is what let a pendant land in both Furniture
+  // and Lighting.
+  //
+  // Scarcest first: flooring has seven clean close-ups, vibe has a per-industry
+  // board of well over a hundred. Filling the roomy categories first would
+  // spend a scarce flooring image on the mood board.
+  const used = new Set<string>(
+    Object.values(hand).flatMap((list) => list.map((p) => p.imageUrl)),
+  );
+
   const topUp = (category: keyof typeof hand): PinterestPin[] => {
     const picked = hand[category];
-    const seen = new Set(picked.map((p) => p.imageUrl));
     const filler = selectCategoryImages(category, {
       vibe: state.vibeQuery,
       paletteHexes,
       spaceId,
       count: DECK_PER_CATEGORY * 2,
-    })
-      .filter((c) => !seen.has(c.imageUrl))
-      .map(toPin);
+      exclude: used,
+      // Chosen once per brief and then stored, so two briefs for the same kind
+      // of space are not near-copies of each other.
+      variety: 1,
+    }).map(toPin);
     return [...picked, ...filler].slice(0, DECK_PER_CATEGORY);
   };
 
   return {
-    vibe: topUp("vibe"),
-    furniture: topUp("furniture"),
-    lighting: topUp("lighting"),
     flooring: topUp("flooring"),
     ceiling: topUp("ceiling"),
+    furniture: topUp("furniture"),
+    lighting: topUp("lighting"),
     materials: topUp("materials"),
+    vibe: topUp("vibe"),
   };
 }
 
@@ -120,6 +133,14 @@ export default function WizardClient() {
     useState<GenerateBriefResponse | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
+  // The brief's reference images, chosen ONCE when it is generated.
+  //
+  // This used to be briefPins(wizardState) called twice — once for the save
+  // and once inside the render. Two independent invocations agreed only
+  // because selection was deterministic, and the moment it varies per brief
+  // (see SelectOptions.variety) the page would reshuffle its own images on
+  // every keystroke and disagree with what was saved.
+  const [briefImages, setBriefImages] = useState<ReturnType<typeof briefPins> | null>(null);
 
   const params = useSearchParams();
 
@@ -340,6 +361,8 @@ export default function WizardClient() {
       const industryLabel = wizardState.industryId
         ? getIndustry(wizardState.industryId)?.label
         : undefined;
+      const chosenImages = briefPins(wizardState);
+      setBriefImages(chosenImages);
       setGeneratedBrief(data);
       setGenerationStatus("done");
 
@@ -347,7 +370,7 @@ export default function WizardClient() {
       // up a brief the user can already read.
       saveBrief({
         brief: data,
-        pins: briefPins(wizardState),
+        pins: chosenImages,
         facts: { industry: industryLabel, style: wizardState.vibeQuery },
         spaceType: industryLabel ?? "unspecified",
         creationMode: "full",
@@ -381,7 +404,7 @@ export default function WizardClient() {
         <ShareBar token={shareToken} />
         <BriefDisplay
           brief={generatedBrief}
-          pins={briefPins(wizardState)}
+          pins={briefImages ?? undefined}
           onRegenerate={generateBrief}
           onStartOver={startOver}
         />

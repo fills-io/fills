@@ -49,7 +49,27 @@ function industryPoolFor(category: string, spaceId?: string | null): CuratedPin[
     isUsableReference,
   );
   if (!hasCategoryKeywords(category)) return base;
-  return base.filter((p) => categoryAffinity(p, category) > 0);
+
+  // Keep pins this category can be shown to be about, AND pins with no title
+  // at all.
+  //
+  // An untitled pin is not an off-topic pin, it is an UNKNOWN one: a real
+  // photograph of a room of this exact project type whose publisher wrote no
+  // caption, so `categoryAffinity` has nothing to read and scores it 0. They
+  // are 35% to 58% of every industry board, and excluding them left each
+  // category with one to four project-specific images against seven to
+  // seventeen generic close-ups shared by every project type on the site.
+  // That is why two briefs looked so alike: there was almost nothing in them
+  // that knew what was being designed.
+  //
+  // Ranking, not this filter, decides the order — `rank()` gives a genuinely
+  // on-topic pin at least three points of affinity that an untitled one cannot
+  // score, so captioned floors still come first on the flooring page and the
+  // untitled rooms fill in behind them instead of a tile-catalogue shot that
+  // every other project has already seen.
+  return base.filter(
+    (p) => categoryAffinity(p, category) > 0 || !(p.title ?? "").trim(),
+  );
 }
 
 function hexToRgb(hex: string): [number, number, number] | null {
@@ -153,6 +173,26 @@ function applyFocus(pool: CuratedPin[], focus: string | undefined): CuratedPin[]
     .map((s) => s.pin);
   const rest = scored.filter((s) => s.hits === 0).map((s) => s.pin);
   return [...named, ...rest];
+}
+
+/**
+ * Shuffle the strongest candidates so two briefs of the same kind of space
+ * don't come out as near-copies. See `SelectOptions.variety`.
+ *
+ * Only the band that could plausibly be picked is touched: the top
+ * `need * (1 + variety * 1.5)` entries, with everything below left in rank
+ * order as the fallback tail. So the worst outcome is the Nth-best image
+ * instead of the best one, never a bad image instead of a good one.
+ */
+function shuffleTop<T>(list: T[], need: number, variety = 0): T[] {
+  if (variety <= 0 || list.length <= need) return list;
+  const band = Math.min(list.length, Math.ceil(need * (1 + variety * 1.5)));
+  const head = list.slice(0, band);
+  for (let i = head.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [head[i], head[j]] = [head[j], head[i]];
+  }
+  return [...head, ...list.slice(band)];
 }
 
 /** Rank a pool: higher is better. Colour is the tie-breaker, not the driver. */
@@ -316,6 +356,40 @@ export type SelectOptions = {
   count?: number;
   /** Narrow the result to a sub-topic, e.g. "Coffee table". */
   focus?: string;
+  /**
+   * Vary the pick between briefs, 0 to 1. Off by default.
+   *
+   * Selection is otherwise a pure function of (project type, vibe, palette),
+   * so two briefs for the same kind of space returned the same 77% of their
+   * images however differently the user described them. The arithmetic says
+   * that is not forced: a brief spends 72 images out of roughly 148 available,
+   * so two of them need only share about a fifth.
+   *
+   * With variety on, the pick is drawn from a BAND at the top of the ranking
+   * rather than strictly its first N, so a strong image is likely rather than
+   * certain to appear. Quality is bounded by the band, not by luck: nothing
+   * outside the best `count * (1 + variety * 1.5)` candidates can ever be
+   * chosen.
+   *
+   * Only for GENERATING a brief, where the result is saved and never
+   * recomputed. Do not use it in a picker that re-renders — the grid would
+   * reshuffle under the user's cursor.
+   */
+  variety?: number;
+  /**
+   * Image URLs already spent elsewhere in THIS brief.
+   *
+   * Categories are chosen one at a time, and several pins qualify for more
+   * than one of them — a pendant over a dining table is both furniture and
+   * lighting. Without this, the same photograph turned up in two sections of
+   * the same brief: measured at one to five repeats per brief across all
+   * eleven project types. The deck had its own guard against this and the
+   * PAGE had none, so a reader saw it before the PDF ever hid it.
+   *
+   * Callers pass one Set and let every category add to it, so a brief is
+   * distinct end to end. See `selectBriefImages`, which does exactly that.
+   */
+  exclude?: Set<string>;
 };
 
 /**
@@ -356,15 +430,19 @@ export function selectCategoryImages(
   // request ("Coffee table") is answered with coffee tables where they exist.
   const focused = (list: Scored[]) =>
     applyFocus(list.map((x) => x.pin), opts.focus);
-  const focusedCategory = focused(rankedCategory);
-  const focusedIndustry = focused(rankedIndustry);
+  const focusedCategory = shuffleTop(focused(rankedCategory), count, opts.variety);
+  const focusedIndustry = shuffleTop(focused(rankedIndustry), count, opts.variety);
 
   // Interleave: detail, context, detail, context… so the sheet reads varied.
+  //
+  // `seen` starts from whatever the rest of this brief has already taken, so a
+  // pin that qualifies for two categories lands in one of them, not both.
   const out: CuratedPin[] = [];
-  const seen = new Set<string>();
+  const seen = new Set<string>(opts.exclude);
   const push = (p?: CuratedPin) => {
     if (!p || seen.has(p.imageUrl) || out.length >= count) return;
     seen.add(p.imageUrl);
+    opts.exclude?.add(p.imageUrl);
     out.push(p);
   };
 
@@ -427,3 +505,36 @@ export const AUTO_CATEGORIES = [
   "ceiling",
   "materials",
 ] as const;
+
+/**
+ * Every reference image for one brief, guaranteed distinct.
+ *
+ * The one entry point callers should use. Picking category by category is what
+ * let the same photograph appear under two headings — a pendant over a dining
+ * table scores for both furniture and lighting — so the shared `exclude` set
+ * lives here rather than in each caller, where it was previously forgotten.
+ *
+ * Order matters and is deliberate. The SCARCEST categories choose first:
+ * flooring has seven clean close-ups and furniture has ten, while vibe draws
+ * on a per-industry board of 130 to 200. Letting the roomy categories pick
+ * first would spend a scarce flooring image on the mood board and leave the
+ * flooring section short. Vibe goes last because it can always find more.
+ */
+export function selectBriefImages(
+  opts: Omit<SelectOptions, "exclude" | "focus"> & {
+    /** Images already claimed, e.g. the user's own vibe picks in Quick. */
+    alreadyUsed?: Iterable<string>;
+    /** Categories to fill, scarcest first. Defaults to the standard set. */
+    categories?: readonly string[];
+  },
+): Record<string, CuratedPin[]> {
+  const exclude = new Set<string>(opts.alreadyUsed ?? []);
+  const categories =
+    opts.categories ?? (["flooring", "ceiling", "furniture", "lighting", "materials", "vibe"] as const);
+
+  const out: Record<string, CuratedPin[]> = {};
+  for (const category of categories) {
+    out[category] = selectCategoryImages(category, { ...opts, exclude });
+  }
+  return out;
+}
