@@ -58,12 +58,12 @@ export default function TalkToDesignerForm({
         <span className="absolute left-0 top-0 h-[16px] w-[16px] border-l-[1.5px] border-t-[1.5px] border-acc" />
         <span className="absolute bottom-0 right-0 h-[16px] w-[16px] border-b-[1.5px] border-r-[1.5px] border-acc" />
         <h2 className="font-serif text-[24px] font-medium text-txt">
-          Thank you — your message is in.
+          Thank you, your message is in.
         </h2>
         <p className="mt-3 text-[14px] leading-relaxed text-txt-2">
           A designer will reply by email shortly. While you wait, you can{" "}
           <a
-            href="/concept/wizard"
+            href="/concept/quick"
             className="text-acc underline decoration-acc/40 underline-offset-2 hover:decoration-acc"
           >
             start a brief
@@ -121,13 +121,29 @@ export default function TalkToDesignerForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={status === "sending"}
-        className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-d disabled:opacity-50"
-      >
-        {status === "sending" ? "Sending…" : "Send message →"}
-      </button>
+      <div>
+        <button
+          type="submit"
+          disabled={status === "sending"}
+          className="inline-flex items-center gap-2 bg-acc px-7 py-3.5 text-[13px] font-medium text-white transition hover:gap-3 hover:bg-acc-d disabled:opacity-50"
+        >
+          {status === "sending" ? "Sending…" : "Send message →"}
+        </button>
+        {/* Someone typing their email into a box deserves to know where it
+            goes. This is what actually happens: it's stored, a person reads
+            it, they reply. No list, no resale. */}
+        <p className="mt-4 text-[12px] leading-relaxed text-txt-3">
+          We store your message and email so a designer can reply. We
+          won&apos;t add you to a mailing list or pass it on — see our{" "}
+          <a
+            href="/privacy"
+            className="underline decoration-txt-3/40 underline-offset-2 transition hover:text-acc hover:decoration-acc"
+          >
+            privacy policy
+          </a>
+          .
+        </p>
+      </div>
     </form>
   );
 }

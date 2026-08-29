@@ -20,11 +20,16 @@ export default function SavedBrief({
   pins,
   facts,
   savedAt,
+  token,
+  locked,
 }: {
   brief: GenerateBriefResponse;
   pins?: BriefPins;
   facts?: BriefFacts;
   savedAt: string;
+  token: string;
+  /** True when this visitor hasn't unlocked this deck. */
+  locked: boolean;
 }) {
   const router = useRouter();
   const startNew = () => router.push("/concept/quick");
@@ -42,17 +47,21 @@ export default function SavedBrief({
           Saved brief
         </span>
         <p className="min-w-0 flex-1 text-[13px] text-txt-2">
-          Generated {saved}. This link is permanent — share it with your
+          Generated {saved}. This link is permanent. Share it with your
           designer or contractor.
         </p>
       </div>
 
+      {/* Locked, the paywall lives INSIDE the brief, where the download panel
+          would otherwise be. Sitting above it, it was a lock on an open door:
+          the export panel below still built the full deck in the browser. */}
       <BriefDisplay
         brief={brief}
         pins={pins}
         facts={facts}
         onRegenerate={startNew}
         onStartOver={startNew}
+        paywall={locked ? { briefToken: token } : undefined}
       />
     </main>
   );

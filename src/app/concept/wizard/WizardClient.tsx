@@ -3,14 +3,15 @@
 /**
  * Client-side wizard controller.
  *
- * Holds the current step + the in-progress brief in React state and renders
- * the matching step component (or a placeholder for steps that haven't been
- * ported yet). Back / Next buttons move between steps.
+ * Holds the current step and the in-progress brief in React state, renders the
+ * matching step component, and moves between them with Back / Next.
+ *
+ * Two paths run through the same controller. Full Studio walks every step in
+ * WIZARD_STEPS; Quick walks only QUICK_STEP_IDS (vibe, then colours) and lets
+ * the image selector fill the rest. Which one you get is `?path=`.
  *
  * Query params from the homepage (`?mode=`, `?industry=`, `?spec=`, `?vibe=`)
- * are consumed once on mount to pre-seed the Space step's industry. Once the
- * AI auto-fill lands (Quick mode), the spec and vibe inputs will seed
- * subsequent steps too.
+ * are consumed once on mount to pre-seed the Space step and the vibe search.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -350,7 +351,7 @@ export default function WizardClient() {
         facts: { industry: industryLabel, style: wizardState.vibeQuery },
         spaceType: industryLabel ?? "unspecified",
         creationMode: "full",
-      }).then(setShareToken);
+      }).then(({ shareToken }) => setShareToken(shareToken));
 
       // The draft is spent. Leaving it behind greeted the user with "resume
       // your in-progress plan" on a brief they had already finished.

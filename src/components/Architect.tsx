@@ -72,9 +72,16 @@ export default function Architect() {
 
       <p className="mx-auto mt-12 max-w-2xl text-center text-[13px] leading-[1.85] text-hero-cream-2">
         <strong className="font-medium text-hero-cream">
-          All four are available from inside your project.
+          All four start with the same conversation.
         </strong>{" "}
-        Start a plan above to bring a working architect in.
+        Build your plan first, then{" "}
+        <a
+          href="/talk-to-a-designer"
+          className="text-acc underline decoration-acc/40 underline-offset-2 transition hover:decoration-acc"
+        >
+          tell us about the project
+        </a>{" "}
+        and an architect replies by email.
       </p>
     </section>
   );

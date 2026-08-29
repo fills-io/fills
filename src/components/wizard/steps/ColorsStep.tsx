@@ -15,6 +15,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PaletteBar from "@/components/wizard/PaletteBar";
 import { extractPalette } from "@/lib/extract-colors";
+import { pinAt } from "@/lib/pin-image";
 import type { ColorEntry } from "@/db/schema";
 import type { WizardState } from "@/lib/wizard-state";
 
@@ -180,11 +181,15 @@ export default function ColorsStep({ state, setState }: Props) {
               key={p.id || i}
               className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-bdr-2"
             >
+              {/* 36px provenance chips. 474 rather than the size-matched 236
+                  because the Vibe step's grid loaded these exact URLs at 474
+                  a moment ago — the chip comes out of cache. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={p.imageUrl.replace("/736x/", "/236x/")}
+                src={pinAt(p.imageUrl, 474)}
                 alt=""
                 loading="lazy"
+                decoding="async"
                 className="h-full w-full object-cover"
               />
             </div>

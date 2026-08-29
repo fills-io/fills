@@ -6,7 +6,10 @@ export default function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
+  // The theme is set on <html> by an inline script before React runs, so the
+  // only way to read it is after mount. One pass, on mount, never again.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     setIsDark(document.documentElement.classList.contains("theme-dark"));
   }, []);

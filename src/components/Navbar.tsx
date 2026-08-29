@@ -56,11 +56,8 @@ export default function Navbar() {
           >
             Talk to a designer
           </Link>
-          <button className="hidden h-[60px] whitespace-nowrap border-l border-bdr px-5 text-xs text-txt-2 transition hover:bg-bg-2 hover:text-txt lg:block">
-            Sign in
-          </button>
           <Link
-            href="/concept/wizard"
+            href="/concept/quick"
             className="flex h-[60px] items-center whitespace-nowrap border-l border-bdr bg-acc px-4 text-xs font-medium text-white transition hover:bg-acc-d sm:px-6"
           >
             Get started →
@@ -109,9 +106,6 @@ export default function Navbar() {
           >
             Talk to a designer
           </Link>
-          <button className="block w-full px-6 py-3.5 text-left text-sm text-txt-2 transition hover:bg-bg-2 hover:text-txt">
-            Sign in
-          </button>
         </div>
       )}
     </nav>

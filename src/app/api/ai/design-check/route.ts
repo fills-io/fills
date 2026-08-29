@@ -33,7 +33,7 @@ function firstIssue(error: z.ZodError): string {
   const issue = error.issues[0];
   if (issue?.code === "too_big") {
     const field = String(issue.path[0] ?? "answer");
-    return `Your ${field} is too long — please shorten it.`;
+    return `Your ${field} is too long. Please shorten it.`;
   }
   return "Some of your answers couldn't be read. Please check them.";
 }

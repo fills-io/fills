@@ -18,15 +18,15 @@ const QUESTIONS = [
   },
   {
     q: "Will my contractor be able to work from the plan?",
-    a: "Yes. Every plan includes named materials, a six-color palette with notes on where each goes, a lighting plan, and reference images per part. We export it as a PDF you can hand over directly.",
+    a: "Yes. Every plan includes named materials with where each one goes, a palette with the same notes, a lighting plan down to colour temperature, and reference images per part. The written plan lives on a permanent link you can send, and the reference deck exports as a PDF you can hand over directly.",
   },
   {
     q: "Can designers send the plan to clients?",
-    a: "Yes, and many do. The brief is structured the way studios already brief clients: same shape, same depth. You can export it in your studio's colors and add your logo before you hand it over.",
+    a: "Yes, and many do. The brief is structured the way studios already brief clients: same shape, same depth. You can add your studio's logo to the deck's cover before you hand it over.",
   },
   {
     q: "How long does a plan actually take?",
-    a: "From a minute to ten, depending on which door you pick. Drop a reference image and the plan comes out in about a minute. Pick three things in Quick mode and it's about five. Step through every part yourself in Full Studio and you're around ten.",
+    a: "From a minute to ten, depending on which door you pick. Drop a few photos you love and we read their colours in about a minute, then you carry that palette into Quick. Pick three things in Quick mode and it's about five. Step through every part yourself in Full Studio and you're around ten.",
   },
   {
     q: "What if I don't like what gets generated?",
@@ -34,11 +34,11 @@ const QUESTIONS = [
   },
   {
     q: "Who built this?",
-    a: "A working architect who's spent years briefing clients across residential, hospitality, and commercial work. The engine is trained on the way senior studios actually scope a project, and is in daily use by working architects and interior designers.",
+    a: "A working architect who's spent years briefing clients across residential, hospitality, and commercial work. The engine follows the way senior studios actually scope a project: concept, palette, materials, furniture, lighting, then what to confirm on site.",
   },
   {
     q: "What formats and customization options are available?",
-    a: "PDF or shareable digital link. Landscape or portrait orientation. Add your own logo and studio colors when you send it to clients.",
+    a: "PDF or shareable digital link. The PDF comes as 16:9 slides or A4 portrait. Add your own logo to the cover when you send it to clients.",
   },
 ];
 

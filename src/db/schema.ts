@@ -144,6 +144,31 @@ export const concepts = pgTable("concepts", {
   /** Random opaque token used in /brief/[shareToken] URLs. NULL until shared. */
   shareToken: text("share_token").unique(),
 
+  /**
+   * NOTE: `concepts.edit_token` also exists in the database (migration 0006)
+   * but is DELIBERATELY ABSENT from this table definition.
+   *
+   * It is write capability for the brief's own creator, so they can re-pick
+   * their reference images. Separate from shareToken and never rendered into
+   * /brief/[token]: the share link is a bearer credential we actively tell
+   * people to hand to their designer, and if it also authorised writes that
+   * contractor could silently rewrite the client's brief and the deck they had
+   * already downloaded. Read and write are two different permissions.
+   *
+   * It is out of this definition because drizzle emits EVERY column of a table
+   * in both its INSERT and its SELECT. Declaring it here made every read and
+   * every write of `concepts` fail with 42703 against a database that had not
+   * had the migration applied yet — and migrations here are a button a person
+   * presses in /admin/setup, so there is always a window where the two are out
+   * of step. Adding a column would have taken saved briefs offline, which is
+   * not a thing a new optional feature is allowed to do.
+   *
+   * So it is read and written by raw SQL in the two routes that need it
+   * (src/app/api/concepts/route.ts and .../concepts/[token]/route.ts), each of
+   * which treats a missing column as "this feature is not switched on yet".
+   * Re-pick then starts working on its own the moment the button is pressed.
+   */
+
   // ── User inputs ──────────────────────────────────────────────────────────
   /** Top-level space type, e.g. "residential", "commercial". */
   spaceType: text("space_type").notNull(),
@@ -287,6 +312,58 @@ export const leads = pgTable("leads", {
 
 export type Lead = typeof leads.$inferSelect;
 export type NewLead = typeof leads.$inferInsert;
+
+// ─── purchases ───────────────────────────────────────────────────────────────
+
+/** What someone bought. */
+export const purchaseKindEnum = pgEnum("purchase_kind", [
+  "brief", // one deck, unlocked forever
+  "pass", // every brief for a window
+]);
+
+/**
+ * A completed purchase — the only thing that unlocks a download.
+ *
+ * Keyed on EMAIL, not a user id, on purpose. The buyer is someone doing their
+ * own flat once; asking them to invent a password for a $9 purchase is
+ * homework in the middle of a checkout. The payment provider already collects
+ * an email, so that is the identity, and a magic link brings them back.
+ *
+ * Append-only. A refund writes `refundedAt` rather than deleting the row, so
+ * the history of what someone was sold survives.
+ */
+export const purchases = pgTable("purchases", {
+  id: uuid("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  kind: purchaseKindEnum("kind").notNull(),
+  /** For "brief": the concept.shareToken it unlocks. Null for a pass. */
+  briefToken: text("brief_token"),
+  /** When a pass stops granting new downloads. Null for a single brief,
+   *  which never expires — they bought that deck outright. */
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  /** Minor units, so 900 = $9.00. Stored because prices change and a receipt
+   *  should say what was actually paid. */
+  amountMinor: text("amount_minor"),
+  currency: text("currency"),
+  /**
+   * The payment provider's ids. Null while the placeholder provider is in
+   * use — Stripe UAE needs a trade licence, so the flow is built and dark
+   * until that exists. `providerEventId` is UNIQUE: webhooks are delivered
+   * at least once, and this is what stops a retry granting a second purchase.
+   */
+  provider: text("provider"),
+  providerSessionId: text("provider_session_id"),
+  providerEventId: text("provider_event_id").unique(),
+  refundedAt: timestamp("refunded_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export type Purchase = typeof purchases.$inferSelect;
+export type NewPurchase = typeof purchases.$inferInsert;
 
 // ─── posts ───────────────────────────────────────────────────────────────────
 // Blog posts authored from the /admin Blog manager. Body is stored as light

@@ -17,7 +17,7 @@ const PERSONAS = [
     label: "03 / The Host",
     code: "Project · 156F",
     quote: "I'm furnishing a new short-let property and I have a budget.",
-    outcome: "A complete furnishing plan with sourcing notes, ready for a single afternoon's ordering.",
+    outcome: "A furnishing direction with named materials and reference pieces, so an afternoon's shopping has something to measure against.",
   },
   {
     label: "04 / The Architect",
@@ -29,7 +29,7 @@ const PERSONAS = [
     label: "05 / The Interior Designer",
     code: "Project · 211D",
     quote: "My mood boards keep losing the client between vibe and execution.",
-    outcome: "A brief that holds the vibe and the details together, exportable in your studio's colors.",
+    outcome: "A brief that holds the vibe and the details together, exportable as a deck with your studio's logo.",
   },
   {
     label: "06 / The Studio Lead",

@@ -13,9 +13,13 @@
  * "how it should look" note.
  */
 
+import { useState } from "react";
 import type { GenerateBriefResponse } from "@/lib/ai/prompts/generate-brief";
 import type { PinterestPin } from "@/db/schema";
+import { pinAtOrUndefined, pinSrcSet } from "@/lib/pin-image";
 import ExportPanel from "./ExportPanel";
+import PaywallPreview from "./PaywallPreview";
+import SwapPicker from "./SwapPicker";
 import type { BriefFacts } from "./BriefPDF";
 
 /** Pins picked across the wizard, surfaced in the brief as reference imagery. */
@@ -28,6 +32,20 @@ export type BriefPins = {
   materials?: PinterestPin[];
 };
 
+/** Re-picking the references of ONE section. */
+type SectionSwap = {
+  /** Alternatives, best first. Called only when a picker opens. */
+  candidates: () => PinterestPin[];
+  /** Commit. The host owns the pins and the saving. */
+  onPick: (index: number, next: PinterestPin) => void;
+};
+
+/** Everything a host needs to make a whole brief re-pickable. */
+export type BriefSwap = {
+  candidates: (category: keyof BriefPins) => PinterestPin[];
+  onSwap: (category: keyof BriefPins, index: number, next: PinterestPin) => void;
+};
+
 type Props = {
   brief: GenerateBriefResponse;
   pins?: BriefPins;
@@ -35,6 +53,11 @@ type Props = {
   facts?: BriefFacts;
   onRegenerate: () => void;
   onStartOver: () => void;
+  /** Set when the deck has not been paid for: references drop to small
+   *  un-clickable previews and the paywall stands where the download was. */
+  paywall?: { briefToken: string };
+  /** When set, every section can be re-picked. Ignored on a locked brief. */
+  swap?: BriefSwap;
 };
 
 function textOn(hex: string): string {
@@ -49,15 +72,17 @@ function textOn(hex: string): string {
 const LABEL = "mb-3 font-mono text-[10px] uppercase tracking-[0.18em] text-acc";
 
 /**
- * Pinterest serves the same asset at several widths off the same path. The
- * brief can carry ~70 references, and the 736px original is many times the
- * cell it lands in — costly on a phone. Only the <img> src is narrowed: the
- * pin objects keep their full-resolution URL for the PDF export and the
- * click-through.
+ * How wide a reference cell actually is, so the browser can pick a CDN
+ * variant instead of guessing the full viewport.
+ *
+ * Every host of this component — the wizard, the Quick flow and the shared
+ * brief link — wraps it in `max-w-4xl px-6 sm:px-8`, so the column tops out
+ * at 832px and a large cell lands at ~270px, a small one at ~157px. Doubled
+ * for a retina screen that is 540px and 314px, which is why the small grid
+ * used to look soft: it was asking for 236px.
  */
-function thumb(url: string | undefined, width: "236x" | "474x") {
-  return url?.replace("/736x/", `/${width}/`);
-}
+const LG_SIZES = "(min-width: 896px) 270px, (min-width: 640px) 30vw, 45vw";
+const MD_SIZES = "(min-width: 896px) 157px, (min-width: 640px) 17vw, 28vw";
 
 /** A compact spec row: bold key, supporting detail, quiet note. */
 function SpecRow({
@@ -103,45 +128,139 @@ const MAX_REFS_PER_SECTION = 8;
 function Refs({
   list,
   size = "md",
+  locked = false,
+  swap,
 }: {
   list?: PinterestPin[];
   size?: "lg" | "md";
+  /** Before the deck is paid for. See the note on the locked branch below. */
+  locked?: boolean;
+  /** Present => this viewer may re-pick these references. Absent => read-only. */
+  swap?: SectionSwap;
 }) {
+  // Which tile has its picker open. One at a time: a brief covered in open
+  // panels is worse than the fixed images it replaced.
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
   if (!list || list.length === 0) return null;
+  const large = size === "lg";
+
+  // LOCKED: a strip of small, non-clickable previews.
+  //
+  // Unlocked, every reference links out to the full-size original, which on a
+  // paywalled brief hands over exactly what is being sold, one image at a time.
+  // Here they are 236px, un-linked and un-draggable, so the easy routes to the
+  // full-resolution file are closed. That is not screenshot protection — no
+  // such thing exists on the web — it just stops the page serving the goods
+  // itself. The real deck is only ever assembled server-side.
+  if (locked) {
+    return (
+      <ul className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        {list.slice(0, 6).map((pin) => (
+          <li key={pin.id} className="shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={pinAtOrUndefined(pin.imageUrl || pin.imageThumbUrl, 236)}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              loading="lazy"
+              decoding="async"
+              className="pointer-events-none h-24 w-20 select-none border border-bdr-2 object-cover sm:h-28 sm:w-24"
+            />
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
   const shown = list.slice(0, MAX_REFS_PER_SECTION);
   return (
-    <div
-      className={`mb-4 grid gap-3 ${
-        size === "lg"
-          ? "grid-cols-2 sm:grid-cols-3"
-          : "grid-cols-3 sm:grid-cols-5"
-      }`}
-    >
-      {shown.map((pin) => (
-        <a
-          key={pin.id}
-          href={pin.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          title={pin.title || pin.altText || "Reference"}
-          className="group overflow-hidden border border-bdr-2"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={thumb(
-              pin.imageUrl || pin.imageThumbUrl,
-              size === "lg" ? "474x" : "236x",
-            )}
-            alt={pin.altText || pin.title || "Reference image"}
-            loading="lazy"
-            decoding="async"
-            className={`w-full object-cover transition group-hover:opacity-90 ${
-              size === "lg" ? "aspect-[3/4]" : "aspect-[4/5]"
-            }`}
+    <>
+      <div
+        className={`mb-4 grid gap-3 ${
+          large ? "grid-cols-2 sm:grid-cols-3" : "grid-cols-3 sm:grid-cols-5"
+        }`}
+      >
+        {shown.map((pin, i) => {
+          // Only the displayed bytes are narrowed — the pin keeps the stored
+          // URL the PDF export and the click-through read.
+          const ref = pin.imageUrl || pin.imageThumbUrl;
+          const label = pin.altText || pin.title || "Reference image";
+          const isOpen = swap != null && i === openIndex;
+          const image = (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={pinAtOrUndefined(ref, large ? 736 : 474)}
+              srcSet={pinSrcSet(ref, large ? [474, 736] : [236, 474])}
+              sizes={large ? LG_SIZES : MD_SIZES}
+              alt={label}
+              loading="lazy"
+              decoding="async"
+              className={`w-full object-cover transition group-hover:opacity-90 ${
+                large ? "aspect-[3/4]" : "aspect-[4/5]"
+              }`}
+            />
+          );
+
+          // Swappable: the tile becomes a button that opens the picker below,
+          // instead of a link out to the original.
+          if (swap) {
+            return (
+              <button
+                key={pin.id + i}
+                type="button"
+                onClick={() => setOpenIndex(isOpen ? null : i)}
+                aria-label={`Swap ${label}`}
+                className={`group relative overflow-hidden border transition ${
+                  isOpen ? "border-acc ring-2 ring-acc" : "border-bdr-2 hover:border-acc"
+                }`}
+              >
+                {image}
+                <span
+                  className={`absolute inset-x-0 bottom-0 bg-bg/85 py-1 text-center font-mono text-[9px] uppercase tracking-[0.14em] text-acc transition ${
+                    isOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                  }`}
+                >
+                  {isOpen ? "Pick below" : "Swap"}
+                </span>
+              </button>
+            );
+          }
+
+          return (
+            <a
+              key={pin.id + i}
+              /* Curated references have no source page, so the image itself is
+                 the link. Some pickers store them with an empty url, which
+                 with target="_blank" opened a blank tab on the same page. */
+              href={pin.url || ref}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={pin.title || pin.altText || "Reference"}
+              className="group overflow-hidden border border-bdr-2"
+            >
+              {image}
+            </a>
+          );
+        })}
+      </div>
+
+      {/* A SIBLING of the grid, never a child: a full-width panel inside a
+          grid cell would be squeezed into one column. */}
+      {swap && openIndex !== null && (
+        <div className="mb-4">
+          <SwapPicker
+            index={openIndex}
+            candidates={swap.candidates()}
+            onPick={(index, next) => {
+              swap.onPick(index, next);
+              setOpenIndex(null);
+            }}
+            onCancel={() => setOpenIndex(null)}
           />
-        </a>
-      ))}
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -151,7 +270,22 @@ export default function BriefDisplay({
   facts,
   onRegenerate,
   onStartOver,
+  paywall,
+  swap,
 }: Props) {
+  const locked = !!paywall;
+  // A locked brief is never re-pickable. The picker offers 474px thumbnails,
+  // which is larger than the 236px the locked strip deliberately serves, so
+  // enabling it there would open a wider hole than the strip closes. Guarded
+  // here AND by the early return in Refs AND server-side in the PATCH route.
+  const canSwap = !!swap && !locked;
+  const swapFor = (category: keyof BriefPins): SectionSwap | undefined =>
+    canSwap && swap
+      ? {
+          candidates: () => swap.candidates(category),
+          onPick: (index, next) => swap.onSwap(category, index, next),
+        }
+      : undefined;
 
   return (
     <article className="space-y-10">
@@ -159,7 +293,10 @@ export default function BriefDisplay({
       <header className="border-b border-bdr-2 pb-8">
         <div className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-acc">
           <span className="inline-block h-px w-6 bg-acc" />
-          Design brief · {brief.summary.projectType}
+          {brief.title?.trim() || "Design brief"} ·{" "}
+          {/* The model often ends projectType with a full stop, which reads as
+              a typo inside a letter-spaced uppercase eyebrow. */}
+          {brief.summary.projectType.replace(/[.,;:\s]+$/, "")}
         </div>
         <h1 className="font-serif text-[clamp(28px,4vw,44px)] font-normal leading-[1.12] tracking-tight text-txt">
           {brief.conceptLine}
@@ -182,7 +319,7 @@ export default function BriefDisplay({
       {/* The direction — the vibe references and the one piece of real writing */}
       <section>
         <h2 className={LABEL}>The direction</h2>
-        <Refs list={pins?.vibe} size="lg" />
+        <Refs list={pins?.vibe} size="lg" locked={locked} swap={swapFor("vibe")} />
         <p className="font-serif text-[15px] leading-[1.7] text-txt">
           {brief.cinematicDescription}
         </p>
@@ -236,7 +373,7 @@ export default function BriefDisplay({
       {/* Materials & finishes */}
       <section>
         <h2 className={LABEL}>Materials &amp; finishes</h2>
-        <Refs list={pins?.materials} />
+        <Refs list={pins?.materials} locked={locked} swap={swapFor("materials")} />
         <div className="border-b border-bdr-2">
           {brief.materials.map((m, i) => (
             <SpecRow key={i} head={m.material} sub={m.application} />
@@ -247,7 +384,7 @@ export default function BriefDisplay({
       {/* Furniture */}
       <section>
         <h2 className={LABEL}>Furniture</h2>
-        <Refs list={pins?.furniture} />
+        <Refs list={pins?.furniture} locked={locked} swap={swapFor("furniture")} />
         <div className="border-b border-bdr-2">
           {brief.furniture.map((f, i) => (
             <SpecRow key={i} head={f.item} sub={f.character} />
@@ -259,20 +396,20 @@ export default function BriefDisplay({
       {(pins?.flooring?.length ?? 0) > 0 && (
         <section>
           <h2 className={LABEL}>Flooring</h2>
-          <Refs list={pins?.flooring} />
+          <Refs list={pins?.flooring} locked={locked} swap={swapFor("flooring")} />
         </section>
       )}
       {(pins?.ceiling?.length ?? 0) > 0 && (
         <section>
           <h2 className={LABEL}>Ceiling</h2>
-          <Refs list={pins?.ceiling} />
+          <Refs list={pins?.ceiling} locked={locked} swap={swapFor("ceiling")} />
         </section>
       )}
 
       {/* Lighting plan */}
       <section>
         <h2 className={LABEL}>Lighting plan</h2>
-        <Refs list={pins?.lighting} />
+        <Refs list={pins?.lighting} locked={locked} swap={swapFor("lighting")} />
         <p className="text-[14px] leading-relaxed text-txt-2">
           {brief.lighting.strategy}
         </p>
@@ -345,7 +482,15 @@ export default function BriefDisplay({
       </section>
 
       {/* Export */}
-      <ExportPanel brief={brief} pins={pins} facts={facts} />
+      {paywall ? (
+        <PaywallPreview
+          brief={brief}
+          pins={pins}
+          briefToken={paywall.briefToken}
+        />
+      ) : (
+        <ExportPanel brief={brief} pins={pins} facts={facts} />
+      )}
 
       {/* Actions */}
       <footer className="flex flex-col items-center justify-between gap-4 border-t border-bdr-2 pt-8 sm:flex-row">

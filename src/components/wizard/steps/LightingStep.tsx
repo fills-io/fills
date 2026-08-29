@@ -3,9 +3,8 @@
 /**
  * Step 5 — Lighting.
  *
- * One Pinterest grid, up to 3 lighting references — pendants, sconces,
- * floor lamps, ambient. The AI will later analyze these as "mood + task +
- * accent" layers.
+ * One grid, up to six lighting references: pendants, sconces, floor lamps,
+ * ambient. The AI later reads these as "ambient + task + accent" layers.
  */
 
 import PinterestStepWrapper from "./PinterestStepWrapper";
@@ -40,7 +39,7 @@ export default function LightingStep({ state, setState }: Props) {
       onChange={({ pins, query }) =>
         setState({ lightingPins: pins, lightingQuery: query })
       }
-      helperText="Mood, task, accent: try to cover all three layers in your three picks."
+      helperText="Mood, task, accent: try to cover all three layers across your picks."
     />
   );
 }

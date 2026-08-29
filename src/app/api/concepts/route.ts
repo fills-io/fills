@@ -26,6 +26,7 @@
 import { randomBytes } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { db, concepts } from "@/db";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -47,6 +48,30 @@ function makeShareToken(): string {
   return randomBytes(9).toString("base64url");
 }
 
+/**
+ * Postgres 42703: the statement named a column the table does not have.
+ *
+ * Drizzle wraps the driver's error, so the code can be one or two `cause`
+ * levels down rather than on the object it hands back. The message is checked
+ * as well because that nesting is an implementation detail of a library we do
+ * not control, and getting this wrong means a saved brief is lost.
+ */
+function isUndefinedColumn(error: unknown): boolean {
+  for (let e: unknown = error, depth = 0; e && depth < 4; depth++) {
+    if (typeof e !== "object") break;
+    const o = e as { code?: unknown; message?: unknown; cause?: unknown };
+    if (o.code === "42703") return true;
+    if (
+      typeof o.message === "string" &&
+      /column .*edit_token.* does not exist/i.test(o.message)
+    ) {
+      return true;
+    }
+    e = o.cause;
+  }
+  return false;
+}
+
 export async function POST(request: NextRequest) {
   // One row per saved brief; bounded so the table can't be flooded.
   const limited = checkRateLimit(request, "concepts", 30, 3600000);
@@ -66,24 +91,68 @@ export async function POST(request: NextRequest) {
   }
 
   const shareToken = makeShareToken();
+  // Returned to the creating browser only, never rendered into the share page.
+  // See the note on concepts.editToken in src/db/schema.ts.
+  const editToken = makeShareToken();
+
+  const row = {
+    status: "ready" as const,
+    creationMode: parsed.data.creationMode ?? ("quick" as const),
+    shareToken,
+    spaceType: parsed.data.spaceType || "unspecified",
+    brief: parsed.data.brief,
+    briefPins: parsed.data.pins ?? null,
+    briefFacts: parsed.data.facts ?? null,
+  };
+
   try {
-    await db.insert(concepts).values({
-      status: "ready",
-      creationMode: parsed.data.creationMode ?? "quick",
-      shareToken,
-      spaceType: parsed.data.spaceType || "unspecified",
-      brief: parsed.data.brief,
-      briefPins: parsed.data.pins ?? null,
-      briefFacts: parsed.data.facts ?? null,
-    });
-    return NextResponse.json({ ok: true, shareToken });
+    await db.insert(concepts).values(row);
   } catch (error) {
     // Never hand a raw Postgres error to the browser — it names tables and
     // columns to anyone who asks.
     console.error("[/api/concepts] insert failed:", error);
     return NextResponse.json(
-      { ok: false, error: "Couldn't save the brief." },
+      {
+        ok: false,
+        error: "Couldn't save the brief.",
+        // Off production only. A save failing here costs someone a finished
+        // brief, and diagnosing it from the outside was otherwise guesswork.
+        ...(process.env.VERCEL_ENV !== "production"
+          ? { reason: describe(error) }
+          : {}),
+      },
       { status: 500 },
     );
   }
+
+  // Stamp the edit token separately, in raw SQL, because `edit_token` is
+  // deliberately not on the drizzle table — see the long note in schema.ts.
+  // The brief is already saved by this point, so a database that has not had
+  // migration 0006 applied simply means re-picking images is not switched on
+  // yet. It starts working by itself once the button in /admin/setup is
+  // pressed; nothing here needs to change.
+  try {
+    await db.execute(
+      sql`UPDATE concepts SET edit_token = ${editToken} WHERE share_token = ${shareToken}`,
+    );
+    return NextResponse.json({ ok: true, shareToken, editToken });
+  } catch (error) {
+    if (!isUndefinedColumn(error)) {
+      console.error("[/api/concepts] edit-token stamp failed:", error);
+    }
+    return NextResponse.json({ ok: true, shareToken, editToken: null });
+  }
+}
+
+/** A short, non-sensitive description of a database error, for previews. */
+function describe(error: unknown): string {
+  const parts: string[] = [];
+  for (let e: unknown = error, depth = 0; e && depth < 4; depth++) {
+    if (typeof e !== "object") break;
+    const o = e as { code?: unknown; message?: unknown; cause?: unknown };
+    if (o.code) parts.push(`code=${String(o.code)}`);
+    if (typeof o.message === "string") parts.push(o.message.slice(0, 160));
+    e = o.cause;
+  }
+  return parts.join(" | ").slice(0, 400) || "unknown";
 }

@@ -55,7 +55,12 @@ export default function SetupStage({ state, patch }: Props) {
         01 · Project
       </div>
 
-      <p className="font-serif text-[clamp(22px,3vw,34px)] font-normal leading-[1.65] tracking-tight text-txt-2">
+      {/* A <div>, not a <p>. The industry dropdown below renders a
+          role="listbox" <div> inside this sentence, and the HTML parser closes
+          a <p> the moment it meets a block element: server and client then
+          disagreed about the tree and React threw a hydration error on every
+          load of this page. Nothing here needs paragraph semantics. */}
+      <div className="font-serif text-[clamp(22px,3vw,34px)] font-normal leading-[1.65] tracking-tight text-txt-2">
         <span className={state.industryId ? "text-txt" : ""}>
           I&apos;m working on a{" "}
         </span>
@@ -163,7 +168,7 @@ export default function SetupStage({ state, patch }: Props) {
           <span className="italic text-txt-3 opacity-60">vibe…</span>
         )}
         <span>.</span>
-      </p>
+      </div>
 
       {/* Project facts — the numbers a designer needs first, and the basis for
           any later floor plan or 3D. Optional, never blocks the flow. */}

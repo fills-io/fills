@@ -46,7 +46,10 @@ export const INDUSTRIES: Industry[] = [
     label: "Residential",
     blurb: "Homes and personal spaces.",
     spaces: [
+      { id: "villa", label: "Villa (whole home)", hint: "Every room, one direction" },
+      { id: "apartment", label: "Apartment (whole home)", hint: "Open plan, every room" },
       { id: "living-room", label: "Living room", hint: "Lounging, hosting, daily life" },
+      { id: "majlis", label: "Majlis", hint: "Guest reception, formal hospitality" },
       { id: "bedroom", label: "Bedroom", hint: "Rest, retreat, intimacy" },
       { id: "kitchen", label: "Kitchen", hint: "Cooking, gathering, the social anchor" },
       { id: "bathroom", label: "Bathroom", hint: "Ritual, restoration, privacy" },
@@ -68,6 +71,7 @@ export const INDUSTRIES: Industry[] = [
       { id: "boutique-hotel", label: "Boutique hotel", hint: "Small, character-driven, themed" },
       { id: "resort", label: "Resort", hint: "Destination feel, leisure-led" },
       { id: "serviced-apartment", label: "Serviced apartment", hint: "Long-stay, home-like" },
+      { id: "rooftop-lounge", label: "Rooftop / pool bar", hint: "Views, outdoor, evening" },
       { id: "ballroom", label: "Ballroom / events", hint: "Weddings, banquets, conferences" },
     ],
   },
@@ -83,7 +87,7 @@ export const INDUSTRIES: Industry[] = [
       { id: "wine-bar", label: "Wine bar", hint: "Bottles, plates, conversation" },
       { id: "fast-casual", label: "Fast casual / QSR", hint: "Quick service, high turnover" },
       { id: "bakery", label: "Bakery / patisserie", hint: "Counter-led, display, grab-and-go" },
-      { id: "cloud-kitchen", label: "Cloud kitchen", hint: "Delivery-only, back of house" },
+      { id: "shisha-lounge", label: "Shisha lounge", hint: "Terrace, extraction, evening" },
     ],
   },
   {
@@ -98,7 +102,7 @@ export const INDUSTRIES: Industry[] = [
       { id: "mall-unit", label: "Mall unit", hint: "In-line shop, mall guidelines" },
       { id: "pop-up", label: "Pop-up", hint: "Short-term, brand activation" },
       { id: "jewelry-store", label: "Jewelry store", hint: "Security, lighting, display" },
-      { id: "supermarket", label: "Supermarket / grocery", hint: "Wayfinding, volume, aisles" },
+      { id: "prayer-room", label: "Prayer room / musalla", hint: "Wudu, qibla, quiet" },
     ],
   },
   {
@@ -113,6 +117,7 @@ export const INDUSTRIES: Industry[] = [
       { id: "reception", label: "Reception", hint: "Entrance, lobby, hosting" },
       { id: "executive-suite", label: "Executive suite", hint: "Leadership, private, refined" },
       { id: "breakout", label: "Breakout / pantry", hint: "Coffee, informal, recharge" },
+      { id: "prayer-room", label: "Prayer room / musalla", hint: "Wudu, qibla, quiet" },
     ],
   },
   {
@@ -139,6 +144,7 @@ export const INDUSTRIES: Industry[] = [
       { id: "lecture-hall", label: "Lecture hall", hint: "Tiered, acoustics, sightlines" },
       { id: "training-center", label: "Training center", hint: "Corporate, workshops, agile" },
       { id: "campus-common", label: "Campus common", hint: "Social, break, in-between" },
+      { id: "prayer-room", label: "Prayer room / musalla", hint: "Wudu, qibla, quiet" },
     ],
   },
   {
@@ -164,6 +170,8 @@ export const INDUSTRIES: Industry[] = [
       { id: "spa", label: "Spa", hint: "Treatments, rituals, calm" },
       { id: "wellness-center", label: "Wellness center", hint: "Longevity, recovery, IV / IM" },
       { id: "physiotherapy", label: "Physiotherapy", hint: "Rehab, movement, clinical-calm" },
+      { id: "padel-court", label: "Padel / sports court", hint: "Court, viewing, social" },
+      { id: "locker-room", label: "Locker / changing", hint: "Wet and dry, privacy, flow" },
       { id: "pool-thermal", label: "Pool / thermal", hint: "Water, heat, sensory" },
     ],
   },
@@ -190,6 +198,7 @@ export const INDUSTRIES: Industry[] = [
       { id: "amenity-lounge", label: "Amenity lounge", hint: "Residents' club, social" },
       { id: "gym-amenity", label: "Amenity gym", hint: "Building fitness, shared" },
       { id: "rooftop", label: "Rooftop / pool deck", hint: "Leisure, views, outdoor" },
+      { id: "prayer-room", label: "Prayer room / musalla", hint: "Wudu, qibla, quiet" },
     ],
   },
   {

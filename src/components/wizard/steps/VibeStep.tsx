@@ -3,9 +3,9 @@
 /**
  * Step 2 — Vibe & Style.
  *
- * The user picks up to 3 Pinterest pins that capture the feeling they want
+ * The user picks three to six references that capture the feeling they want
  * the space to have. Selections drive the AI's later "Design DNA" analysis,
- * so quality > quantity — three sharp picks beat ten muddy ones.
+ * so quality beats quantity: three sharp picks beat ten muddy ones.
  *
  * Seeded from the homepage's "feels like ___" input if Quick mode brought
  * one through (`?vibe=warm minimalism`).

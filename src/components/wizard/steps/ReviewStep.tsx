@@ -24,6 +24,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { getIndustry } from "@/lib/space-taxonomy";
 import { buildCategoryPool } from "@/lib/select-images";
 import { usableOnly } from "@/lib/image-quality";
+import { pinAt, pinSrcSet } from "@/lib/pin-image";
 import {
   CURATED_PINS,
   CURATED_VIBE,
@@ -112,8 +113,8 @@ export default function ReviewStep({ state, goToStep, setState }: Props) {
     <div className="space-y-8">
       <p className="text-[14px] text-txt-2">
         One last look, laid out the way the brief will read. Tap any image to
-        swap it for another reference — no need to go back a step. Nothing is
-        locked in until you generate the plan.
+        swap it for another reference, with no need to go back a step. Nothing
+        is locked in until you generate the plan.
       </p>
 
       {/* AI design check — coherence reading across all picks */}
@@ -377,6 +378,14 @@ function ReviewSection({
 }
 
 /**
+ * A board tile is ~270px in the three-column desktop layout and ~157px on a
+ * phone — 736 and 474 respectively once retina is accounted for. The tiles
+ * used to render the stored URL as-is, which left curated picks (stored at
+ * 474) soft on desktop and scraped picks (736) oversized on a phone.
+ */
+const BOARD_SIZES = "(min-width: 896px) 270px, (min-width: 768px) 30vw, 45vw";
+
+/**
  * One category's picks as a masonry board, with click-to-swap.
  *
  * CSS multi-column is the whole masonry implementation — no library, no
@@ -458,7 +467,9 @@ function SwapBoard({
               <div key={pin.id + i} className={frame}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={pin.imageUrl}
+                  src={pinAt(pin.imageUrl, 736)}
+                  srcSet={pinSrcSet(pin.imageUrl, [474, 736])}
+                  sizes={BOARD_SIZES}
                   alt={label}
                   loading="lazy"
                   decoding="async"
@@ -481,7 +492,9 @@ function SwapBoard({
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={pin.imageUrl}
+                src={pinAt(pin.imageUrl, 736)}
+                srcSet={pinSrcSet(pin.imageUrl, [474, 736])}
+                sizes={BOARD_SIZES}
                 alt={label}
                 loading="lazy"
                 decoding="async"
@@ -616,7 +629,12 @@ function ColorSwatchRow({
 function toPin(c: CuratedPin): PinterestPin {
   return {
     id: c.id,
-    url: "",
+    // Curated references have no source page, so the image itself IS the link.
+    // This was an empty string, which BriefDisplay rendered as href="" with
+    // target="_blank": clicking a reference opened a blank copy of the brief
+    // in a new tab. The canonical toPin in select-images.ts always had this
+    // right; these two copies did not.
+    url: c.imageUrl,
     title: c.title,
     description: "",
     altText: c.title,
@@ -628,10 +646,11 @@ function toPin(c: CuratedPin): PinterestPin {
   };
 }
 
-/** Smaller variant for the picker's thumbnails — the 736 original is wasted
- *  bytes at that size. Same trick the curated picker uses. */
+/** Picker thumbnails sit in a ~153px cell on desktop, so 474 is the smallest
+ *  variant a retina screen can use without softening. Same call the curated
+ *  picker makes. */
 function thumb(url: string): string {
-  return url.replace("/736x/", "/474x/");
+  return pinAt(url, 474);
 }
 
 function sizeLabel(size: NonNullable<WizardState["spaceSize"]>): string {

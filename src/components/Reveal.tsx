@@ -27,6 +27,9 @@ export default function Reveal({
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      // Reduced motion: show it at once and never observe. A media query is
+      // exactly the external system an effect is meant to read.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShown(true);
       return;
     }

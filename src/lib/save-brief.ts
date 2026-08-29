@@ -16,17 +16,36 @@ type SaveInput = {
   creationMode?: "quick" | "full" | "from-image";
 };
 
-export async function saveBrief(input: SaveInput): Promise<string | null> {
+/**
+ * The two tokens a saved brief comes back with.
+ *
+ * `shareToken` is the public address, safe to hand to a designer. `editToken`
+ * is write capability and must never leave the browser that made the brief —
+ * it is what lets that person re-pick their own reference images later.
+ */
+export type SavedBriefTokens = {
+  shareToken: string | null;
+  editToken: string | null;
+};
+
+export async function saveBrief(input: SaveInput): Promise<SavedBriefTokens> {
+  const none: SavedBriefTokens = { shareToken: null, editToken: null };
   try {
     const res = await fetch("/api/concepts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(input),
     });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { shareToken?: string };
-    return data.shareToken ?? null;
+    if (!res.ok) return none;
+    const data = (await res.json()) as {
+      shareToken?: string;
+      editToken?: string;
+    };
+    return {
+      shareToken: data.shareToken ?? null,
+      editToken: data.editToken ?? null,
+    };
   } catch {
-    return null;
+    return none;
   }
 }

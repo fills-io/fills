@@ -77,11 +77,14 @@ export default function SpaceStep({ state, setState }: Props) {
         <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
           {INDUSTRIES.map((ind) => {
             const isSelected = state.industryId === ind.id;
+            // Three example spaces, by first word of each id. Deduped and
+            // taken from the whole list rather than the first three, because
+            // Hospitality leads with hotel-lobby and hotel-room and so
+            // advertised itself as "hotel · hotel · suite".
             const meta = ind.freeform
               ? "your own brief"
-              : ind.spaces
+              : [...new Set(ind.spaces.map((s) => s.id.split("-")[0]))]
                   .slice(0, 3)
-                  .map((s) => s.id.split("-")[0])
                   .join(" · ");
             return (
               <button

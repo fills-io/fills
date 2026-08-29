@@ -24,5 +24,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // a "page with redirect" error in Search Console.
     { url: `${base}/concept/quick`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${base}/concept/wizard`, changeFrequency: "monthly", priority: 0.6 },
+    // Low priority, but listed: a policy page that search engines can't find
+    // is one a customer can't find either.
+    { url: `${base}/privacy`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${base}/terms`, changeFrequency: "yearly", priority: 0.3 },
   ];
 }

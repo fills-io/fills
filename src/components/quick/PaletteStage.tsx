@@ -88,7 +88,7 @@ export default function PaletteStage({ state, patch }: Props) {
             : Array(QUICK_PALETTE_SIZE).fill(false),
       });
     } catch {
-      setError("Couldn't read colours from the images — edit them by hand below.");
+      setError("Couldn't read colours from the images. Edit them by hand below.");
     } finally {
       setBusy("idle");
     }

@@ -7,6 +7,7 @@
  */
 
 import { getIndustry } from "@/lib/concept-taxonomy";
+import { pinAt } from "@/lib/pin-image";
 import type { QuickState } from "@/lib/quick-state";
 
 export type PrimaryAction = {
@@ -67,11 +68,15 @@ export default function LiveBrief({
                 key={p.id || i}
                 className="h-8 w-8 overflow-hidden border border-bdr"
               >
+                {/* A 32px chip only needs 236, but the vibe grid beside it
+                    has already fetched the 474 — reusing that URL is a cache
+                    hit, a narrower one would be a fresh request per pick. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={p.imageUrl.replace("/736x/", "/236x/")}
+                  src={pinAt(p.imageUrl, 474)}
                   alt=""
                   loading="lazy"
+                  decoding="async"
                   className="h-full w-full object-cover"
                 />
               </div>

@@ -23,8 +23,34 @@
  */
 
 import { CURATED_PINS, CURATED_VIBE, type CuratedPin } from "@/data/reference-images";
-import { categoryAffinity, isUsableReference } from "@/lib/image-quality";
+import {
+  categoryAffinity,
+  hasCategoryKeywords,
+  isUsableReference,
+} from "@/lib/image-quality";
 import type { PinterestPin } from "@/db/schema";
+
+/**
+ * The industry pool for one category: rooms of the user's project type, kept
+ * only where they are about this step.
+ *
+ * The `hasCategoryKeywords` guard is load-bearing. "vibe" has no keyword list,
+ * because every pin in an industry pool is already a room of that project type
+ * and there is nothing to narrow — but `categoryAffinity` returns 0 for a
+ * category it has no words for, so a bare `> 0` filter deleted the ENTIRE pool
+ * for exactly the section that needed it most. Measured before this guard: 0
+ * industry pins for residential (of 145 usable), 0 for hospitality (of 144), 0
+ * for retail (of 171). Every mood board and every deck cover in the product
+ * came from the same 17 generic images whether the user was briefing a hotel
+ * lobby or a dental clinic.
+ */
+function industryPoolFor(category: string, spaceId?: string | null): CuratedPin[] {
+  const base = (spaceId ? CURATED_VIBE[spaceId] ?? [] : []).filter(
+    isUsableReference,
+  );
+  if (!hasCategoryKeywords(category)) return base;
+  return base.filter((p) => categoryAffinity(p, category) > 0);
+}
 
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
@@ -179,15 +205,16 @@ export function buildCategoryPool(
     .filter((c): c is [number, number, number] => c !== null);
 
   const categoryPool = (CURATED_PINS[category] ?? []).filter(isUsableReference);
-  const industryPool = (opts.spaceId ? CURATED_VIBE[opts.spaceId] ?? [] : [])
-    .filter(isUsableReference)
-    .filter((p) => categoryAffinity(p, category) > 0);
+  const industryPool = industryPoolFor(category, opts.spaceId);
 
   const rankedCategory = rank(categoryPool, {
     vibe,
     paletteRgb,
     category,
-    useAffinity: false,
+    // Score, don't filter. Roughly 40% of close-ups are untitled, so a hard
+    // filter would delete pins that are probably fine; scoring just sinks the
+    // off-topic ones instead of letting dominant colour decide the order.
+    useAffinity: true,
   });
   const rankedIndustry = rank(industryPool, {
     vibe,
@@ -213,6 +240,69 @@ export function buildCategoryPool(
   const blended =
     out.length > 0 ? out : (CURATED_PINS[category] ?? []).filter(isUsableReference);
   return applyFocus(blended, opts.focus);
+}
+
+/**
+ * Candidates for a SWAP picker, ordered best first.
+ *
+ * Wider than `buildCategoryPool` on purpose. A finished brief already holds
+ * the best twelve of a pool that is only seven to twenty-three deep, so the
+ * narrow blend leaves nothing to offer: measured, it returns ZERO flooring
+ * alternatives in ten of eleven industries once the brief's own picks are
+ * excluded, and an empty panel is a worse answer than a broad one.
+ *
+ * So this widens in tiers, and the ORDER is the honest part. Tier 1 is
+ * everything the pickers already offer, so the top of the panel is exactly as
+ * on-topic as before. Tier 2 is the rest of the project type's own rooms,
+ * ranked by how much they are about this category. Tier 3 is other categories'
+ * clean close-ups, which is the point at which we are frankly offering a
+ * photograph of something else — it is last for that reason, and it exists so
+ * the panel is never empty rather than because it is a good answer. The real
+ * fix is more reference images; this is the honest interim.
+ */
+export function buildSwapPool(
+  category: string,
+  opts: {
+    vibe?: string;
+    paletteHexes?: string[];
+    spaceId?: string | null;
+  },
+): CuratedPin[] {
+  const vibe = (opts.vibe ?? "").trim().toLowerCase();
+  const paletteRgb = (opts.paletteHexes ?? [])
+    .map(hexToRgb)
+    .filter((c): c is [number, number, number] => c !== null);
+
+  const out: CuratedPin[] = [];
+  const seen = new Set<string>();
+  const push = (p?: CuratedPin) => {
+    if (!p || seen.has(p.imageUrl)) return;
+    seen.add(p.imageUrl);
+    out.push(p);
+  };
+
+  for (const p of buildCategoryPool(category, opts)) push(p);
+
+  const board = (opts.spaceId ? CURATED_VIBE[opts.spaceId] ?? [] : []).filter(
+    isUsableReference,
+  );
+  for (const scored of rank(board, {
+    vibe,
+    paletteRgb,
+    category,
+    useAffinity: true,
+  })) {
+    push(scored.pin);
+  }
+
+  for (const key of Object.keys(CURATED_PINS)) {
+    if (key === category) continue;
+    for (const p of CURATED_PINS[key] ?? []) {
+      if (isUsableReference(p)) push(p);
+    }
+  }
+
+  return out;
 }
 
 export type SelectOptions = {
@@ -245,17 +335,15 @@ export function selectCategoryImages(
   // 1. Category close-ups (generic but precisely on-topic).
   const categoryPool = (CURATED_PINS[category] ?? []).filter(isUsableReference);
 
-  // 2. Rooms of this project type that actually mention this category.
-  const industryPoolAll = opts.spaceId ? CURATED_VIBE[opts.spaceId] ?? [] : [];
-  const industryPool = industryPoolAll
-    .filter(isUsableReference)
-    .filter((p) => categoryAffinity(p, category) > 0);
+  // 2. Rooms of this project type that are about this category.
+  const industryPool = industryPoolFor(category, opts.spaceId);
 
   const rankedCategory = rank(categoryPool, {
     vibe,
     paletteRgb,
     category,
-    useAffinity: false,
+    // See the note in buildCategoryPool: score the close-ups, never filter them.
+    useAffinity: true,
   });
   const rankedIndustry = rank(industryPool, {
     vibe,
@@ -292,27 +380,20 @@ export function selectCategoryImages(
     }
   }
 
-  // If the two ranked pools ran out, top up from OTHER categories' clean
-  // close-ups rather than from this category's raw pool.
+  // NO CROSS-CATEGORY TOP-UP. A short section is returned short.
   //
-  // This used to read from the unfiltered `CURATED_PINS[category]`, which is
-  // how a "SALE — 20% off" pin and a watermarked flooring advert reached a
-  // finished brief: the filter was applied to the ranked pools and then
-  // quietly bypassed the moment those pools were a few images short. Returning
-  // fewer, clean images is always better than filling the count with junk.
-  if (out.length < count) {
-    for (const key of Object.keys(CURATED_PINS)) {
-      if (key === category) continue;
-      for (const p of CURATED_PINS[key] ?? []) {
-        if (!isUsableReference(p)) continue;
-        if (categoryAffinity(p, category) <= 0) continue;
-        push(p);
-        if (out.length >= count) break;
-      }
-      if (out.length >= count) break;
-    }
-  }
-
+  // There used to be a fallback here that borrowed from OTHER categories'
+  // close-ups whenever this one came up short. It fired for flooring in ten of
+  // eleven industries, and because it admitted anything whose text matched the
+  // category, what it borrowed was lamps: a retail flooring spread shipped with
+  // "Derosier Floor Lamp", "Burgundy Mid-Century Modern Arched Floor Lamp" and
+  // "Cozy Living Room: Tall Floor Lamp Glow" on it. That is the whole of the
+  // "images aren't relevant to the category" complaint, in one loop.
+  //
+  // The earlier comment here already had the right principle and stopped one
+  // step short of applying it: returning fewer, clean images is always better
+  // than filling the count. Seven flooring photographs beat twelve with four
+  // lamps among them, and BriefDisplay/BriefPDF both handle a short list.
   return out;
 }
 
