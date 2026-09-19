@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SITE_URL } from "@/lib/site";
 
 /**
  * Privacy policy.
@@ -24,10 +25,10 @@ export const metadata: Metadata = {
   title: { absolute: "Privacy Policy | Fills" },
   description:
     "What Fills collects, where it is stored, who else sees it, and how to have it deleted. Plainly written, and accurate to what the product actually does.",
-  alternates: { canonical: "https://fills.io/privacy" },
+  alternates: { canonical: `${SITE_URL}/privacy` },
   openGraph: {
     type: "website",
-    url: "https://fills.io/privacy",
+    url: `${SITE_URL}/privacy`,
     title: "Privacy Policy | Fills",
     description:
       "What Fills collects, where it is stored, who else sees it, and how to have it deleted.",

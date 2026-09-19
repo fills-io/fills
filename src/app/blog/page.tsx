@@ -3,6 +3,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getPublishedPosts } from "@/lib/blog-store";
+import { SITE_URL } from "@/lib/site";
 
 // Posts come from the database (authored in /admin), so render fresh each time.
 export const dynamic = "force-dynamic";
@@ -11,10 +12,10 @@ export const metadata: Metadata = {
   title: { absolute: "Interior Design Blog | Fills" },
   description:
     "Practical notes on writing interior design briefs, building mood boards, and briefing a space well. Written by a working architect.",
-  alternates: { canonical: "https://fills.io/blog" },
+  alternates: { canonical: `${SITE_URL}/blog` },
   openGraph: {
     type: "website",
-    url: "https://fills.io/blog",
+    url: `${SITE_URL}/blog`,
     title: "Interior Design Blog | Fills",
     description:
       "Practical notes on writing interior design briefs and building mood boards, from a working architect.",

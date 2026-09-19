@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site";
 
 /** /robots.txt — lets crawlers in, keeps the admin + API out of the index. */
 export default function robots(): MetadataRoute.Robots {
@@ -8,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/admin", "/api/"],
     },
-    sitemap: "https://fills.io/sitemap.xml",
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
