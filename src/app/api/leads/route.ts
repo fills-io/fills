@@ -8,12 +8,16 @@
  * Best-effort: the flow advances the user regardless of whether this
  * succeeds, so a DB hiccup never blocks them. Returns 200 on success,
  * 400 on bad input, 500 on a storage error (the client ignores failures).
+ *
+ * Each stored lead also emails the team (src/lib/lead-alert.ts), once
+ * RESEND_API_KEY is set.
  */
 
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { db, leads } from "@/db";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { sendLeadAlert } from "@/lib/lead-alert";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,6 +63,18 @@ export async function POST(request: NextRequest) {
       message: parsed.data.message || null,
       source: parsed.data.source || null,
     });
+
+    // Tell the team, AFTER the visitor has their answer. `after` keeps the
+    // function alive until the email is sent without making them wait for it,
+    // and runs only once the row is safely stored, so no alert ever describes
+    // a lead that isn't in the table.
+    after(() =>
+      sendLeadAlert({
+        ...parsed.data,
+        adminUrl: `${request.nextUrl.origin}/admin`,
+      }),
+    );
+
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[/api/leads] insert failed:", error);
