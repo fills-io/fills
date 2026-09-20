@@ -109,7 +109,9 @@ function gmailConfig():
   | { user: string; pass: string; to: string[] }
   | { missing: string } {
   const user = process.env.GMAIL_USER?.trim();
-  const pass = process.env.GMAIL_APP_PASSWORD?.trim();
+  // Google displays app passwords as "abcd efgh ijkl mnop" and people paste
+  // them that way. The real password is the 16 letters; drop the spaces.
+  const pass = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "");
   if (!user) return { missing: "GMAIL_USER" };
   if (!pass) return { missing: "GMAIL_APP_PASSWORD" };
 
@@ -119,6 +121,56 @@ function gmailConfig():
     .filter(Boolean);
 
   return { user, pass, to };
+}
+
+function gmailTransport(user: string, pass: string) {
+  return nodemailer.createTransport({
+    host: GMAIL_HOST,
+    port: GMAIL_PORT,
+    secure: false, // STARTTLS is negotiated on 587; `true` here means implicit TLS on 465.
+    requireTLS: true, // Never send the app password in the clear.
+    auth: { user, pass },
+    connectionTimeout: TIMEOUT_MS,
+    greetingTimeout: TIMEOUT_MS,
+    socketTimeout: TIMEOUT_MS,
+  });
+}
+
+/**
+ * What the admin check page reports. Nothing here can leak the password:
+ * only whether it is set, and how long it is (a real app password is 16).
+ */
+export type GmailCheck = {
+  gmailUser: string | null;
+  appPasswordSet: boolean;
+  appPasswordLength: number;
+  recipients: string[];
+  /** "ok" when Google accepted the login, otherwise Google's own words. */
+  login: string;
+};
+
+/**
+ * Log in to Gmail and hang up, without sending anything. Serverless logs are
+ * hard to reach, so this puts Google's answer where a person can read it.
+ */
+export async function checkGmail(): Promise<GmailCheck> {
+  const config = gmailConfig();
+  const rawPass = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, "") ?? "";
+  const base = {
+    gmailUser: process.env.GMAIL_USER?.trim() || null,
+    appPasswordSet: rawPass.length > 0,
+    appPasswordLength: rawPass.length,
+  };
+  if ("missing" in config) {
+    return { ...base, recipients: [], login: `${config.missing} is not set` };
+  }
+  try {
+    await gmailTransport(config.user, config.pass).verify();
+    return { ...base, recipients: config.to, login: "ok" };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ...base, recipients: config.to, login: message };
+  }
 }
 
 export async function sendLeadAlert(lead: LeadAlert): Promise<void> {
@@ -131,16 +183,7 @@ export async function sendLeadAlert(lead: LeadAlert): Promise<void> {
   const { subject, text } = buildLeadAlert(lead);
 
   try {
-    const transport = nodemailer.createTransport({
-      host: GMAIL_HOST,
-      port: GMAIL_PORT,
-      secure: false, // STARTTLS is negotiated on 587; `true` here means implicit TLS on 465.
-      requireTLS: true, // Never send the app password in the clear.
-      auth: { user: config.user, pass: config.pass },
-      connectionTimeout: TIMEOUT_MS,
-      greetingTimeout: TIMEOUT_MS,
-      socketTimeout: TIMEOUT_MS,
-    });
+    const transport = gmailTransport(config.user, config.pass);
 
     await transport.sendMail({
       // Gmail insists the sender is the authenticated mailbox (or one of its
