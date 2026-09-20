@@ -2,15 +2,16 @@ import type { Metadata } from "next";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import TalkToDesignerForm from "@/components/TalkToDesignerForm";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: { absolute: "Talk to a Designer | Fills" },
   description:
     "Get a working interior architect's eyes on your project. Tell us what you're working on and a designer will reply by email.",
-  alternates: { canonical: "https://fills.io/talk-to-a-designer" },
+  alternates: { canonical: `${SITE_URL}/talk-to-a-designer` },
   openGraph: {
     type: "website",
-    url: "https://fills.io/talk-to-a-designer",
+    url: `${SITE_URL}/talk-to-a-designer`,
     title: "Talk to a Designer | Fills",
     description:
       "Get a working interior architect's eyes on your project. Tell us what you're working on and a designer will reply by email.",

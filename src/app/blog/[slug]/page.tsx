@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import PostBody from "@/components/blog/PostBody";
 import { AUTHOR } from "@/content/blog/posts";
 import { getPostBySlug } from "@/lib/blog-store";
+import { SITE_URL } from "@/lib/site";
 
 type Params = { slug: string };
 
@@ -21,7 +22,7 @@ export async function generateMetadata({
   const post = await getPostBySlug(slug);
   if (!post) return {};
 
-  const url = `https://fills.io/blog/${post.slug}`;
+  const url = `${SITE_URL}/blog/${post.slug}`;
   const title = post.metaTitle ?? `${post.title} | Fills`;
   return {
     title: { absolute: title },
@@ -56,7 +57,7 @@ export default async function PostPage({
   const post = await getPostBySlug(slug);
   if (!post) notFound();
 
-  const url = `https://fills.io/blog/${post.slug}`;
+  const url = `${SITE_URL}/blog/${post.slug}`;
   const articleJsonLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -68,7 +69,7 @@ export default async function PostPage({
     publisher: {
       "@type": "Organization",
       name: "Fills",
-      url: "https://fills.io",
+      url: SITE_URL,
     },
     mainEntityOfPage: { "@type": "WebPage", "@id": url },
   };

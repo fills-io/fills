@@ -3,6 +3,7 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import BriefTemplate from "@/components/blog/BriefTemplate";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: { absolute: "Free Interior Design Brief Template (Printable) | Fills" },
@@ -15,10 +16,10 @@ export const metadata: Metadata = {
     "interior design brief template pdf",
     "printable design brief",
   ],
-  alternates: { canonical: "https://fills.io/interior-design-brief-template" },
+  alternates: { canonical: `${SITE_URL}/interior-design-brief-template` },
   openGraph: {
     type: "website",
-    url: "https://fills.io/interior-design-brief-template",
+    url: `${SITE_URL}/interior-design-brief-template`,
     title: "Free Interior Design Brief Template (Printable) | Fills",
     description:
       "A free, printable interior design brief template covering goals, style, budget, and constraints. Built by a working architect.",

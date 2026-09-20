@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { SITE_URL } from "@/lib/site";
 
 /**
  * Terms of use.
@@ -20,10 +21,10 @@ export const metadata: Metadata = {
   title: { absolute: "Terms of Use | Fills" },
   description:
     "The terms for using Fills: what a generated brief is and isn't, who owns the reference images, and how buying a brief or a project pass works.",
-  alternates: { canonical: "https://fills.io/terms" },
+  alternates: { canonical: `${SITE_URL}/terms` },
   openGraph: {
     type: "website",
-    url: "https://fills.io/terms",
+    url: `${SITE_URL}/terms`,
     title: "Terms of Use | Fills",
     description:
       "What a generated brief is and isn't, who owns the reference images, and how buying works.",

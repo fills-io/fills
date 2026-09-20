@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Playfair_Display, DM_Sans, DM_Mono, Archivo } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const playfair = Playfair_Display({
@@ -33,8 +34,6 @@ const archivo = Archivo({
   display: "swap",
 });
 
-const SITE_URL = "https://fills.io";
-
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -56,7 +55,7 @@ export const metadata: Metadata = {
   ],
   applicationName: "Fills",
   authors: [{ name: "Fills" }],
-  // A URL *instance* (not the string "https://fills.io") makes Next resolve the
+  // A URL *instance* (not the SITE_URL string) makes Next resolve the
   // canonical against each page's own pathname, so an un-overridden page
   // self-canonicalises. With a string, every page inherited it verbatim and told
   // Google it was a duplicate of the homepage — /concept/quick and
@@ -94,14 +93,14 @@ const STRUCTURED_DATA = {
   name: "Fills",
   applicationCategory: "DesignApplication",
   operatingSystem: "Web",
-  url: "https://fills.io",
+  url: SITE_URL,
   description:
     "An AI mood board and interior design brief generator. Turn a one-line brief into a complete editorial mood board (palette, materials, lighting, furniture) in five minutes. Built by a working architect.",
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   creator: {
     "@type": "Organization",
     name: "Fills",
-    url: "https://fills.io",
+    url: SITE_URL,
   },
 };
 

@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
 import { getPublishedPosts } from "@/lib/blog-store";
+import { SITE_URL } from "@/lib/site";
 
 /** XML sitemap at /sitemap.xml — tells Google which pages to index. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = "https://fills.io";
+  const base = SITE_URL;
 
   const posts = await getPublishedPosts();
   const postEntries: MetadataRoute.Sitemap = posts.map((p) => ({
