@@ -9,8 +9,8 @@
  * succeeds, so a DB hiccup never blocks them. Returns 200 on success,
  * 400 on bad input, 500 on a storage error (the client ignores failures).
  *
- * Each stored lead also emails the team (src/lib/lead-alert.ts), once
- * RESEND_API_KEY is set.
+ * Each stored lead also emails the team (src/lib/lead-alert.ts), once the
+ * Gmail settings (GMAIL_USER + GMAIL_APP_PASSWORD) are set.
  */
 
 import { after, NextResponse, type NextRequest } from "next/server";

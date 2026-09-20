@@ -5,19 +5,23 @@
  * `leads` table. Nobody was told, so every enquiry waited until someone
  * happened to open /admin. This sends one plain-text email per lead.
  *
- * Sent through Resend's HTTP API with a bare fetch, so there is no SDK to keep
- * up to date. Three settings, all server-side:
+ * Sent through the company's own Gmail (Google Workspace) over SMTP. Chosen
+ * over a transactional provider on purpose: Aisha already pays for Workspace,
+ * wanted no new accounts, and the volume is a handful of emails a week. Two
+ * settings, both server-side:
  *
- *   RESEND_API_KEY   required. Without it this does nothing and says so in
- *                    the logs, so the lead flow works identically before the
- *                    account exists. Nothing breaks while it is missing.
- *   LEAD_ALERT_TO    who receives the alert. Defaults to aisha@fills.io.
- *   LEAD_ALERT_FROM  the sender. Defaults to Resend's shared test address,
- *                    which needs no DNS setup but can ONLY deliver to the
- *                    email the Resend account was opened with. So either open
- *                    the account with the LEAD_ALERT_TO address, or verify
- *                    fills.io in Resend and set this to e.g.
- *                    "Fills <alerts@fills.io>".
+ *   GMAIL_USER          the mailbox that sends, e.g. aisha@fills.io. Also the
+ *                       default recipient.
+ *   GMAIL_APP_PASSWORD  a Google "app password" for that mailbox, NOT the
+ *                       normal password (Google rejects those for SMTP).
+ *                       Made under Google Account → Security → 2-Step
+ *                       Verification → App passwords. Treat it like the
+ *                       mailbox password: it can read and send everything.
+ *   LEAD_ALERT_TO       optional. Who receives the alert; defaults to
+ *                       GMAIL_USER. Comma-separate to add more people.
+ *
+ * Without both Gmail settings this does nothing and says so in the logs, so
+ * the lead flow works identically before they exist. Nothing breaks.
  *
  * Plain text only. The message is written by a stranger, and plain text means
  * nothing they type can be rendered as markup in the team's inbox.
@@ -27,11 +31,13 @@
  * who sent it.
  */
 
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
-const DEFAULT_TO = "aisha@fills.io";
-const DEFAULT_FROM = "Fills <onboarding@resend.dev>";
+import nodemailer from "nodemailer";
 
-/** Long enough for a slow API, short enough to stay inside a serverless call. */
+/** Google's SMTP front door. Port 587 with STARTTLS is what they document. */
+const GMAIL_HOST = "smtp.gmail.com";
+const GMAIL_PORT = 587;
+
+/** Long enough for a slow handshake, short enough to stay inside a serverless call. */
 const TIMEOUT_MS = 8_000;
 
 export type LeadAlert = {
@@ -98,40 +104,58 @@ export function buildLeadAlert(lead: LeadAlert): { subject: string; text: string
   return { subject, text: lines.join("\n") };
 }
 
+/** The settings, or null with the reason when the feature is switched off. */
+function gmailConfig():
+  | { user: string; pass: string; to: string[] }
+  | { missing: string } {
+  const user = process.env.GMAIL_USER?.trim();
+  const pass = process.env.GMAIL_APP_PASSWORD?.trim();
+  if (!user) return { missing: "GMAIL_USER" };
+  if (!pass) return { missing: "GMAIL_APP_PASSWORD" };
+
+  const to = (process.env.LEAD_ALERT_TO?.trim() || user)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  return { user, pass, to };
+}
+
 export async function sendLeadAlert(lead: LeadAlert): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  if (!apiKey) {
-    console.info("[lead-alert] RESEND_API_KEY not set, skipping the email.");
+  const config = gmailConfig();
+  if ("missing" in config) {
+    console.info(`[lead-alert] ${config.missing} not set, skipping the email.`);
     return;
   }
 
   const { subject, text } = buildLeadAlert(lead);
 
   try {
-    const response = await fetch(RESEND_ENDPOINT, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: process.env.LEAD_ALERT_FROM?.trim() || DEFAULT_FROM,
-        to: [process.env.LEAD_ALERT_TO?.trim() || DEFAULT_TO],
-        // Hitting reply answers the person who wrote in, not the robot.
-        reply_to: lead.email,
-        subject,
-        text,
-      }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+    const transport = nodemailer.createTransport({
+      host: GMAIL_HOST,
+      port: GMAIL_PORT,
+      secure: false, // STARTTLS is negotiated on 587; `true` here means implicit TLS on 465.
+      requireTLS: true, // Never send the app password in the clear.
+      auth: { user: config.user, pass: config.pass },
+      connectionTimeout: TIMEOUT_MS,
+      greetingTimeout: TIMEOUT_MS,
+      socketTimeout: TIMEOUT_MS,
     });
 
-    if (!response.ok) {
-      // Resend explains itself in the body (bad key, unverified sender...).
-      // Logged in full: this is the only place the reason will ever surface.
-      const detail = await response.text().catch(() => "");
-      console.error(`[lead-alert] Resend refused (${response.status}): ${detail}`);
-    }
+    await transport.sendMail({
+      // Gmail insists the sender is the authenticated mailbox (or one of its
+      // aliases); anything else is silently rewritten, so don't pretend.
+      from: `Fills <${config.user}>`,
+      to: config.to,
+      // Hitting reply answers the person who wrote in, not the mailbox.
+      replyTo: lead.email,
+      subject,
+      text,
+    });
   } catch (error) {
+    // Google explains itself in the error (bad app password, 2-step off,
+    // blocked sign-in...). Logged in full: this is the only place the reason
+    // will ever surface.
     console.error("[lead-alert] send failed:", error);
   }
 }
